@@ -5,32 +5,21 @@
   },
   "files": {
     "ignore": [
-      "static/**",
       "node_modules/**",
-      "**/midscene_run",
-      "**/extension_output",
-      ".nx",
-      "**/dist",
-      "test-data/**",
-      "**/inject-tp.js",
-      "dist",
-      "dist-inspect",
-      "__ai_responses__",
-      "ai-data/**",
-      "**/doc_build",
-      "*-dump.json",
-      "test-results/**",
-      "iife-script/**",
-      "script_get_all_texts.tmp.js",
+      "**/midscene_run/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/coverage/**",
+      "**/.nyc_output/**",
+      "**/test-results/**",
       "**/playwright-report/**",
-      "**/todo-report.spec.ts-snapshots/**",
-      "**/visualizer/scripts/fixture/*",
-      "**/unpacked-extension/*",
-      "**/page-data/**",
+      "**/*.log",
+      "**/pnpm-lock.yaml",
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "**/.env*",
       "**/dump.json",
-      "**/dump-with-invisible.json",
-      "**/dump-for-utils-test.json",
-      "**/.rslib"
+      "**/*-dump.json"
     ]
   },
   "javascript": {
@@ -67,7 +56,6 @@
   "overrides": [
     {
       "include": ["*.ts", "*.d.ts", "*.tsx"],
-      "ignore": [".nx"],
       "linter": {
         "rules": {}
       }
