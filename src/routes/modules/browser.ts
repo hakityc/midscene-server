@@ -94,6 +94,34 @@ const browserRouter = new Hono().post('/demo', async (c) => {
       });
     }
 
+    // 若出现 MCP 超时类错误，进行一次性带指引的重试
+    if (hasError && errorDetails?.isTimeout) {
+      logger.warn('⏳ 检测到 MCP 请求超时，准备进行一次性带指引的重试');
+
+      const retryHint = `请先导航到百度首页并等待搜索框出现，使用稳定选择器 input#kw 或 input[name=wd] 定位，再输入搜索词并执行搜索。若遇到广告结果，请优先选择“官网/Official Site”。`;
+      const retryPrompt = `${retryHint}\n\n原始指令：${prompt}\n\n【请严格按步骤执行：】\n1) 打开 https://www.baidu.com\n2) 等待搜索框出现（input#kw 或 input[name=wd]）\n3) 输入搜索词并提交\n4) 识别官网链接并打开`;
+
+      try {
+        const retryResponse = await browserAgent.streamVNext(retryPrompt);
+        for await (const chunk of retryResponse.textStream) {
+          chunkCount++;
+          fullResponse += chunk;
+          process.stdout.write(chunk);
+        }
+        // 重试成功后清除错误标记
+        hasError = false;
+        errorDetails = null;
+        logger.info('✅ 重试成功，已补全流式输出');
+      } catch (retryErr) {
+        const retryErrDetails = extractMCPErrorDetails(retryErr);
+        logger.error('❌ 重试仍然失败', {
+          retryError: retryErr instanceof Error ? retryErr.message : String(retryErr),
+          mcpError: retryErrDetails
+        });
+        // 保留首次错误标记与详情
+      }
+    }
+
     logger.info('✅ 流式响应完成', {
       totalChunks: chunkCount,
       totalLength: fullResponse.length,

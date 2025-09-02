@@ -1,7 +1,8 @@
 import { Mastra } from '@mastra/core/mastra';
+import { randomUUID } from 'crypto';
 import { browserAgent } from './agents/browser-agent';
 import { logger } from './logger';
-// import { mcpServer } from './mcp/server';
+import { getMcpServer } from './mcp/server';
 
 // TODO：
 // 高优先级:
@@ -13,8 +14,45 @@ import { logger } from './logger';
 export const mastra = new Mastra({
   agents: { browserAgent },
   // logger,
-  // 注册 MCP Server - 暂时注释掉，等类型问题解决后再启用
-  // mcpServers: {
-  //   midsceneBrowser: mcpServer
-  // },
+  server: {
+    apiRoutes: [
+      {
+        path: '/api/mcp/midscene/mcp',
+        method: 'ALL',
+        createHandler: async () => {
+          const server = await getMcpServer();
+          return async (req: any, res: any) => {
+            const url = new URL(req.url || '', `http://${req.headers.host}`);
+            await server.startHTTP({
+              url,
+              httpPath: '/api/mcp/midscene/mcp',
+              req,
+              res,
+              options: {
+                enableJsonResponse: false,
+                sessionIdGenerator: () => randomUUID(),
+              },
+            });
+          };
+        },
+      },
+      {
+        path: '/api/mcp/midscene/sse',
+        method: 'ALL',
+        createHandler: async () => {
+          const server = await getMcpServer();
+          return async (req: any, res: any) => {
+            const url = new URL(req.url || '', `http://${req.headers.host}`);
+            await server.startSSE({
+              url,
+              ssePath: '/api/mcp/midscene/sse',
+              messagePath: '/api/mcp/midscene/message',
+              req,
+              res,
+            });
+          };
+        },
+      },
+    ],
+  },
 });
