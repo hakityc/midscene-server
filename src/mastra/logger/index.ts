@@ -54,9 +54,9 @@ export const logger = new PinoLogger({
       });
 
       // 格式化输出
-      console.log(
-        `${color}${bold}[${timeStr}] ${level}${reset} ${color}${message}${reset}`
-      );
+      // console.log(
+      //   `${color}${bold}[${timeStr}] ${level}${reset} ${color}${message}${reset}`
+      // );
 
       // 显示重要的额外数据，特别关注 MCP 工具执行相关的信息
       if (object && typeof object === 'object') {
@@ -68,44 +68,44 @@ export const logger = new PinoLogger({
           console.log(JSON.stringify(data, null, 2));
         } else {
           // 过滤掉技术性的字段，但保留 MCP 相关的重要信息
-          const filteredData = Object.fromEntries(
-            Object.entries(data).filter(([key, value]) => {
-              // 保留 MCP 相关的字段
-              if (
-                key.includes('mcp') ||
-                key.includes('MCP') ||
-                key.includes('tool') ||
-                key.includes('Tool') ||
-                key.includes('error') ||
-                key.includes('Error') ||
-                key.includes('args') ||
-                key.includes('Args') ||
-                key.includes('timeout') ||
-                key.includes('Timeout')
-              ) {
-                return true;
-              }
+          // const filteredData = Object.fromEntries(
+          //   Object.entries(data).filter(([key, value]) => {
+          //     // 保留 MCP 相关的字段
+          //     if (
+          //       key.includes('mcp') ||
+          //       key.includes('MCP') ||
+          //       key.includes('tool') ||
+          //       key.includes('Tool') ||
+          //       key.includes('error') ||
+          //       key.includes('Error') ||
+          //       key.includes('args') ||
+          //       key.includes('Args') ||
+          //       key.includes('timeout') ||
+          //       key.includes('Timeout')
+          //     ) {
+          //       return true;
+          //     }
 
-              // 过滤掉技术性的字段
-              return (
-                (!key.includes('~standard') &&
-                  !key.includes('vendor') &&
-                  !key.includes('zod') &&
-                  !key.includes('supportsStructuredOutputs') &&
-                  typeof value !== 'object') ||
-                (typeof value === 'object' &&
-                  value !== null &&
-                  Object.keys(value).length < 5)
-              );
-            })
-          );
+          //     // 过滤掉技术性的字段
+          //     return (
+          //       (!key.includes('~standard') &&
+          //         !key.includes('vendor') &&
+          //         !key.includes('zod') &&
+          //         !key.includes('supportsStructuredOutputs') &&
+          //         typeof value !== 'object') ||
+          //       (typeof value === 'object' &&
+          //         value !== null &&
+          //         Object.keys(value).length < 5)
+          //     );
+          //   })
+          // );
 
-          if (Object.keys(filteredData).length > 0) {
-            console.log(
-              `${color}📊 ${reset}`,
-              JSON.stringify(filteredData, null, 2)
-            );
-          }
+          // if (Object.keys(filteredData).length > 0) {
+          //   console.log(
+          //     `${color}📊 ${reset}`,
+          //     JSON.stringify(filteredData, null, 2)
+          //   );
+          // }
         }
       }
 

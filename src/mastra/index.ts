@@ -12,9 +12,9 @@ import { logger } from './logger';
 // 错误处理增强 (推荐)
 export const mastra = new Mastra({
   agents: { browserAgent },
-  logger,
+  // logger,
   // 注册 MCP Server - 暂时注释掉，等类型问题解决后再启用
-  // mcpServers: { 
-  //   midsceneBrowser: mcpServer 
+  // mcpServers: {
+  //   midsceneBrowser: mcpServer
   // },
 });
