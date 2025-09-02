@@ -6,8 +6,8 @@ export const mcpClient = new MCPClient({
       command: 'npx',
       args: ['-y', '@midscene/mcp'],
       env: {
-        MIDSCENE_MODEL_NAME: 'REPLACE_WITH_YOUR_MODEL_NAME',
-        OPENAI_API_KEY: 'REPLACE_WITH_YOUR_OPENAI_API_KEY',
+        OPENAI_API_KEY: 'sk-66ec28c79d814d0d8dc59a6fb0b00680',
+        MIDSCENE_MODEL_NAME: 'qwen-vl-max-latest',
         MCP_SERVER_REQUEST_TIMEOUT: '800000',
       },
     },
