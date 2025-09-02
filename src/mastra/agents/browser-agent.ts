@@ -46,6 +46,7 @@ const createModel = () => {
 
 export const browserAgent = new Agent({
   name: 'Browser Agent',
+  description: '专业的浏览器自动化助手，通过 Midscene MCP 工具来操控浏览器，帮助用户完成各种网页操作任务',
   instructions: `你是一个专业的浏览器自动化助手，通过 Midscene MCP 工具来操控浏览器，帮助用户完成各种网页操作任务。
 
   ## 核心能力
