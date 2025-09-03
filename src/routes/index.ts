@@ -14,7 +14,7 @@ export const setupRouter = (app: Hono) => {
       message: '欢迎使用 MidScene Server API',
       version: '1.0.0',
       endpoints: {
-        browser: '/browser/demo',
+        browser: '/browser',
       },
     });
   });
