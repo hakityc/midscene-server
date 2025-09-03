@@ -48,7 +48,7 @@ function extractMCPErrorDetails(error: unknown): any {
   return mcpErrorInfo;
 }
 
-const browserRouter = new Hono().post('/demo', async (c) => {
+const browserRouter = new Hono().post('/', async (c) => {
   const logger = mastra.getLogger();
   const browserAgent = mastra.getAgent('browserAgent');
 
@@ -66,6 +66,11 @@ const browserRouter = new Hono().post('/demo', async (c) => {
   logger.info('🚀 开始执行浏览器任务', { prompt });
 
   try {
+    // 记录 MCP 工具调用开始
+    logger.info('🚀 开始执行浏览器任务，准备调用 MCP 工具', {
+      prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
+      promptLength: prompt.length
+    });
 
     // 使用流式响应来实时显示大模型的输出
     const response = await browserAgent.streamVNext(prompt);
@@ -127,6 +132,20 @@ const browserRouter = new Hono().post('/demo', async (c) => {
       totalLength: fullResponse.length,
       hasError
     });
+
+    // 记录 MCP 任务执行结果
+    if (!hasError) {
+      logger.info('✅ MCP 浏览器任务执行成功', {
+        responseLength: fullResponse.length,
+        chunkCount: chunkCount,
+        responsePreview: fullResponse.substring(0, 200) + (fullResponse.length > 200 ? '...' : '')
+      });
+    } else {
+      logger.error('❌ MCP 浏览器任务执行失败', {
+        errorDetails: errorDetails,
+        partialResponse: fullResponse.substring(0, 200) + (fullResponse.length > 200 ? '...' : '')
+      });
+    }
 
     return c.json({
       response: fullResponse,

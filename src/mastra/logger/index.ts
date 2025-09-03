@@ -25,6 +25,17 @@ export const logger = new PinoLogger({
         return object; // 跳过这些详细的技术信息
       }
 
+      // 专门处理 MCP 相关的日志
+      const isMCPLog = typeof message === 'string' && (
+        message.includes('MCP') ||
+        message.includes('mcp') ||
+        message.includes('🔧') ||
+        message.includes('🚀') ||
+        message.includes('✅') ||
+        message.includes('❌') ||
+        message.includes('⚠️')
+      );
+
       // 根据日志级别设置颜色
       let color = '\x1b[37m'; // 默认白色
       switch (level) {
@@ -53,59 +64,21 @@ export const logger = new PinoLogger({
         second: '2-digit',
       });
 
-      // 格式化输出
-      // console.log(
-      //   `${color}${bold}[${timeStr}] ${level}${reset} ${color}${message}${reset}`
-      // );
+      // 格式化输出 - 只显示 MCP 相关的日志
+      if (isMCPLog) {
+        console.log(
+          `${color}${bold}[${timeStr}] ${level}${reset} ${color}${message}${reset}`
+        );
 
-      // 显示重要的额外数据，特别关注 MCP 工具执行相关的信息
-      if (object && typeof object === 'object') {
-        const { level: _, msg: __, time: ___, ...data } = object;
+        // 显示 MCP 相关的额外数据
+        if (object && typeof object === 'object') {
+          const { level: _, msg: __, time: ___, ...data } = object;
 
-        // 对于错误日志，显示更详细的信息
-        if (level === 'ERROR') {
-          console.log(`${color}🔍 详细错误信息:${reset}`);
-          console.log(JSON.stringify(data, null, 2));
-        } else {
-          // 过滤掉技术性的字段，但保留 MCP 相关的重要信息
-          // const filteredData = Object.fromEntries(
-          //   Object.entries(data).filter(([key, value]) => {
-          //     // 保留 MCP 相关的字段
-          //     if (
-          //       key.includes('mcp') ||
-          //       key.includes('MCP') ||
-          //       key.includes('tool') ||
-          //       key.includes('Tool') ||
-          //       key.includes('error') ||
-          //       key.includes('Error') ||
-          //       key.includes('args') ||
-          //       key.includes('Args') ||
-          //       key.includes('timeout') ||
-          //       key.includes('Timeout')
-          //     ) {
-          //       return true;
-          //     }
-
-          //     // 过滤掉技术性的字段
-          //     return (
-          //       (!key.includes('~standard') &&
-          //         !key.includes('vendor') &&
-          //         !key.includes('zod') &&
-          //         !key.includes('supportsStructuredOutputs') &&
-          //         typeof value !== 'object') ||
-          //       (typeof value === 'object' &&
-          //         value !== null &&
-          //         Object.keys(value).length < 5)
-          //     );
-          //   })
-          // );
-
-          // if (Object.keys(filteredData).length > 0) {
-          //   console.log(
-          //     `${color}📊 ${reset}`,
-          //     JSON.stringify(filteredData, null, 2)
-          //   );
-          // }
+          // 对于 MCP 日志，显示详细信息
+          if (Object.keys(data).length > 0) {
+            console.log(`${color}📊 MCP 详细信息:${reset}`);
+            console.log(JSON.stringify(data, null, 2));
+          }
         }
       }
 

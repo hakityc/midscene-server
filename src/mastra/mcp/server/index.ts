@@ -1,25 +1,38 @@
 import { MCPServer } from '@mastra/mcp';
 import { mcpClient } from '../client';
+import { logger } from '../../logger';
 
 let cachedServer: MCPServer | null = null;
 
 export async function getMcpServer(): Promise<MCPServer> {
   if (cachedServer) return cachedServer;
 
-  // 拉取 midscene MCP 的全部工具并原样对外暴露
-  const tools = await mcpClient.getTools();
+  try {
+    logger.info('🔧 正在初始化 MCP 服务器...');
 
-  // 启动时打印工具概览，便于排查是否成功连接上 MCP 服务器
-  const toolNames = Object.keys(tools || {});
-  console.log('[MCP Server] Loaded tools:', toolNames.length, toolNames);
+    // 拉取 midscene MCP 的全部工具并原样对外暴露
+    const tools = await mcpClient.getTools();
 
-  cachedServer = new MCPServer({
-    name: 'midscene-bridge-server',
-    version: '1.0.0',
-    tools,
-  });
+    // 启动时打印工具概览，便于排查是否成功连接上 MCP 服务器
+    const toolNames = Object.keys(tools || {});
+    logger.info('✅ MCP 服务器初始化成功', {
+      toolCount: toolNames.length,
+      toolNames: toolNames
+    });
 
-  return cachedServer;
+    cachedServer = new MCPServer({
+      name: 'midscene-bridge-server',
+      version: '1.0.0',
+      tools,
+    });
+
+    return cachedServer;
+  } catch (error) {
+    logger.error('❌ MCP 服务器初始化失败', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    throw error;
+  }
 }
 
 
