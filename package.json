@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "tsx src/index.ts",
     "test:logger": "tsx src/test/logger-test.ts",
     "mcp:server:stdio": "tsx src/mastra/mcp/server/start-server.ts stdio",
     "mcp:server:sse": "tsx src/mastra/mcp/server/start-server.ts sse",
