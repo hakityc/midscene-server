@@ -18,4 +18,13 @@ export const setupRouter = (app: Hono) => {
       },
     });
   });
+
+  // 健康检查端点
+  app.get('/health', (c) => {
+    return c.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
+  });
 };
