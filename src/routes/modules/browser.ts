@@ -1,6 +1,87 @@
 import { Hono } from 'hono';
 import { mastra } from '../../mastra';
 
+// 解析 AI 输出的 JSON 内容
+function parseAIResponse(response: string): {
+  parsed: any | null;
+  error: string | null;
+} {
+  if (!response.trim()) {
+    return { parsed: null, error: '响应内容为空' };
+  }
+
+  try {
+    // 方法1: 尝试直接解析整个响应
+    const directParse = JSON.parse(response.trim());
+    if (typeof directParse === 'object' && directParse !== null) {
+      return { parsed: directParse, error: null };
+    }
+  } catch {
+    // 直接解析失败，继续尝试其他方法
+  }
+
+  try {
+    // 方法2: 查找 JSON 代码块
+    const jsonBlockMatch = response.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+    if (jsonBlockMatch) {
+      const parsed = JSON.parse(jsonBlockMatch[1]);
+      return { parsed, error: null };
+    }
+  } catch {
+    // JSON 代码块解析失败
+  }
+
+  try {
+    // 方法3: 查找任何 JSON 对象
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return { parsed, error: null };
+    }
+  } catch {
+    // JSON 对象解析失败
+  }
+
+  return { parsed: null, error: '未找到有效的 JSON 格式内容' };
+}
+
+// 验证解析后的 JSON 是否符合预期格式
+function validateAIResponse(parsed: any): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!parsed || typeof parsed !== 'object') {
+    errors.push('响应不是有效的对象');
+    return { valid: false, errors };
+  }
+
+  // 检查必要字段
+  if (!parsed.analysis) {
+    errors.push('缺少 analysis 字段');
+  } else if (typeof parsed.analysis !== 'object') {
+    errors.push('analysis 字段不是对象类型');
+  }
+
+  if (!parsed.actions) {
+    errors.push('缺少 actions 字段');
+  } else if (!Array.isArray(parsed.actions)) {
+    errors.push('actions 字段不是数组类型');
+  }
+
+  // 检查 actions 数组中的每个元素
+  if (Array.isArray(parsed.actions)) {
+    parsed.actions.forEach((action: any, index: number) => {
+      if (!action.type) {
+        errors.push(`actions[${index}] 缺少 type 字段`);
+      }
+      if (!action.params) {
+        errors.push(`actions[${index}] 缺少 params 字段`);
+      }
+    });
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
 // 提取 MCP 相关的错误详细信息
 function extractMCPErrorDetails(error: unknown): any {
   if (!error) return null;
@@ -11,11 +92,12 @@ function extractMCPErrorDetails(error: unknown): any {
   // 尝试解析 MCP 错误信息
   const mcpErrorInfo: any = {
     originalMessage: errorStr,
-    isTimeout: errorStr.includes('timeout') || errorStr.includes('Request timed out'),
+    isTimeout:
+      errorStr.includes('timeout') || errorStr.includes('Request timed out'),
     isMCPError: errorStr.includes('MCP error') || errorStr.includes('mcp'),
     errorCode: null,
     toolArgs: null,
-    model: null
+    model: null,
   };
 
   // 尝试从错误消息中提取 JSON 信息
@@ -57,10 +139,13 @@ const browserRouter = new Hono().post('/', async (c) => {
   const prompt = body.prompt;
 
   if (!prompt) {
-    return c.json({
-      error: '缺少必要参数',
-      message: '请提供 prompt 参数'
-    }, 400);
+    return c.json(
+      {
+        error: '缺少必要参数',
+        message: '请提供 prompt 参数',
+      },
+      400
+    );
   }
 
   logger.info('🚀 开始执行浏览器任务', { prompt });
@@ -69,11 +154,15 @@ const browserRouter = new Hono().post('/', async (c) => {
     // 记录 MCP 工具调用开始
     logger.info('🚀 开始执行浏览器任务，准备调用 MCP 工具', {
       prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
-      promptLength: prompt.length
+      promptLength: prompt.length,
     });
 
     // 使用流式响应来实时显示大模型的输出
-    const response = await browserAgent.streamVNext(prompt);
+    const response = await browserAgent.streamVNext(prompt, {
+      onStepFinish: ({ text, toolCalls, toolResults, finishReason, usage }) => {
+        console.log({ text, toolCalls, toolResults, finishReason, usage });
+      },
+    });
 
     let fullResponse = '';
     let chunkCount = 0;
@@ -94,8 +183,11 @@ const browserRouter = new Hono().post('/', async (c) => {
       hasError = true;
       errorDetails = extractMCPErrorDetails(streamError);
       logger.error('❌ 流式响应处理过程中发生错误', {
-        streamError: streamError instanceof Error ? streamError.message : String(streamError),
-        mcpError: errorDetails
+        streamError:
+          streamError instanceof Error
+            ? streamError.message
+            : String(streamError),
+        mcpError: errorDetails,
       });
     }
 
@@ -120,8 +212,9 @@ const browserRouter = new Hono().post('/', async (c) => {
       } catch (retryErr) {
         const retryErrDetails = extractMCPErrorDetails(retryErr);
         logger.error('❌ 重试仍然失败', {
-          retryError: retryErr instanceof Error ? retryErr.message : String(retryErr),
-          mcpError: retryErrDetails
+          retryError:
+            retryErr instanceof Error ? retryErr.message : String(retryErr),
+          mcpError: retryErrDetails,
         });
         // 保留首次错误标记与详情
       }
@@ -130,34 +223,115 @@ const browserRouter = new Hono().post('/', async (c) => {
     logger.info('✅ 流式响应完成', {
       totalChunks: chunkCount,
       totalLength: fullResponse.length,
-      hasError
+      hasError,
     });
+
+    // 解析 AI 输出的 JSON 格式
+    let parsedResponse = null;
+    let parseError = null;
+    let validationErrors: string[] = [];
+
+    if (!hasError && fullResponse.trim()) {
+      const parseResult = parseAIResponse(fullResponse);
+
+      if (parseResult.parsed) {
+        // 验证解析后的 JSON 格式
+        const validation = validateAIResponse(parseResult.parsed);
+
+        if (validation.valid) {
+          parsedResponse = parseResult.parsed;
+          logger.info('✅ 成功解析并验证 AI 输出的 JSON 格式', {
+            hasAnalysis: !!parsedResponse.analysis,
+            hasActions: !!parsedResponse.actions,
+            actionsCount: parsedResponse.actions?.length || 0,
+            hasReasoning: !!parsedResponse.reasoning,
+            hasFallback: !!parsedResponse.fallback,
+          });
+        } else {
+          parseError = `JSON 格式验证失败: ${validation.errors.join(', ')}`;
+          validationErrors = validation.errors;
+          logger.warn('⚠️ AI 输出的 JSON 格式验证失败', {
+            errors: validation.errors,
+            responsePreview: fullResponse.substring(0, 200),
+          });
+        }
+      } else {
+        parseError = parseResult.error || '未知的解析错误';
+        logger.warn('⚠️ AI 输出解析失败', {
+          error: parseError,
+          responsePreview: fullResponse.substring(0, 200),
+        });
+      }
+    }
 
     // 记录 MCP 任务执行结果
     if (!hasError) {
       logger.info('✅ MCP 浏览器任务执行成功', {
         responseLength: fullResponse.length,
         chunkCount: chunkCount,
-        responsePreview: fullResponse.substring(0, 200) + (fullResponse.length > 200 ? '...' : '')
+        responsePreview:
+          fullResponse.substring(0, 200) +
+          (fullResponse.length > 200 ? '...' : ''),
+        jsonParsed: !!parsedResponse,
+        parseError: parseError,
       });
     } else {
       logger.error('❌ MCP 浏览器任务执行失败', {
         errorDetails: errorDetails,
-        partialResponse: fullResponse.substring(0, 200) + (fullResponse.length > 200 ? '...' : '')
+        partialResponse:
+          fullResponse.substring(0, 200) +
+          (fullResponse.length > 200 ? '...' : ''),
       });
     }
 
+    // 返回结构化的响应
+    if (hasError) {
+      return c.json(
+        {
+          error: '任务执行失败',
+          details: errorDetails,
+          metadata: {
+            chunkCount,
+            totalLength: fullResponse.length,
+            timestamp: new Date().toISOString(),
+            hasError: true,
+          },
+        },
+        500
+      );
+    }
+
+    if (parseError) {
+      return c.json(
+        {
+          error: 'AI 输出格式解析失败',
+          details: parseError,
+          validationErrors:
+            validationErrors.length > 0 ? validationErrors : undefined,
+          rawResponse: fullResponse,
+          metadata: {
+            chunkCount,
+            totalLength: fullResponse.length,
+            timestamp: new Date().toISOString(),
+            hasError: false,
+            parseError: true,
+          },
+        },
+        422
+      );
+    }
+
+    // 成功解析，返回结构化的 JSON 响应
     return c.json({
-      response: fullResponse,
+      ...parsedResponse,
       metadata: {
         chunkCount,
         totalLength: fullResponse.length,
         timestamp: new Date().toISOString(),
-        hasError,
-        errorDetails: hasError ? errorDetails : undefined
-      }
+        hasError: false,
+        parseError: false,
+      },
     });
-
   } catch (error) {
     // 详细记录错误信息，包括 MCP 工具调用的详细信息
     const errorDetails = {
@@ -166,15 +340,18 @@ const browserRouter = new Hono().post('/', async (c) => {
       name: error instanceof Error ? error.name : undefined,
       // 尝试提取 MCP 相关的错误信息
       mcpError: extractMCPErrorDetails(error),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     logger.error('❌ 浏览器任务执行失败', errorDetails);
 
-    return c.json({
-      error: '任务执行失败',
-      details: errorDetails
-    }, 500);
+    return c.json(
+      {
+        error: '任务执行失败',
+        details: errorDetails,
+      },
+      500
+    );
   }
 });
 
