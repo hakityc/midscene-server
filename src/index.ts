@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { config } from 'dotenv';
+import { createNodeWebSocket } from '@hono/node-ws'
 
 // 加载环境变量
 config();

@@ -1,13 +1,14 @@
 import { Hono } from 'hono';
-// import { UserController } from '../controllers/userController';
 import { logger } from '../middleware/logger';
-import { browserRouter } from './modules/browser';
+// import { browserRouter } from './modules/browser';
+import { operateRouter } from './modules/operate'
 
 export const setupRouter = (app: Hono) => {
   // 全局中间件
-  app.use('*', logger);
+  app.use('/operate', logger);
 
-  app.route('/browser', browserRouter);
+  // app.route('/browser', browserRouter);
+  app.route('/operate', operateRouter);
   // 根路径
   app.get('/', (c) => {
     return c.json({
