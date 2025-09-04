@@ -1,18 +1,14 @@
 import { Hono } from 'hono';
-import { AgentOverChromeBridge } from '@midscene/web/bridge-mode';
+import { OperateController } from '../../controllers/operateController';
 
 const operateRouter = new Hono().post('/', async (c) => {
   const { prompt } = await c.req.json();
-  const agent = new AgentOverChromeBridge({
-    closeNewTabsAfterDisconnect: true,
-  });
-  console.log(prompt);
-  await agent.connectCurrentTab({
+  const operateController = new OperateController();
+  await operateController.connectCurrentTab({
     forceSameTabNavigation: true,
   });
+  await operateController.execute(prompt);
 
-  await agent.ai(prompt);
-  // await agent.destroy();
   return c.json({ message: '操作成功' });
 });
 
