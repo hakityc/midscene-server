@@ -2,7 +2,7 @@ import { MCPClient } from '@mastra/mcp';
 import dotenv from 'dotenv';
 import { logger } from '../../logger';
 
-dotenv.config();
+// dotenv.config();
 
 // 创建 MCP 客户端并添加日志记录
 export const mcpClient = new MCPClient({
@@ -21,30 +21,30 @@ export const mcpClient = new MCPClient({
   },
 });
 
-// 添加 MCP 工具调用的日志记录
-const originalGetTools = mcpClient.getTools.bind(mcpClient);
-mcpClient.getTools = async function() {
-  try {
-    logger.info('🔧 正在获取 MCP 工具列表...');
-    const tools = await originalGetTools();
-    
-    if (tools && Object.keys(tools).length > 0) {
-      logger.info('✅ MCP 工具获取成功', {
-        toolCount: Object.keys(tools).length,
-        toolNames: Object.keys(tools)
-      });
-    } else {
-      logger.warn('⚠️ MCP 工具列表为空');
-    }
-    
-    return tools;
-  } catch (error) {
-    logger.error('❌ MCP 工具获取失败', {
-      error: error instanceof Error ? error.message : String(error)
-    });
-    throw error;
-  }
-};
+// // 添加 MCP 工具调用的日志记录
+// const originalGetTools = mcpClient.getTools.bind(mcpClient);
+// mcpClient.getTools = async function() {
+//   try {
+//     logger.info('🔧 正在获取 MCP 工具列表...');
+//     const tools = await originalGetTools();
+
+//     if (tools && Object.keys(tools).length > 0) {
+//       logger.info('✅ MCP 工具获取成功', {
+//         toolCount: Object.keys(tools).length,
+//         toolNames: Object.keys(tools)
+//       });
+//     } else {
+//       logger.warn('⚠️ MCP 工具列表为空');
+//     }
+
+//     return tools;
+//   } catch (error) {
+//     logger.error('❌ MCP 工具获取失败', {
+//       error: error instanceof Error ? error.message : String(error)
+//     });
+//     throw error;
+//   }
+// };
 
 // 注意：MCPClient 可能没有直接的 callTool 方法
 // 工具调用通常通过 Agent 的 streamVNext 方法进行

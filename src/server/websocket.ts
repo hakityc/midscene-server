@@ -1,6 +1,6 @@
 import { createNodeWebSocket } from '@hono/node-ws'
 import { Hono } from 'hono'
-import { getWebSocketManager } from './websocket-manager'
+import { getWebSocketManager } from './websocketManager'
 import { mastra } from '../mastra'
 
 export const setupWebSocket = (app: Hono) => {
@@ -16,7 +16,7 @@ export const setupWebSocket = (app: Hono) => {
 
       return {
         onOpen(ws: any) {
-          // 注册连接
+          // 注册连接 - ws 是 @hono/node-ws 的 ctx 对象，真正的 WebSocket 在 ws.raw
           wsManager.registerConnection(ws, connectionId, {
             userAgent: c.req.header('user-agent'),
             ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
@@ -54,6 +54,9 @@ export const setupWebSocket = (app: Hono) => {
             connectionId,
             messageLength: dataLength
           })
+          
+          // 调用 WebSocketManager 的消息处理方法
+          wsManager.handleMessageDirect(connectionId, event.data.toString())
         },
         onClose() {
           logger.info('🔌 WebSocket 连接已关闭', { connectionId })
