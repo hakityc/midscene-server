@@ -18,15 +18,15 @@ export const mcpClient = new MCPClient({
     //     MCP_SERVER_REQUEST_TIMEOUT: '800000',
     //   },
     // },
-    "taskmaster-ai": {
-        "command": "npx",
-        "args": ["-y", "--package=task-master-ai", "task-master-ai"],
-        "env": {
-          "OPENAI_API_KEY": process.env.TASK_OPENAI_BASE_URL || '',
-          "MODEL": process.env.TASK_MIDSCENE_MODEL_NAME || '',
-          "MAX_TOKENS": "64000",
-        }
-      }
+    // "taskmaster-ai": {
+    //     "command": "npx",
+    //     "args": ["-y", "--package=task-master-ai", "task-master-ai"],
+    //     "env": {
+    //       "OPENAI_API_KEY": process.env.TASK_OPENAI_BASE_URL || '',
+    //       "MODEL": process.env.TASK_MIDSCENE_MODEL_NAME || '',
+    //       "MAX_TOKENS": "64000",
+    //     }
+    //   }
   },
 });
 
