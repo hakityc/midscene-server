@@ -17,6 +17,7 @@ export const startServer = () => {
   // 加载环境变量
   config();
 
+  const port = Number(process.env.PORT || '3000');
   // 创建应用
   const app = initApp()
 
@@ -26,7 +27,7 @@ export const startServer = () => {
   // 启动服务器
   const server = serve({
     fetch: app.fetch,
-    port: appConfig.port,
+    port: port,
   });
 
   // 注入 WebSocket
