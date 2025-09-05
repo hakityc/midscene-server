@@ -1,12 +1,7 @@
-import { mastra } from '../mastra';
-
 export class TaskController {
-  private logger = mastra.getLogger();
-  private taskAgent = mastra.getAgent('taskAgent');
-
   async plan(prompt: string) {
-    const response = await this.taskAgent.streamVNext(prompt);
-    console.log(response);
-    return response;
+    // TODO: 实现任务规划逻辑
+    console.log('Task planning for:', prompt);
+    return { message: 'Task planning not implemented yet' };
   }
 }

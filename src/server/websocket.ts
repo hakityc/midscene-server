@@ -1,6 +1,6 @@
 import { createNodeWebSocket } from '@hono/node-ws';
 import { Hono } from 'hono';
-import { mastra } from '../mastra';
+// 移除 mastra 导入
 import { OperateController } from '../controllers/operateController';
 
 // WebSocket 消息格式
@@ -19,7 +19,7 @@ const connections = new Map<string, any>();
 
 export const setupWebSocket = (app: Hono) => {
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
-  const logger = mastra.getLogger();
+  // 移除 mastra logger
 
   const operateController = new OperateController();
 
@@ -43,12 +43,10 @@ export const setupWebSocket = (app: Hono) => {
     message: WebSocketMessage,
     ws: any
   ) {
-    const logger = mastra.getLogger();
-
     switch (message.content.action) {
       case 'connectTab':
         // 处理连接标签页请求
-        logger.info('🔗 处理连接标签页请求', {
+        console.log('🔗 处理连接标签页请求', {
           connectionId,
           messageId: message.message_id,
         });
@@ -70,7 +68,7 @@ export const setupWebSocket = (app: Hono) => {
 
       case 'ai':
         // 处理 AI 请求
-        logger.info('🤖 处理 AI 请求', {
+        console.log('🤖 处理 AI 请求', {
           connectionId,
           messageId: message.message_id,
         });
@@ -88,7 +86,7 @@ export const setupWebSocket = (app: Hono) => {
         break;
 
       default:
-        logger.warn('⚠️ 未知的 action 类型', {
+        console.warn('⚠️ 未知的 action 类型', {
           action: message.content.action,
         });
         sendMessage(ws, {
@@ -116,7 +114,7 @@ export const setupWebSocket = (app: Hono) => {
           // 存储连接
           connections.set(connectionId, ws);
 
-          logger.info('🔌 WebSocket 连接已建立', { connectionId });
+          console.log('🔌 WebSocket 连接已建立', { connectionId });
 
           // 发送欢迎消息
           sendMessage(ws, {
@@ -137,7 +135,7 @@ export const setupWebSocket = (app: Hono) => {
         onMessage(event, ws) {
           try {
             const message: WebSocketMessage = JSON.parse(event.data.toString());
-            logger.info('📨 收到消息', {
+            console.log('📨 收到消息', {
               connectionId,
               action: message.content.action,
               messageId: message.message_id,
@@ -146,7 +144,7 @@ export const setupWebSocket = (app: Hono) => {
             // 处理消息
             handleMessage(connectionId, message, ws);
           } catch (error) {
-            logger.error('❌ 消息解析失败', {
+            console.error('❌ 消息解析失败', {
               connectionId,
               error: error instanceof Error ? error.message : String(error),
             });
@@ -156,11 +154,11 @@ export const setupWebSocket = (app: Hono) => {
         onClose() {
           // 移除连接
           connections.delete(connectionId);
-          logger.info('🔌 WebSocket 连接已关闭', { connectionId });
+          console.log('🔌 WebSocket 连接已关闭', { connectionId });
         },
 
         onError(error: any) {
-          logger.error('❌ WebSocket 连接错误', {
+          console.error('❌ WebSocket 连接错误', {
             connectionId,
             error: error?.message || String(error),
           });
