@@ -15,6 +15,14 @@ export class OperateController {
     await this.operateService.execute(prompt);
   }
 
+  async executeTasks(tasks: { action: string; verify: string }[]) {
+    for (const task of tasks) {
+      await this.operateService.execute(task.action);
+      const result = await this.operateService.expect(task.verify);
+      console.log("result", result);
+    }
+  }
+
   async destroy() {
     await this.operateService.destroy();
   }
