@@ -1,3 +1,4 @@
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import dotenv from 'dotenv';
 
 // 根据环境变量动态创建模型实例
