@@ -15,6 +15,10 @@ export class OperateController {
     await this.operateService.execute(prompt);
   }
 
+  async expect(prompt: string) {
+    return await this.operateService.expect(prompt);
+  }
+
   async executeTasks(tasks: { action: string; verify: string }[]) {
     for (const task of tasks) {
       await this.operateService.execute(task.action);

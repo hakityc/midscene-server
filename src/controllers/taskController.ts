@@ -101,36 +101,107 @@ export class TaskController {
   }
 
   async execute(prompt: string) {
+    let operateController: OperateController | null = null;
+    
     try {
-      const operateController = new OperateController();
+      // 解析任务步骤
       const response = await this.taskAgent.streamVNext(prompt);
       const fullResponse = await this.extractTextFromStream(response);
       const parseResult = this.parseTaskSteps(fullResponse);
-      operateController.connectCurrentTab({ forceSameTabNavigation: true });
-      if (parseResult.success && parseResult.data) {
-        // 执行任务步骤
-        for (const step of parseResult.data) {
-          console.log(`执行步骤: ${step.action}`);
-          operateController.executeTasks(parseResult.data);
-        }
-
-        return {
-          success: true,
-          message: '任务执行完成',
-          executedSteps: parseResult.data.length
-        };
-      } else {
+      
+      if (!parseResult.success || !parseResult.data) {
         return {
           success: false,
           error: parseResult.error || '任务解析失败'
         };
       }
+
+      // 初始化操作控制器
+      operateController = new OperateController();
+      
+      // 尝试连接浏览器
+      try {
+        await operateController.connectCurrentTab({ forceSameTabNavigation: true });
+      } catch (connectError) {
+        console.warn('⚠️ 浏览器连接失败，但继续执行任务:', connectError);
+        // 不因为连接失败而中断整个流程
+      }
+
+      // 执行任务步骤
+      const executedSteps = [];
+      const failedSteps = [];
+      
+      for (let i = 0; i < parseResult.data.length; i++) {
+        const step = parseResult.data[i];
+        console.log(`🔄 执行步骤 ${i + 1}/${parseResult.data.length}: ${step.action}`);
+        
+        try {
+          if (operateController) {
+            await operateController.execute(step.action);
+            console.log(`✅ 步骤 ${i + 1} 执行成功`);
+            
+            // 验证步骤
+            try {
+              await operateController.expect(step.verify);
+              console.log(`✅ 步骤 ${i + 1} 验证成功`);
+              executedSteps.push(step);
+            } catch (verifyError) {
+              console.warn(`⚠️ 步骤 ${i + 1} 验证失败:`, verifyError);
+              executedSteps.push({ 
+                ...step, 
+                verifyError: verifyError instanceof Error ? verifyError.message : String(verifyError) 
+              });
+            }
+          } else {
+            console.log(`⏭️ 跳过步骤 ${i + 1} (无浏览器连接): ${step.action}`);
+            executedSteps.push({ ...step, skipped: true });
+          }
+        } catch (stepError) {
+          console.error(`❌ 步骤 ${i + 1} 执行失败:`, stepError);
+          const errorMessage = stepError instanceof Error ? stepError.message : String(stepError);
+          failedSteps.push({ ...step, error: errorMessage });
+          
+          // 根据错误类型决定是否继续
+          if (errorMessage.includes('Bridge') || errorMessage.includes('EADDRINUSE')) {
+            console.log('🔄 检测到连接问题，尝试重新连接...');
+            try {
+              operateController = new OperateController();
+              await operateController.connectCurrentTab({ forceSameTabNavigation: true });
+              console.log('✅ 重新连接成功');
+            } catch (reconnectError) {
+              console.warn('⚠️ 重新连接失败，继续执行剩余步骤');
+              operateController = null;
+            }
+          }
+        }
+      }
+
+      return {
+        success: true,
+        message: `任务执行完成，成功 ${executedSteps.length} 步，失败 ${failedSteps.length} 步`,
+        executedSteps: executedSteps.length,
+        failedSteps: failedSteps.length,
+        details: {
+          executed: executedSteps,
+          failed: failedSteps
+        }
+      };
+      
     } catch (error) {
-      console.error('任务执行失败:', error);
+      console.error('❌ 任务执行失败:', error);
       return {
         success: false,
         error: '任务执行失败: ' + (error instanceof Error ? error.message : String(error))
       };
+    } finally {
+      // 清理资源
+      if (operateController) {
+        try {
+          await operateController.destroy();
+        } catch (destroyError) {
+          console.warn('⚠️ 清理资源失败:', destroyError);
+        }
+      }
     }
   }
 }
