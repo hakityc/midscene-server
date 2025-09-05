@@ -6,6 +6,7 @@ export class OperateService {
   constructor() {
     this.agent = new AgentOverChromeBridge({
       closeNewTabsAfterDisconnect: true,
+      cacheId: 'midscene',
     });
   }
 
@@ -15,6 +16,10 @@ export class OperateService {
 
   async execute(prompt: string) {
     await this.agent.ai(prompt);
+  }
+
+  async expect(prompt: string) {
+    await this.agent.aiAssert(prompt);
   }
 
   async destroy() {
