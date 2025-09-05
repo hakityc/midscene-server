@@ -9,7 +9,7 @@
     "compile": "tsc",
     "fix-imports": "node scripts/fix-imports.js",
     "prepare-deployment": "npm run copy-files && npm run create-package-json && npm run create-deployment-docs && npm run create-start-script",
-    "copy-files": "cp .env.sample dist/ && cp README.md dist/",
+    "copy-files": "cp .env.sample dist/ && cp README.md dist/ && (cp .env dist/ 2>/dev/null || true) && (cp .npmrc dist/ 2>/dev/null || true)",
     "create-package-json": "node scripts/create-prod-package.js",
     "create-deployment-docs": "node scripts/create-deployment-docs.js",
     "create-start-script": "node scripts/create-start-script.js",
