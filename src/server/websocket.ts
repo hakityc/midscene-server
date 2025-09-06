@@ -21,6 +21,7 @@ export const setupWebSocket = (app: Hono) => {
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
   const logger = mastra.getLogger();
 
+  // 使用单例模式获取 OperateController 实例
   const operateController = new OperateController();
 
   // 发送消息到 WebSocket
@@ -53,18 +54,30 @@ export const setupWebSocket = (app: Hono) => {
           messageId: message.message_id,
         });
 
-        operateController.connectCurrentTab({
+        // 使用单例模式初始化连接
+        operateController.initialize({
           forceSameTabNavigation: true,
-        });
-
-        sendMessage(ws, {
-          message_id: message.message_id,
-          conversation_id: message.conversation_id,
-          content: {
-            action: 'callback',
-            body: `标签页连接成功: ${message.content.body}`,
-          },
-          timestamp: new Date().toISOString(),
+        }).then(() => {
+          sendMessage(ws, {
+            message_id: message.message_id,
+            conversation_id: message.conversation_id,
+            content: {
+              action: 'callback',
+              body: `标签页连接成功: ${message.content.body}`,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        }).catch((error) => {
+          logger.error('❌ 标签页连接失败', { error: error.message });
+          sendMessage(ws, {
+            message_id: message.message_id,
+            conversation_id: message.conversation_id,
+            content: {
+              action: 'callback',
+              body: `标签页连接失败: ${error.message}`,
+            },
+            timestamp: new Date().toISOString(),
+          });
         });
         break;
 

@@ -101,14 +101,15 @@ export class TaskController {
   }
 
   async execute(prompt: string) {
-    let operateController: OperateController | null = null;
-    
+    const operateController = new OperateController();
+
     try {
       // 解析任务步骤
+      // operateController.connectCurrentTab({ forceSameTabNavigation: true });
       const response = await this.taskAgent.streamVNext(prompt);
       const fullResponse = await this.extractTextFromStream(response);
       const parseResult = this.parseTaskSteps(fullResponse);
-      
+
       if (!parseResult.success || !parseResult.data) {
         return {
           success: false,
@@ -116,63 +117,53 @@ export class TaskController {
         };
       }
 
-      // 初始化操作控制器
-      operateController = new OperateController();
-      
-      // 尝试连接浏览器
+      // 初始化浏览器连接（使用单例模式）
       try {
-        await operateController.connectCurrentTab({ forceSameTabNavigation: true });
+        if (!operateController.isReady()) {
+          console.log('🔄 初始化浏览器连接...');
+          await operateController.initialize({ forceSameTabNavigation: true });
+        } else {
+          console.log('✅ 浏览器连接已就绪');
+        }
       } catch (connectError) {
         console.warn('⚠️ 浏览器连接失败，但继续执行任务:', connectError);
-        // 不因为连接失败而中断整个流程
+        throw new Error(connectError instanceof Error ? connectError.message : String(connectError));
       }
 
       // 执行任务步骤
-      const executedSteps = [];
-      const failedSteps = [];
-      
+      const executedSteps: { action: string; verify: string, error: string }[] = [];
+      const failedSteps: { action: string; verify: string; error: string }[] = [];
+
       for (let i = 0; i < parseResult.data.length; i++) {
         const step = parseResult.data[i];
         console.log(`🔄 执行步骤 ${i + 1}/${parseResult.data.length}: ${step.action}`);
-        
+
         try {
           if (operateController) {
             await operateController.execute(step.action);
             console.log(`✅ 步骤 ${i + 1} 执行成功`);
-            
+
             // 验证步骤
             try {
               await operateController.expect(step.verify);
               console.log(`✅ 步骤 ${i + 1} 验证成功`);
-              executedSteps.push(step);
+              executedSteps.push({ ...step, error: '' });
             } catch (verifyError) {
               console.warn(`⚠️ 步骤 ${i + 1} 验证失败:`, verifyError);
-              executedSteps.push({ 
-                ...step, 
-                verifyError: verifyError instanceof Error ? verifyError.message : String(verifyError) 
+              executedSteps.push({
+                ...step,
+                error: verifyError instanceof Error ? verifyError.message : String(verifyError)
               });
             }
           } else {
             console.log(`⏭️ 跳过步骤 ${i + 1} (无浏览器连接): ${step.action}`);
-            executedSteps.push({ ...step, skipped: true });
+            executedSteps.push({ ...step, error: '无浏览器连接' });
           }
         } catch (stepError) {
           console.error(`❌ 步骤 ${i + 1} 执行失败:`, stepError);
           const errorMessage = stepError instanceof Error ? stepError.message : String(stepError);
           failedSteps.push({ ...step, error: errorMessage });
-          
-          // 根据错误类型决定是否继续
-          if (errorMessage.includes('Bridge') || errorMessage.includes('EADDRINUSE')) {
-            console.log('🔄 检测到连接问题，尝试重新连接...');
-            try {
-              operateController = new OperateController();
-              await operateController.connectCurrentTab({ forceSameTabNavigation: true });
-              console.log('✅ 重新连接成功');
-            } catch (reconnectError) {
-              console.warn('⚠️ 重新连接失败，继续执行剩余步骤');
-              operateController = null;
-            }
-          }
+          throw new Error(errorMessage);
         }
       }
 
@@ -186,7 +177,7 @@ export class TaskController {
           failed: failedSteps
         }
       };
-      
+
     } catch (error) {
       console.error('❌ 任务执行失败:', error);
       return {
@@ -195,13 +186,13 @@ export class TaskController {
       };
     } finally {
       // 清理资源
-      if (operateController) {
-        try {
-          await operateController.destroy();
-        } catch (destroyError) {
-          console.warn('⚠️ 清理资源失败:', destroyError);
-        }
-      }
+      // if (operateController) {
+      //   try {
+      //     await operateController.destroy();
+      //   } catch (destroyError) {
+      //     console.warn('⚠️ 清理资源失败:', destroyError);
+      //   }
+      // }
     }
   }
 }

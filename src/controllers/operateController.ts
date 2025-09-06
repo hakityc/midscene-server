@@ -4,7 +4,15 @@ export class OperateController {
   private operateService: OperateService;
 
   constructor() {
-    this.operateService = new OperateService();
+    // 使用单例模式获取 OperateService 实例
+    this.operateService = OperateService.getInstance();
+  }
+
+  /**
+   * 初始化连接（确保 AgentOverChromeBridge 已连接）
+   */
+  async initialize(option: { forceSameTabNavigation: boolean } = { forceSameTabNavigation: true }) {
+    await this.operateService.initialize(option);
   }
 
   async connectCurrentTab(option: { forceSameTabNavigation: boolean }) {
@@ -29,5 +37,12 @@ export class OperateController {
 
   async destroy() {
     await this.operateService.destroy();
+  }
+
+  /**
+   * 检查服务是否已准备就绪
+   */
+  isReady(): boolean {
+    return this.operateService.isReady();
   }
 }
