@@ -14,7 +14,10 @@ export class OperateService {
   async connectCurrentTab(option: { forceSameTabNavigation: boolean }) {
     try {
       await this.agent.connectCurrentTab(option);
+      console.log('✅ 浏览器标签页连接成功');
     } catch (error: any) {
+      console.error('❌ 浏览器连接失败:', error);
+      
       // 处理浏览器连接错误
       if (error.message && error.message.includes('connect')) {
         throw new AppError('Failed to connect to browser', 503);

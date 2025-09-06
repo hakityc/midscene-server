@@ -8,7 +8,7 @@ export interface WebSocketMessage {
   message_id: string;
   conversation_id: string;
   content: {
-    action: 'connectTab' | 'ai' | 'callback';
+    action: 'connectTab' | 'ai' | 'callback' | 'error';
     body: string;
   };
   timestamp: string;
@@ -38,7 +38,7 @@ export const setupWebSocket = (app: Hono) => {
   }
 
   // 处理接收到的消息
-  function handleMessage(
+  async function handleMessage(
     connectionId: string,
     message: WebSocketMessage,
     ws: any
@@ -51,19 +51,36 @@ export const setupWebSocket = (app: Hono) => {
           messageId: message.message_id,
         });
 
-        operateController.connectCurrentTab({
-          forceSameTabNavigation: true,
-        });
+        try {
+          await operateController.connectCurrentTab({
+            forceSameTabNavigation: true,
+          });
 
-        sendMessage(ws, {
-          message_id: message.message_id,
-          conversation_id: message.conversation_id,
-          content: {
-            action: 'callback',
-            body: `标签页连接成功: ${message.content.body}`,
-          },
-          timestamp: new Date().toISOString(),
-        });
+          sendMessage(ws, {
+            message_id: message.message_id,
+            conversation_id: message.conversation_id,
+            content: {
+              action: 'callback',
+              body: `标签页连接成功: ${message.content.body}`,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        } catch (error) {
+          console.error('❌ 标签页连接失败', {
+            connectionId,
+            error: error instanceof Error ? error.message : String(error)
+          });
+
+          sendMessage(ws, {
+            message_id: message.message_id,
+            conversation_id: message.conversation_id,
+            content: {
+              action: 'error',
+              body: `标签页连接失败: ${error instanceof Error ? error.message : String(error)}`,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        }
         break;
 
       case 'ai':
@@ -72,17 +89,35 @@ export const setupWebSocket = (app: Hono) => {
           connectionId,
           messageId: message.message_id,
         });
-        operateController.execute(message.content.body);
-        // 这里可以集成 AI 处理逻辑
-        sendMessage(ws, {
-          message_id: message.message_id,
-          conversation_id: message.conversation_id,
-          content: {
-            action: 'callback',
-            body: `AI 处理完成: ${message.content.body}`,
-          },
-          timestamp: new Date().toISOString(),
-        });
+
+        try {
+          await operateController.execute(message.content.body);
+
+          sendMessage(ws, {
+            message_id: message.message_id,
+            conversation_id: message.conversation_id,
+            content: {
+              action: 'callback',
+              body: `AI 处理完成: ${message.content.body}`,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        } catch (error) {
+          console.error('❌ AI 处理失败', {
+            connectionId,
+            error: error instanceof Error ? error.message : String(error)
+          });
+
+          sendMessage(ws, {
+            message_id: message.message_id,
+            conversation_id: message.conversation_id,
+            content: {
+              action: 'error',
+              body: `AI 处理失败: ${error instanceof Error ? error.message : String(error)}`,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        }
         break;
 
       default:
@@ -141,12 +176,39 @@ export const setupWebSocket = (app: Hono) => {
               messageId: message.message_id,
             });
 
-            // 处理消息
-            handleMessage(connectionId, message, ws);
+            // 处理消息（异步调用，但不等待结果，避免阻塞）
+            handleMessage(connectionId, message, ws).catch((error) => {
+              console.error('❌ 消息处理失败', {
+                connectionId,
+                error: error instanceof Error ? error.message : String(error),
+              });
+
+              // 发送错误消息给客户端
+              sendMessage(ws, {
+                message_id: message.message_id || `error_${Date.now()}`,
+                conversation_id: message.conversation_id || 'system',
+                content: {
+                  action: 'error',
+                  body: `消息处理失败: ${error instanceof Error ? error.message : String(error)}`,
+                },
+                timestamp: new Date().toISOString(),
+              });
+            });
           } catch (error) {
             console.error('❌ 消息解析失败', {
               connectionId,
               error: error instanceof Error ? error.message : String(error),
+            });
+
+            // 发送解析错误消息给客户端
+            sendMessage(ws, {
+              message_id: `parse_error_${Date.now()}`,
+              conversation_id: 'system',
+              content: {
+                action: 'error',
+                body: `消息解析失败: ${error instanceof Error ? error.message : String(error)}`,
+              },
+              timestamp: new Date().toISOString(),
             });
           }
         },
