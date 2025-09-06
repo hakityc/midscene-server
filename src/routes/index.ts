@@ -3,6 +3,11 @@ import { logger } from '../middleware/logger';
 // import { browserRouter } from './modules/browser';
 import { operateRouter } from './modules/operate'
 import { taskRouter } from './modules/task'
+import { AppError } from '../server/error';
+
+// 模拟服务状态检查
+let browserConnected = false;
+let aiServiceAvailable = true;
 
 export const setupRouter = (app: Hono) => {
   // 全局中间件
@@ -24,10 +29,20 @@ export const setupRouter = (app: Hono) => {
 
   // 健康检查端点
   app.get('/health', (c) => {
+    // 检查关键服务状态
+    const checks = {
+      browser: browserConnected,
+      aiService: aiServiceAvailable,
+    };
+    
+    // 检查是否有服务不可用
+    const isHealthy = Object.values(checks).every(check => check === true);
+    
     return c.json({
-      status: 'healthy',
+      status: isHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      checks,
     });
   });
 };
