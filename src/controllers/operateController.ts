@@ -7,7 +7,7 @@ export class OperateController {
     this.operateService = new OperateService();
   }
 
-  async connectCurrentTab(option: { forceSameTabNavigation: boolean }) {
+  async connectCurrentTab(option: { forceSameTabNavigation: boolean, tabId: number }) {
     await this.operateService.connectCurrentTab(option);
   }
 
