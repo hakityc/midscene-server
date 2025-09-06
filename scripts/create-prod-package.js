@@ -21,8 +21,8 @@ const prodPackage = {
   }
 };
 
-// 确保 dist 目录存在
-const distDir = 'dist';
+// 确保 dist/server 目录存在
+const distDir = 'dist/server';
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
 }

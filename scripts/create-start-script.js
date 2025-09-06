@@ -67,8 +67,8 @@ echo ""
 npm start
 `;
 
-// 确保 dist 目录存在
-const distDir = 'dist';
+// 确保 dist/server 目录存在
+const distDir = 'dist/server';
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
 }
@@ -163,13 +163,13 @@ echo.
 call npm start
 `;
 
-// 写入 Linux/Mac 启动脚本
+// 写入 Linux/Mac 启动脚本到 dist/server 目录
 fs.writeFileSync(
   path.join(distDir, 'start.sh'),
   startScript
 );
 
-// 写入 Windows 启动脚本
+// 写入 Windows 启动脚本到 dist/server 目录
 fs.writeFileSync(
   path.join(distDir, 'start.bat'),
   startScriptWindows
@@ -179,5 +179,5 @@ fs.writeFileSync(
 fs.chmodSync(path.join(distDir, 'start.sh'), '755');
 
 console.log('✅ 启动脚本已创建');
-console.log('   - Linux/Mac: dist/start.sh');
-console.log('   - Windows: dist/start.bat');
+console.log('   - Linux/Mac: dist/server/start.sh');
+console.log('   - Windows: dist/server/start.bat');

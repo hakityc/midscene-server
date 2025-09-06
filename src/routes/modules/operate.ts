@@ -15,6 +15,7 @@ const operateRouter = new Hono().post('/', async (c) => {
     const operateController = new OperateController();
     await operateController.connectCurrentTab({
       forceSameTabNavigation: true,
+      tabId: 0, // 默认使用第一个标签页
     });
     await operateController.execute(prompt);
 
