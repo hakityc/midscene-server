@@ -11,7 +11,7 @@ export class OperateService {
     });
   }
 
-  async connectCurrentTab(option: { forceSameTabNavigation: boolean, tabId: number }) {
+  async connectCurrentTab(option: { forceSameTabNavigation: boolean, tabId?: number }) {
     try {
       await this.agent.connectCurrentTab(option);
       console.log('✅ 浏览器标签页连接成功');

@@ -17,6 +17,76 @@ export interface WebSocketMessage {
 // 简单的连接管理
 const connections = new Map<string, any>();
 
+// 健壮的 JSON 解析函数
+function parseWebSocketMessage(rawData: string): WebSocketMessage {
+  let cleanedData = rawData;
+
+  // 1. 移除可能的 BOM 字符
+  cleanedData = cleanedData.replace(/^\uFEFF/, '');
+
+  // 2. 移除前后空白字符
+  cleanedData = cleanedData.trim();
+
+  // 3. 尝试直接解析
+  try {
+    return JSON.parse(cleanedData);
+  } catch (firstError) {
+    console.log('🔧 首次解析失败，尝试修复格式...', {
+      error:
+        firstError instanceof Error ? firstError.message : String(firstError),
+      rawData:
+        cleanedData.substring(0, 100) + (cleanedData.length > 100 ? '...' : ''),
+    });
+  }
+
+  // 4. 修复常见的格式问题
+  try {
+    // 将单引号替换为双引号（但要小心字符串内的单引号）
+    cleanedData = cleanedData.replace(/'/g, '"');
+
+    // 确保所有对象键都使用双引号
+    cleanedData = cleanedData.replace(/(\w+):/g, '"$1":');
+
+    // 修复可能的尾随逗号
+    cleanedData = cleanedData.replace(/,(\s*[}\]])/g, '$1');
+
+    return JSON.parse(cleanedData);
+  } catch (secondError) {
+    console.log('🔧 格式修复后仍解析失败，尝试更激进的修复...', {
+      error:
+        secondError instanceof Error
+          ? secondError.message
+          : String(secondError),
+      cleanedData:
+        cleanedData.substring(0, 100) + (cleanedData.length > 100 ? '...' : ''),
+    });
+  }
+
+  // 5. 最后的尝试：使用 eval（仅用于调试，生产环境应避免）
+  try {
+    // 创建一个安全的评估环境
+    const safeEval = new Function('return ' + cleanedData);
+    const result = safeEval();
+
+    // 验证结果是否符合预期格式
+    if (
+      result &&
+      typeof result === 'object' &&
+      result.content &&
+      result.content.action
+    ) {
+      return result as WebSocketMessage;
+    }
+  } catch (evalError) {
+    console.log('🔧 eval 解析也失败', {
+      error: evalError instanceof Error ? evalError.message : String(evalError),
+    });
+  }
+
+  // 6. 如果所有方法都失败，抛出原始错误
+  throw new Error(`无法解析 WebSocket 消息: ${rawData.substring(0, 200)}...`);
+}
+
 export const setupWebSocket = (app: Hono) => {
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
   // 移除 mastra logger
@@ -52,15 +122,13 @@ export const setupWebSocket = (app: Hono) => {
         });
 
         try {
-          await operateController.connectCurrentTab({
+          const option = {
             forceSameTabNavigation: true,
-            tabId: Number(message.content.body)
-          });
-          console.log('✅ 标签页连接成功', {
-            connectionId,
-            messageId: message.message_id,
-            tabId: Number(message.content.body)
-          });
+          };
+          message.content.body !== '' &&
+            Object.assign(option, message.content.body);
+          await operateController.connectCurrentTab(option)
+          console.log('✅ 标签页连接成功', option);
           sendMessage(ws, {
             message_id: message.message_id,
             conversation_id: message.conversation_id,
@@ -74,7 +142,7 @@ export const setupWebSocket = (app: Hono) => {
           console.error('❌ 标签页连接失败', {
             connectionId,
             error: error instanceof Error ? error.message : String(error),
-            tabId: Number(message.content.body)
+            tabId: Number(message.content.body),
           });
 
           sendMessage(ws, {
@@ -82,7 +150,9 @@ export const setupWebSocket = (app: Hono) => {
             conversation_id: message.conversation_id,
             content: {
               action: 'error',
-              body: `标签页连接失败: ${error instanceof Error ? error.message : String(error)}`,
+              body: `标签页连接失败: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             },
             timestamp: new Date().toISOString(),
           });
@@ -111,7 +181,7 @@ export const setupWebSocket = (app: Hono) => {
         } catch (error) {
           console.error('❌ AI 处理失败', {
             connectionId,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
 
           sendMessage(ws, {
@@ -119,7 +189,9 @@ export const setupWebSocket = (app: Hono) => {
             conversation_id: message.conversation_id,
             content: {
               action: 'error',
-              body: `AI 处理失败: ${error instanceof Error ? error.message : String(error)}`,
+              body: `AI 处理失败: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             },
             timestamp: new Date().toISOString(),
           });
@@ -175,8 +247,16 @@ export const setupWebSocket = (app: Hono) => {
 
         onMessage(event, ws) {
           try {
-            const message: WebSocketMessage = JSON.parse(event.data.toString());
-            console.log('📨 收到消息', {
+            const rawData = event.data.toString();
+            console.log('📨 收到原始消息', {
+              connectionId,
+              rawData:
+                rawData.substring(0, 200) + (rawData.length > 200 ? '...' : ''),
+            });
+
+            // 使用健壮的解析函数
+            const message: WebSocketMessage = parseWebSocketMessage(rawData);
+            console.log('📨 解析成功', {
               connectionId,
               action: message.content.action,
               messageId: message.message_id,
@@ -195,7 +275,9 @@ export const setupWebSocket = (app: Hono) => {
                 conversation_id: message.conversation_id || 'system',
                 content: {
                   action: 'error',
-                  body: `消息处理失败: ${error instanceof Error ? error.message : String(error)}`,
+                  body: `消息处理失败: ${
+                    error instanceof Error ? error.message : String(error)
+                  }`,
                 },
                 timestamp: new Date().toISOString(),
               });
@@ -204,6 +286,9 @@ export const setupWebSocket = (app: Hono) => {
             console.error('❌ 消息解析失败', {
               connectionId,
               error: error instanceof Error ? error.message : String(error),
+              rawData:
+                event.data.toString().substring(0, 200) +
+                (event.data.toString().length > 200 ? '...' : ''),
             });
 
             // 发送解析错误消息给客户端
@@ -212,7 +297,9 @@ export const setupWebSocket = (app: Hono) => {
               conversation_id: 'system',
               content: {
                 action: 'error',
-                body: `消息解析失败: ${error instanceof Error ? error.message : String(error)}`,
+                body: `消息解析失败: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
               },
               timestamp: new Date().toISOString(),
             });
