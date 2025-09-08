@@ -1,4 +1,5 @@
 import { OperateService } from '../services/operateService';
+import { ConnectCurrentTabOption } from '../types/operate';
 
 export class OperateController {
   private operateService: OperateService;
@@ -7,7 +8,7 @@ export class OperateController {
     this.operateService = new OperateService();
   }
 
-  async connectCurrentTab(option: { forceSameTabNavigation: boolean, tabId?: number }) {
+  async connectCurrentTab(option: ConnectCurrentTabOption) {
     await this.operateService.connectCurrentTab(option);
   }
 

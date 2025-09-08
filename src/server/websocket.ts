@@ -126,8 +126,11 @@ export const setupWebSocket = (app: Hono) => {
             forceSameTabNavigation: true,
           };
           message.content.body !== '' &&
-            Object.assign(option, message.content.body);
-          await operateController.connectCurrentTab(option)
+            Object.assign(option, {
+              // 这里 tabId 还是 tabIndex 取决于云应用那边（目前暂定 tabIndex）
+              tabIndex: message.content.body,
+            });
+          await operateController.connectCurrentTab(option);
           console.log('✅ 标签页连接成功', option);
           sendMessage(ws, {
             message_id: message.message_id,
@@ -139,11 +142,7 @@ export const setupWebSocket = (app: Hono) => {
             timestamp: new Date().toISOString(),
           });
         } catch (error) {
-          console.error('❌ 标签页连接失败', {
-            connectionId,
-            error: error instanceof Error ? error.message : String(error),
-            tabId: Number(message.content.body),
-          });
+          console.error('❌ 标签页连接失败', error);
 
           sendMessage(ws, {
             message_id: message.message_id,

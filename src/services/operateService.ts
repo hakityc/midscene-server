@@ -1,5 +1,6 @@
 import { AgentOverChromeBridge } from '@midscene/web/bridge-mode';
 import { AppError } from '../server/error';
+import { ConnectCurrentTabOption } from '../types/operate';
 
 export class OperateService {
   private agent: AgentOverChromeBridge;
@@ -11,7 +12,7 @@ export class OperateService {
     });
   }
 
-  async connectCurrentTab(option: { forceSameTabNavigation: boolean, tabId?: number }) {
+  async connectCurrentTab(option: ConnectCurrentTabOption) {
     try {
       await this.agent.connectCurrentTab(option);
       console.log('✅ 浏览器标签页连接成功');
