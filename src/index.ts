@@ -9,7 +9,7 @@ process.on('unhandledRejection', (reason, promise) => {
     stack: reason instanceof Error ? reason.stack : undefined,
     promise: promise.toString(),
   }, '未处理的 Promise 拒绝');
-  
+
   // 不退出进程，继续运行服务
   serverLogger.info('服务继续运行，错误已记录');
 });
@@ -21,7 +21,7 @@ process.on('uncaughtException', (error) => {
     message: error.message,
     stack: error.stack,
   }, '未捕获的异常');
-  
+
   // 对于严重错误，可以选择退出，但这里我们选择继续运行
   serverLogger.info('服务继续运行，异常已记录');
 });
