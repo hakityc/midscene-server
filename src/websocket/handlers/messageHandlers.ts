@@ -1,4 +1,4 @@
-import { OperateController } from '../../controllers/operateController';
+import { OperateService } from '../../services/operateService';
 import { WebSocketAction } from '../../utils/enums';
 import type { ConnectCurrentTabOption } from '../../types/operate';
 import { wsLogger } from '../../utils/logger';
@@ -25,7 +25,7 @@ export const createSuccessResponse = MessageBuilder.createSuccessResponse;
 export const createErrorResponse = MessageBuilder.createErrorResponse;
 
 // 连接标签页处理器
-export function createConnectTabHandler(operateController: OperateController): MessageHandler {
+export function createConnectTabHandler(operateService: OperateService): MessageHandler {
   return async ({ ws, send }, message) => {
     wsLogger.info({
       messageId: message.message_id,
@@ -38,10 +38,10 @@ export function createConnectTabHandler(operateController: OperateController): M
         const maybeIndex = Number(message.content.body);
         if (!Number.isNaN(maybeIndex)) option.tabIndex = maybeIndex;
       }
-      
-      await operateController.connectCurrentTab(option);
+
+      await operateService.connectCurrentTab(option);
       wsLogger.info({ option }, '标签页连接成功');
-      
+
       const response = createSuccessResponse(
         message,
         `标签页连接成功: ${message.content.body}`
@@ -56,26 +56,26 @@ export function createConnectTabHandler(operateController: OperateController): M
 }
 
 // AI 请求处理器
-export function createAiHandler(operateController: OperateController): MessageHandler {
+export function createAiHandler(operateService: OperateService): MessageHandler {
   return async ({ ws, connectionId, send }, message) => {
-    wsLogger.info({ 
-      connectionId, 
-      messageId: message.message_id, 
-      action: 'ai_request' 
+    wsLogger.info({
+      connectionId,
+      messageId: message.message_id,
+      action: 'ai_request'
     }, '处理 AI 请求');
 
     try {
-      await operateController.execute(message.content.body);
+      await operateService.execute(message.content.body);
       const response = createSuccessResponse(
         message,
         `AI 处理完成: ${message.content.body}`
       );
       send(response);
     } catch (error) {
-      wsLogger.error({ 
-        connectionId, 
-        error, 
-        messageId: message.message_id 
+      wsLogger.error({
+        connectionId,
+        error,
+        messageId: message.message_id
       }, 'AI 处理失败');
       const response = createErrorResponse(message, error, 'AI 处理失败');
       send(response);
@@ -84,10 +84,10 @@ export function createAiHandler(operateController: OperateController): MessageHa
 }
 
 // 创建所有消息处理器
-export function createMessageHandlers(operateController: OperateController): Record<WebSocketAction, MessageHandler> {
+export function createMessageHandlers(operateService: OperateService): Record<WebSocketAction, MessageHandler> {
   return {
-    [WebSocketAction.CONNECT_TAB]: createConnectTabHandler(operateController),
-    [WebSocketAction.AI]: createAiHandler(operateController),
+    [WebSocketAction.CONNECT_TAB]: createConnectTabHandler(operateService),
+    [WebSocketAction.AI]: createAiHandler(operateService),
     [WebSocketAction.CALLBACK]: async () => {},
     [WebSocketAction.ERROR]: async () => {},
   } as Record<WebSocketAction, MessageHandler>;

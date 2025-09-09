@@ -1,6 +1,6 @@
 import { createNodeWebSocket } from '@hono/node-ws';
 import { Hono } from 'hono';
-import { OperateController } from '../controllers/operateController';
+import { OperateService } from '../services/operateService';
 import { WebSocketAction } from '../utils/enums';
 import { wsLogger } from '../utils/logger';
 import { createMessageHandlers } from './handlers/messageHandlers';
@@ -106,9 +106,9 @@ function parseWebSocketMessage(rawData: string): WebSocketMessage {
 
 export const setupWebSocket = (app: Hono) => {
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
-  const operateController = new OperateController();
+  const operateService = new OperateService();
   const connections = new ConnectionRegistry();
-  const handlers = createMessageHandlers(operateController);
+  const handlers = createMessageHandlers(operateService);
 
   // 统一的消息调度
   const dispatchMessage = async (
