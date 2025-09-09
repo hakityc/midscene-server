@@ -31,7 +31,7 @@ export class MessageBuilder {
     body: string,
     action: WebSocketAction = WebSocketAction.CALLBACK
   ): WebSocketMessage {
-    return this.buildBaseMessage(
+    return MessageBuilder.buildBaseMessage(
       originalMessage.message_id,
       originalMessage.conversation_id,
       action,
@@ -48,7 +48,7 @@ export class MessageBuilder {
     prefix: string = '操作失败'
   ): WebSocketMessage {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return this.buildBaseMessage(
+    return MessageBuilder.buildBaseMessage(
       originalMessage.message_id,
       originalMessage.conversation_id,
       WebSocketAction.ERROR,
@@ -65,7 +65,7 @@ export class MessageBuilder {
     conversationId: string = 'system',
     action: WebSocketAction = WebSocketAction.CALLBACK
   ): WebSocketMessage {
-    return this.buildBaseMessage(messageId, conversationId, action, body);
+    return MessageBuilder.buildBaseMessage(messageId, conversationId, action, body);
   }
 
   /**
@@ -76,7 +76,7 @@ export class MessageBuilder {
     conversationId: string = 'broadcast'
   ): WebSocketMessage {
     const body = typeof message === 'string' ? message : JSON.stringify(message);
-    return this.buildBaseMessage(
+    return MessageBuilder.buildBaseMessage(
       `broadcast_${Date.now()}`,
       conversationId,
       WebSocketAction.CALLBACK,
@@ -94,7 +94,7 @@ export class MessageBuilder {
       serverTime: new Date().toISOString(),
     };
     
-    return this.buildBaseMessage(
+    return MessageBuilder.buildBaseMessage(
       `welcome_${Date.now()}`,
       'system',
       WebSocketAction.CALLBACK,
@@ -109,7 +109,7 @@ export class MessageBuilder {
     originalMessage: WebSocketMessage,
     action: string
   ): WebSocketMessage {
-    return this.buildBaseMessage(
+    return MessageBuilder.buildBaseMessage(
       originalMessage.message_id,
       originalMessage.conversation_id,
       WebSocketAction.CALLBACK,
@@ -125,7 +125,7 @@ export class MessageBuilder {
     connectionId?: string
   ): WebSocketMessage {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return this.buildBaseMessage(
+    return MessageBuilder.buildBaseMessage(
       `parse_error_${Date.now()}`,
       'system',
       WebSocketAction.ERROR,
@@ -141,7 +141,7 @@ export class MessageBuilder {
     error: unknown
   ): WebSocketMessage {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return this.buildBaseMessage(
+    return MessageBuilder.buildBaseMessage(
       originalMessage.message_id || `error_${Date.now()}`,
       originalMessage.conversation_id || 'system',
       WebSocketAction.ERROR,
