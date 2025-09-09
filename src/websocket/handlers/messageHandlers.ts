@@ -2,7 +2,7 @@ import { OperateController } from '../../controllers/operateController';
 import { WebSocketAction } from '../../utils/enums';
 import type { ConnectCurrentTabOption } from '../../types/operate';
 import { wsLogger } from '../../utils/logger';
-import type { WebSocketMessage } from '../websocket';
+import type { WebSocketMessage } from '../index';
 import { MessageBuilder } from '../builders/messageBuilder';
 
 type WebSocketClient = any;

@@ -1,4 +1,10 @@
-import { startServer } from './server';
+import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
+import { config } from 'dotenv';
+import { setupRouter } from './routes/index';
+import { setupWebSocket } from './websocket';
+import { config as appConfig } from './config';
+import { setupError } from './utils/error';
 import { serverLogger } from './utils/logger';
 
 // 全局错误处理，防止服务因未处理的 Promise 拒绝而停止
@@ -36,5 +42,35 @@ process.on('SIGTERM', () => {
   serverLogger.info('收到 SIGTERM 信号，正在优雅关闭服务...');
   process.exit(0);
 });
+
+const initApp = () => {
+  const app = new Hono();
+  setupRouter(app);
+  setupError(app);
+  return app;
+};
+
+const startServer = () => {
+  // 加载环境变量
+  config();
+
+  const port = Number(process.env.PORT || '3000');
+  // 创建应用
+  const app = initApp();
+
+  // 设置 WebSocket
+  const { injectWebSocket } = setupWebSocket(app);
+
+  // 启动服务器
+  const server = serve({
+    fetch: app.fetch,
+    port: port,
+  });
+
+  // 注入 WebSocket
+  injectWebSocket(server);
+
+  serverLogger.info({ port }, '服务启动成功');
+};
 
 startServer();

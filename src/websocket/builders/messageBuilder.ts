@@ -1,5 +1,5 @@
 import { WebSocketAction } from '../../utils/enums';
-import type { WebSocketMessage } from '../websocket';
+import type { WebSocketMessage } from '../index';
 
 /**
  * WebSocket 消息构建器

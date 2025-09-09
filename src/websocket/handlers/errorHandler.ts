@@ -1,5 +1,5 @@
 import { wsLogger } from '../../utils/logger';
-import type { WebSocketMessage } from '../websocket';
+import type { WebSocketMessage } from '../index';
 import { MessageBuilder } from '../builders/messageBuilder';
 import { WebSocketAction } from '../../utils/enums';
 
@@ -102,7 +102,7 @@ export class WebSocketErrorHandler {
  * 用于包装消息处理器，自动处理错误
  */
 export function withErrorHandling<T extends any[]>(
-  handler: (...args: T) => Promise<void>,
+  handler: (ws: WebSocketClient, message: WebSocketMessage, ...args: T) => Promise<void>,
   errorContext: {
     connectionId: string;
     action?: string;
