@@ -1,15 +1,37 @@
 import { Context, Next } from 'hono';
+import { createLogger } from '../utils/logger';
 
-export const logger = async (c: Context, next: Next) => {
+const logger = createLogger('middleware');
+
+export const requestLogger = async (c: Context, next: Next) => {
   const start = Date.now();
   const { method, url } = c.req;
-  
-  console.log(`[${new Date().toISOString()}] ${method} ${url} - 开始处理请求`);
-  
+  const userAgent = c.req.header('user-agent') || 'unknown';
+  const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
+
+  // 记录请求开始
+  logger.info({
+    method,
+    url,
+    userAgent,
+    ip,
+    type: 'request_start'
+  }, '开始处理请求');
+
   await next();
-  
+
   const end = Date.now();
   const duration = end - start;
-  
-  console.log(`[${new Date().toISOString()}] ${method} ${url} - 完成处理 (${duration}ms)`);
+  const status = c.res.status;
+
+  // 记录请求完成
+  logger.info({
+    method,
+    url,
+    status,
+    duration,
+    userAgent,
+    ip,
+    type: 'request_complete'
+  }, '请求处理完成');
 };

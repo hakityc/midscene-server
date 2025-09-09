@@ -3,6 +3,8 @@ import { Hono } from 'hono';
 // 移除 mastra 导入
 import { OperateController } from '../controllers/operateController';
 import { WebSocketAction } from '../utils/enums';
+import type { ConnectCurrentTabOption } from '../types/operate';
+import { wsLogger, controllerLogger } from '../utils/logger';
 
 // WebSocket 消息格式
 export interface WebSocketMessage {
@@ -15,231 +17,209 @@ export interface WebSocketMessage {
   timestamp: string;
 }
 
-// 简单的连接管理
-const connections = new Map<string, any>();
+type WebSocketClient = any;
+
+// 连接注册表：集中管理连接、统计与广播
+class ConnectionRegistry {
+  private readonly idToClient = new Map<string, WebSocketClient>();
+
+  add(connectionId: string, client: WebSocketClient): void {
+    this.idToClient.set(connectionId, client);
+  }
+
+  remove(connectionId: string): void {
+    this.idToClient.delete(connectionId);
+  }
+
+  get(connectionId: string): WebSocketClient | undefined {
+    return this.idToClient.get(connectionId);
+  }
+
+  keys(): string[] {
+    return Array.from(this.idToClient.keys());
+  }
+
+  size(): number {
+    return this.idToClient.size;
+  }
+
+  forEach(handler: (id: string, client: WebSocketClient) => void): void {
+    for (const [id, client] of this.idToClient) handler(id, client);
+  }
+}
+
+// 单一职责：发送消息
+function sendMessage(ws: WebSocketClient, message: WebSocketMessage): boolean {
+  try {
+    if (ws && typeof ws.send === 'function') {
+      ws.send(JSON.stringify(message));
+      return true;
+    }
+    return false;
+    } catch (error) {
+      wsLogger.error({ error }, '发送消息失败');
+      return false;
+    }
+}
 
 // 健壮的 JSON 解析函数
 function parseWebSocketMessage(rawData: string): WebSocketMessage {
-  let cleanedData = rawData;
+  let cleanedData = rawData.replace(/^\uFEFF/, '').trim();
 
-  // 1. 移除可能的 BOM 字符
-  cleanedData = cleanedData.replace(/^\uFEFF/, '');
-
-  // 2. 移除前后空白字符
-  cleanedData = cleanedData.trim();
-
-  // 3. 尝试直接解析
   try {
     return JSON.parse(cleanedData);
   } catch (firstError) {
-    console.log('🔧 首次解析失败，尝试修复格式...', {
-      error:
-        firstError instanceof Error ? firstError.message : String(firstError),
-      rawData:
-        cleanedData.substring(0, 100) + (cleanedData.length > 100 ? '...' : ''),
-    });
+    wsLogger.debug({
+      error: firstError instanceof Error ? firstError.message : String(firstError),
+      rawData: cleanedData.substring(0, 100) + (cleanedData.length > 100 ? '...' : ''),
+    }, '首次解析失败，尝试修复格式');
   }
 
-  // 4. 修复常见的格式问题
   try {
-    // 将单引号替换为双引号（但要小心字符串内的单引号）
     cleanedData = cleanedData.replace(/'/g, '"');
-
-    // 确保所有对象键都使用双引号
     cleanedData = cleanedData.replace(/(\w+):/g, '"$1":');
-
-    // 修复可能的尾随逗号
     cleanedData = cleanedData.replace(/,(\s*[}\]])/g, '$1');
-
     return JSON.parse(cleanedData);
   } catch (secondError) {
-    console.log('🔧 格式修复后仍解析失败，尝试更激进的修复...', {
-      error:
-        secondError instanceof Error
-          ? secondError.message
-          : String(secondError),
-      cleanedData:
-        cleanedData.substring(0, 100) + (cleanedData.length > 100 ? '...' : ''),
-    });
+    wsLogger.debug({
+      error: secondError instanceof Error ? secondError.message : String(secondError),
+      cleanedData: cleanedData.substring(0, 100) + (cleanedData.length > 100 ? '...' : ''),
+    }, '格式修复后仍解析失败，尝试更激进的修复');
   }
 
-  // 5. 最后的尝试：使用 eval（仅用于调试，生产环境应避免）
   try {
-    // 创建一个安全的评估环境
     const safeEval = new Function('return ' + cleanedData);
     const result = safeEval();
-
-    // 验证结果是否符合预期格式
-    if (
-      result &&
-      typeof result === 'object' &&
-      result.content &&
-      result.content.action
-    ) {
+    if (result && typeof result === 'object' && result.content && result.content.action) {
       return result as WebSocketMessage;
     }
   } catch (evalError) {
-    console.log('🔧 eval 解析也失败', {
+    wsLogger.debug({
       error: evalError instanceof Error ? evalError.message : String(evalError),
-    });
+    }, 'eval 解析也失败');
   }
 
-  // 6. 如果所有方法都失败，抛出原始错误
   throw new Error(`无法解析 WebSocket 消息: ${rawData.substring(0, 200)}...`);
 }
 
-export const setupWebSocket = (app: Hono) => {
-  const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
-  // 移除 mastra logger
+// 基于动作的处理器映射，替代大 switch，提高可维护性
+type MessageHandler = (
+  ctx: {
+    connectionId: string;
+    ws: WebSocketClient;
+    send: (m: WebSocketMessage) => void;
+  },
+  message: WebSocketMessage
+) => Promise<void>;
 
-  const operateController = new OperateController();
-
-  // 发送消息到 WebSocket
-  function sendMessage(ws: any, message: WebSocketMessage): boolean {
-    try {
-      if (ws && typeof ws.send === 'function') {
-        ws.send(JSON.stringify(message));
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('发送消息失败:', error);
-      return false;
-    }
-  }
-
-  // 处理接收到的消息
-  async function handleMessage(
-    connectionId: string,
-    message: WebSocketMessage,
-    ws: any
-  ) {
-    switch (message.content.action) {
-      case WebSocketAction.CONNECT_TAB:
-        // 处理连接标签页请求
-        console.log('🔗 处理连接标签页请求', {
-          connectionId,
-          messageId: message.message_id,
-        });
-
-        try {
-          const option = {
-            forceSameTabNavigation: true,
-          };
-          message.content.body !== '' &&
-            Object.assign(option, {
-              // 这里 tabId 还是 tabIndex 取决于云应用那边（目前暂定 tabIndex）
-              tabIndex: message.content.body,
-            });
-          await operateController.connectCurrentTab(option);
-          console.log('✅ 标签页连接成功', option);
-          sendMessage(ws, {
-            message_id: message.message_id,
-            conversation_id: message.conversation_id,
-            content: {
-              action: WebSocketAction.CALLBACK,
-              body: `标签页连接成功: ${message.content.body}`,
-            },
-            timestamp: new Date().toISOString(),
-          });
-        } catch (error) {
-          console.error('❌ 标签页连接失败', error);
-
-          sendMessage(ws, {
-            message_id: message.message_id,
-            conversation_id: message.conversation_id,
-            content: {
-              action: WebSocketAction.ERROR,
-              body: `标签页连接失败: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-            timestamp: new Date().toISOString(),
-          });
+function createHandlers(operateController: OperateController): Record<WebSocketAction, MessageHandler> {
+  return {
+    [WebSocketAction.CONNECT_TAB]: async ({ ws }, message) => {
+      wsLogger.info({
+        messageId: message.message_id,
+        action: 'connect_tab',
+      }, '处理连接标签页请求');
+      try {
+        const option: ConnectCurrentTabOption = { forceSameTabNavigation: true };
+        if (message.content.body !== '') {
+          const maybeIndex = Number(message.content.body);
+          if (!Number.isNaN(maybeIndex)) option.tabIndex = maybeIndex;
         }
-        break;
-
-      case WebSocketAction.AI:
-        // 处理 AI 请求
-        console.log('🤖 处理 AI 请求', {
-          connectionId,
-          messageId: message.message_id,
+        await operateController.connectCurrentTab(option);
+        wsLogger.info({ option }, '标签页连接成功');
+        sendMessage(ws, {
+          message_id: message.message_id,
+          conversation_id: message.conversation_id,
+          content: { action: WebSocketAction.CALLBACK, body: `标签页连接成功: ${message.content.body}` },
+          timestamp: new Date().toISOString(),
         });
-
-        try {
-          await operateController.execute(message.content.body);
-
-          sendMessage(ws, {
-            message_id: message.message_id,
-            conversation_id: message.conversation_id,
-            content: {
-              action: WebSocketAction.CALLBACK,
-              body: `AI 处理完成: ${message.content.body}`,
-            },
-            timestamp: new Date().toISOString(),
-          });
-        } catch (error) {
-          console.error('❌ AI 处理失败', {
-            connectionId,
-            error: error instanceof Error ? error.message : String(error),
-          });
-
-          sendMessage(ws, {
-            message_id: message.message_id,
-            conversation_id: message.conversation_id,
-            content: {
-              action: WebSocketAction.ERROR,
-              body: `AI 处理失败: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-            timestamp: new Date().toISOString(),
-          });
-        }
-        break;
-
-      default:
-        console.warn('⚠️ 未知的 action 类型', {
-          action: message.content.action,
-        });
+      } catch (error) {
+        wsLogger.error({ error, messageId: message.message_id }, '标签页连接失败');
         sendMessage(ws, {
           message_id: message.message_id,
           conversation_id: message.conversation_id,
           content: {
-            action: WebSocketAction.CALLBACK,
-            body: `未知的 action 类型: ${message.content.action}`,
+            action: WebSocketAction.ERROR,
+            body: `标签页连接失败: ${error instanceof Error ? error.message : String(error)}`,
           },
           timestamp: new Date().toISOString(),
         });
-    }
-  }
+      }
+    },
 
-  // WebSocket 连接
+    [WebSocketAction.AI]: async ({ ws, connectionId }, message) => {
+      wsLogger.info({ connectionId, messageId: message.message_id, action: 'ai_request' }, '处理 AI 请求');
+      try {
+        await operateController.execute(message.content.body);
+        sendMessage(ws, {
+          message_id: message.message_id,
+          conversation_id: message.conversation_id,
+          content: { action: WebSocketAction.CALLBACK, body: `AI 处理完成: ${message.content.body}` },
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        wsLogger.error({ connectionId, error, messageId: message.message_id }, 'AI 处理失败');
+        sendMessage(ws, {
+          message_id: message.message_id,
+          conversation_id: message.conversation_id,
+          content: {
+            action: WebSocketAction.ERROR,
+            body: `AI 处理失败: ${error instanceof Error ? error.message : String(error)}`,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    },
+
+    // 未使用到的动作可在此按需实现
+    [WebSocketAction.CALLBACK]: async () => {},
+    [WebSocketAction.ERROR]: async () => {},
+  } as Record<WebSocketAction, MessageHandler>;
+}
+
+export const setupWebSocket = (app: Hono) => {
+  const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
+  const operateController = new OperateController();
+  const connections = new ConnectionRegistry();
+  const handlers = createHandlers(operateController);
+
+  // 统一的消息调度
+  const dispatchMessage = async (
+    connectionId: string,
+    message: WebSocketMessage,
+    ws: WebSocketClient
+  ) => {
+    const handler = handlers[message.content.action];
+    if (!handler) {
+      wsLogger.warn({ action: message.content.action, messageId: message.message_id }, '未知的 action 类型');
+      sendMessage(ws, {
+        message_id: message.message_id,
+        conversation_id: message.conversation_id,
+        content: { action: WebSocketAction.CALLBACK, body: `未知的 action 类型: ${message.content.action}` },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+    await handler({ connectionId, ws, send: (m) => sendMessage(ws, m) }, message);
+  };
+
+  // WS 路由
   app.get(
     '/ws',
     upgradeWebSocket((c) => {
-      const connectionId = `conn_${Date.now()}_${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
+      const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       return {
-        onOpen(ws: any) {
-          // 存储连接
-          connections.set(connectionId, ws);
+        onOpen(ws: WebSocketClient) {
+          connections.add(connectionId, ws);
+          wsLogger.info({ connectionId }, 'WebSocket 连接已建立');
 
-          console.log('🔌 WebSocket 连接已建立', { connectionId });
-
-          // 发送欢迎消息
           sendMessage(ws, {
             message_id: `welcome_${Date.now()}`,
             conversation_id: 'system',
             content: {
               action: WebSocketAction.CALLBACK,
-              body: JSON.stringify({
-                connectionId,
-                message: '连接已建立',
-                serverTime: new Date().toISOString(),
-              }),
+              body: JSON.stringify({ connectionId, message: '连接已建立', serverTime: new Date().toISOString() }),
             },
             timestamp: new Date().toISOString(),
           });
@@ -248,58 +228,43 @@ export const setupWebSocket = (app: Hono) => {
         onMessage(event, ws) {
           try {
             const rawData = event.data.toString();
-            console.log('📨 收到原始消息', {
+            wsLogger.debug({
               connectionId,
-              rawData:
-                rawData.substring(0, 200) + (rawData.length > 200 ? '...' : ''),
-            });
+              rawData: rawData.substring(0, 200) + (rawData.length > 200 ? '...' : ''),
+            }, '收到原始消息');
 
-            // 使用健壮的解析函数
             const message: WebSocketMessage = parseWebSocketMessage(rawData);
-            console.log('📨 解析成功', {
-              connectionId,
-              action: message.content.action,
-              messageId: message.message_id,
-            });
+            wsLogger.debug({ connectionId, action: message.content.action, messageId: message.message_id }, '解析成功');
 
-            // 处理消息（异步调用，但不等待结果，避免阻塞）
-            handleMessage(connectionId, message, ws).catch((error) => {
-              console.error('❌ 消息处理失败', {
+            // 异步处理，保证不阻塞
+            dispatchMessage(connectionId, message, ws).catch((error) => {
+              wsLogger.error({
                 connectionId,
-                error: error instanceof Error ? error.message : String(error),
-              });
-
-              // 发送错误消息给客户端
+                error,
+                messageId: message.message_id,
+              }, '消息处理失败');
               sendMessage(ws, {
                 message_id: message.message_id || `error_${Date.now()}`,
                 conversation_id: message.conversation_id || 'system',
                 content: {
                   action: WebSocketAction.ERROR,
-                  body: `消息处理失败: ${
-                    error instanceof Error ? error.message : String(error)
-                  }`,
+                  body: `消息处理失败: ${error instanceof Error ? error.message : String(error)}`,
                 },
                 timestamp: new Date().toISOString(),
               });
             });
           } catch (error) {
-            console.error('❌ 消息解析失败', {
+            wsLogger.error({
               connectionId,
-              error: error instanceof Error ? error.message : String(error),
-              rawData:
-                event.data.toString().substring(0, 200) +
-                (event.data.toString().length > 200 ? '...' : ''),
-            });
-
-            // 发送解析错误消息给客户端
+              error,
+              rawData: event.data.toString().substring(0, 200) + (event.data.toString().length > 200 ? '...' : ''),
+            }, '消息解析失败');
             sendMessage(ws, {
               message_id: `parse_error_${Date.now()}`,
               conversation_id: 'system',
               content: {
                 action: WebSocketAction.ERROR,
-                body: `消息解析失败: ${
-                  error instanceof Error ? error.message : String(error)
-                }`,
+                body: `消息解析失败: ${error instanceof Error ? error.message : String(error)}`,
               },
               timestamp: new Date().toISOString(),
             });
@@ -307,16 +272,12 @@ export const setupWebSocket = (app: Hono) => {
         },
 
         onClose() {
-          // 移除连接
-          connections.delete(connectionId);
-          console.log('🔌 WebSocket 连接已关闭', { connectionId });
+          connections.remove(connectionId);
+          wsLogger.info({ connectionId }, 'WebSocket 连接已关闭');
         },
 
         onError(error: any) {
-          console.error('❌ WebSocket 连接错误', {
-            connectionId,
-            error: error?.message || String(error),
-          });
+          wsLogger.error({ connectionId, error }, 'WebSocket 连接错误');
         },
       };
     })
@@ -326,10 +287,7 @@ export const setupWebSocket = (app: Hono) => {
   app.get('/ws/stats', (c) => {
     return c.json({
       success: true,
-      data: {
-        totalConnections: connections.size,
-        connections: Array.from(connections.keys()),
-      },
+      data: { totalConnections: connections.size(), connections: connections.keys() },
     });
   });
 
@@ -340,34 +298,26 @@ export const setupWebSocket = (app: Hono) => {
       const { message, conversationId = 'broadcast' } = body;
 
       let sentCount = 0;
-      for (const [connectionId, ws] of connections) {
+      connections.forEach((_id, ws) => {
         if (
           sendMessage(ws, {
             message_id: `broadcast_${Date.now()}`,
             conversation_id: conversationId,
             content: {
               action: WebSocketAction.CALLBACK,
-              body:
-                typeof message === 'string' ? message : JSON.stringify(message),
+              body: typeof message === 'string' ? message : JSON.stringify(message),
             },
             timestamp: new Date().toISOString(),
           })
         ) {
           sentCount++;
         }
-      }
-
-      return c.json({
-        success: true,
-        data: { sentCount, totalConnections: connections.size },
       });
+
+      return c.json({ success: true, data: { sentCount, totalConnections: connections.size() } });
     } catch (error) {
       return c.json(
-        {
-          success: false,
-          error: '广播消息失败',
-          details: error instanceof Error ? error.message : String(error),
-        },
+        { success: false, error: '广播消息失败', details: error instanceof Error ? error.message : String(error) },
         400
       );
     }

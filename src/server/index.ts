@@ -5,6 +5,7 @@ import { setupRouter } from '../routes/index';
 import { setupWebSocket } from './websocket';
 import { config as appConfig } from '../config';
 import { setupError } from './error';
+import { serverLogger } from '../utils/logger';
 
 const initApp = () => {
   const app = new Hono();
@@ -33,5 +34,5 @@ export const startServer = () => {
   // 注入 WebSocket
   injectWebSocket(server);
 
-  console.log('server', `服务已在 ${port} 端口启动`);
+  serverLogger.info({ port }, '服务启动成功');
 };
