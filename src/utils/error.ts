@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { Context } from 'hono';
-import { logger } from '../middleware/logger';
+import { serverLogger } from './logger';
 
 // 自定义错误类型
 export class AppError extends Error {
@@ -25,12 +25,10 @@ interface ErrorResponse {
 export const setupError = (app: Hono) => {
   app.onError((err: Error, c: Context) => {
     // 记录错误日志
-    logger(c, async () => {
-      console.error(`[${new Date().toISOString()}] Error occurred:`, err);
-      if (err.stack) {
-        console.error(`Stack trace: ${err.stack}`);
-      }
-    });
+    serverLogger.error({ err }, 'Error occurred');
+    if (err.stack) {
+      serverLogger.error({ stack: err.stack }, 'Stack trace');
+    }
 
     // 默认错误响应
     const errorResponse: ErrorResponse = {

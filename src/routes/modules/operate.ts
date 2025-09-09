@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { OperateController } from '../../controllers/operateController';
-import { AppError } from '../../server/error';
+import { AppError } from '../../utils/error';
 import { errorResponse } from '../../utils/response';
 
 const operateRouter = new Hono().post('/', async (c) => {

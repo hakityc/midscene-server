@@ -4,8 +4,8 @@ import { config } from 'dotenv';
 import { setupRouter } from '../routes/index';
 import { setupWebSocket } from './websocket';
 import { config as appConfig } from '../config';
-import { setupError } from './error';
-import { serverLogger } from '../utils/logger';
+import { setupError } from '../utils/error';
+  import { serverLogger } from '../utils/logger';
 
 const initApp = () => {
   const app = new Hono();

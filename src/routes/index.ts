@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { requestLogger } from '../middleware/logger';
 import { operateRouter } from './modules/operate'
-import { AppError } from '../server/error';
+import { AppError } from '../utils/error';
 
 // 模拟服务状态检查
 let browserConnected = false;

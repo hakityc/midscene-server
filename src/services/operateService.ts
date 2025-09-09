@@ -1,5 +1,5 @@
 import { AgentOverChromeBridge } from '@midscene/web/bridge-mode';
-import { AppError } from '../server/error';
+import { AppError } from '../utils/error';
 import { ConnectCurrentTabOption } from '../types/operate';
 
 export class OperateService {
