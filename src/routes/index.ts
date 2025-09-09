@@ -1,8 +1,6 @@
 import { Hono } from 'hono';
-import { logger } from '../middleware/logger';
-// import { browserRouter } from './modules/browser';
+import { requestLogger } from '../middleware/logger';
 import { operateRouter } from './modules/operate'
-import { taskRouter } from './modules/task'
 import { AppError } from '../server/error';
 
 // 模拟服务状态检查
@@ -11,11 +9,9 @@ let aiServiceAvailable = true;
 
 export const setupRouter = (app: Hono) => {
   // 全局中间件
-  app.use('/operate', logger);
+  app.use('/operate', requestLogger);
 
-  // app.route('/browser', browserRouter);
   app.route('/operate', operateRouter);
-  app.route('/task', taskRouter);
   // 根路径
   app.get('/', (c) => {
     return c.json({
@@ -34,10 +30,10 @@ export const setupRouter = (app: Hono) => {
       browser: browserConnected,
       aiService: aiServiceAvailable,
     };
-    
+
     // 检查是否有服务不可用
     const isHealthy = Object.values(checks).every(check => check === true);
-    
+
     return c.json({
       status: isHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
