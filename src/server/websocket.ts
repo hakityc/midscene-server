@@ -2,13 +2,14 @@ import { createNodeWebSocket } from '@hono/node-ws';
 import { Hono } from 'hono';
 // 移除 mastra 导入
 import { OperateController } from '../controllers/operateController';
+import { WebSocketAction } from '../utils/enums';
 
 // WebSocket 消息格式
 export interface WebSocketMessage {
   message_id: string;
   conversation_id: string;
   content: {
-    action: 'connectTab' | 'ai' | 'callback' | 'error';
+    action: WebSocketAction;
     body: string;
   };
   timestamp: string;
@@ -114,7 +115,7 @@ export const setupWebSocket = (app: Hono) => {
     ws: any
   ) {
     switch (message.content.action) {
-      case 'connectTab':
+      case WebSocketAction.CONNECT_TAB:
         // 处理连接标签页请求
         console.log('🔗 处理连接标签页请求', {
           connectionId,
@@ -136,7 +137,7 @@ export const setupWebSocket = (app: Hono) => {
             message_id: message.message_id,
             conversation_id: message.conversation_id,
             content: {
-              action: 'callback',
+              action: WebSocketAction.CALLBACK,
               body: `标签页连接成功: ${message.content.body}`,
             },
             timestamp: new Date().toISOString(),
@@ -148,7 +149,7 @@ export const setupWebSocket = (app: Hono) => {
             message_id: message.message_id,
             conversation_id: message.conversation_id,
             content: {
-              action: 'error',
+              action: WebSocketAction.ERROR,
               body: `标签页连接失败: ${
                 error instanceof Error ? error.message : String(error)
               }`,
@@ -158,7 +159,7 @@ export const setupWebSocket = (app: Hono) => {
         }
         break;
 
-      case 'ai':
+      case WebSocketAction.AI:
         // 处理 AI 请求
         console.log('🤖 处理 AI 请求', {
           connectionId,
@@ -172,7 +173,7 @@ export const setupWebSocket = (app: Hono) => {
             message_id: message.message_id,
             conversation_id: message.conversation_id,
             content: {
-              action: 'callback',
+              action: WebSocketAction.CALLBACK,
               body: `AI 处理完成: ${message.content.body}`,
             },
             timestamp: new Date().toISOString(),
@@ -187,7 +188,7 @@ export const setupWebSocket = (app: Hono) => {
             message_id: message.message_id,
             conversation_id: message.conversation_id,
             content: {
-              action: 'error',
+              action: WebSocketAction.ERROR,
               body: `AI 处理失败: ${
                 error instanceof Error ? error.message : String(error)
               }`,
@@ -205,7 +206,7 @@ export const setupWebSocket = (app: Hono) => {
           message_id: message.message_id,
           conversation_id: message.conversation_id,
           content: {
-            action: 'callback',
+            action: WebSocketAction.CALLBACK,
             body: `未知的 action 类型: ${message.content.action}`,
           },
           timestamp: new Date().toISOString(),
@@ -233,7 +234,7 @@ export const setupWebSocket = (app: Hono) => {
             message_id: `welcome_${Date.now()}`,
             conversation_id: 'system',
             content: {
-              action: 'callback',
+              action: WebSocketAction.CALLBACK,
               body: JSON.stringify({
                 connectionId,
                 message: '连接已建立',
@@ -273,7 +274,7 @@ export const setupWebSocket = (app: Hono) => {
                 message_id: message.message_id || `error_${Date.now()}`,
                 conversation_id: message.conversation_id || 'system',
                 content: {
-                  action: 'error',
+                  action: WebSocketAction.ERROR,
                   body: `消息处理失败: ${
                     error instanceof Error ? error.message : String(error)
                   }`,
@@ -295,7 +296,7 @@ export const setupWebSocket = (app: Hono) => {
               message_id: `parse_error_${Date.now()}`,
               conversation_id: 'system',
               content: {
-                action: 'error',
+                action: WebSocketAction.ERROR,
                 body: `消息解析失败: ${
                   error instanceof Error ? error.message : String(error)
                 }`,
@@ -345,7 +346,7 @@ export const setupWebSocket = (app: Hono) => {
             message_id: `broadcast_${Date.now()}`,
             conversation_id: conversationId,
             content: {
-              action: 'callback',
+              action: WebSocketAction.CALLBACK,
               body:
                 typeof message === 'string' ? message : JSON.stringify(message),
             },
