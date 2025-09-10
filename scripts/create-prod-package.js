@@ -3,30 +3,17 @@ import path from 'node:path';
 
 console.log('📦 创建生产环境 package.json...');
 
+// 读取原始 package.json
+const packageJsonPath = path.join(process.cwd(), 'package.json');
+const originalPackage = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
 const prodPackage = {
   name: 'midscene-server',
   type: 'module',
   scripts: {
     start: 'node index.js',
   },
-  dependencies: {
-    "@ai-sdk/openai": "2.0.23",
-    "@ai-sdk/openai-compatible": "1.0.13",
-    "@hono/node-server": "^1.19.0",
-    "@hono/node-ws": "1.2.0",
-    "@mastra/core": "0.15.2",
-    "@mastra/libsql": "0.13.7",
-    "@mastra/loggers": "0.10.9",
-    "@mastra/mcp": "0.11.2",
-    "@mastra/memory": "0.14.2",
-    "@midscene/web": "^0.27.6",
-    "dotenv": "^17.2.1",
-    "hono": "^4.9.5",
-    "pino": "9.9.4",
-    "pino-pretty": "13.1.1",
-    "tencentcloud-cls-sdk-js-web": "1.0.13",
-    "zod": "^3.25.76"
-  },
+  dependencies: originalPackage.dependencies,
 };
 
 // 确保 dist/server 目录存在
