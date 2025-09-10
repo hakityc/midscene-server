@@ -1,5 +1,4 @@
 import { Agent } from '@mastra/core/agent';
-import { mcpClient } from '../../mcp/client';
 import { createModel } from '../index';
 
 const instructions = `你是一个专业的任务自动化助手，帮助拆解完成各种任务。请将复杂任务拆解成多个原子化步骤，每个步骤包含一个操作描述和一个验证描述。

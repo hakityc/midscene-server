@@ -114,7 +114,7 @@ function extractMCPErrorDetails(error: unknown): any {
         mcpErrorInfo.model = parsed.details.details?.model;
       }
     }
-  } catch (parseError) {
+  } catch (_parseError) {
     // JSON 解析失败，忽略
   }
 

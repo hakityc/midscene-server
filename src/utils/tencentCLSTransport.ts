@@ -1,5 +1,5 @@
 import { AsyncClient, PutLogsRequest, LogGroup, Log } from 'tencentcloud-cls-sdk-js-web';
-import { TencentCLSTransportOptions, LogEntry } from '../types/cls.js';
+import type { TencentCLSTransportOptions, LogEntry } from '../types/cls.js';
 
 export class TencentCLSTransport {
   private client: AsyncClient;

@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { AppError } from '../../utils/error';
 import { errorResponse } from '../../utils/response';
 import { OperateService } from '../../services/operateService';
-import { ConnectCurrentTabOption } from '../../types/operate';
 
 const operateRouter = new Hono().post('/', async (c) => {
   try {
@@ -28,12 +27,12 @@ const operateRouter = new Hono().post('/', async (c) => {
     }
 
     // 处理浏览器连接错误
-    if (error.message && error.message.includes('connect')) {
+    if (error.message?.includes('connect')) {
       return errorResponse(c, 'Browser connection failed', 503);
     }
 
     // 处理AI执行错误
-    if (error.message && error.message.includes('ai')) {
+    if (error.message?.includes('ai')) {
       return errorResponse(c, 'AI execution failed', 500);
     }
 

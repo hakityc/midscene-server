@@ -1,7 +1,7 @@
 import { createNodeWebSocket } from '@hono/node-ws';
-import { Hono } from 'hono';
+import type { Hono } from 'hono';
 import { OperateService } from '../services/operateService';
-import { WebSocketAction } from '../utils/enums';
+import type { WebSocketAction } from '../utils/enums';
 import { wsLogger } from '../utils/logger';
 import { createMessageHandlers } from './handlers/messageHandlers';
 import { MessageBuilder } from './builders/messageBuilder';
@@ -89,7 +89,7 @@ function parseWebSocketMessage(rawData: string): WebSocketMessage {
   }
 
   try {
-    const safeEval = new Function('return ' + cleanedData);
+    const safeEval = new Function(`return ${cleanedData}`);
     const result = safeEval();
     if (result && typeof result === 'object' && result.content && result.content.action) {
       return result as WebSocketMessage;
@@ -127,7 +127,7 @@ export const setupWebSocket = (app: Hono) => {
   // WS 路由
   app.get(
     '/ws',
-    upgradeWebSocket((c) => {
+    upgradeWebSocket((_c) => {
       const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       return {

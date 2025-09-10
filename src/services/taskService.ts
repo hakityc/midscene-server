@@ -2,7 +2,6 @@ import { mastra } from '../mastra';
 import { OperateService } from './operateService';
 
 export class TaskService {
-  private logger = mastra.getLogger();
   private taskAgent = mastra.getAgent('taskAgent');
   private operateService: OperateService;
 
@@ -85,7 +84,7 @@ export class TaskService {
     } catch (parseError) {
       return {
         success: false,
-        error: 'JSON解析失败: ' + (parseError instanceof Error ? parseError.message : String(parseError)),
+        error: `JSON解析失败: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
         rawResponse: textResponse
       };
     }
@@ -105,7 +104,7 @@ export class TaskService {
       console.error('任务规划失败:', error);
       return {
         success: false,
-        error: '任务规划失败: ' + (error instanceof Error ? error.message : String(error))
+        error: `任务规划失败: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
@@ -194,7 +193,7 @@ export class TaskService {
       console.error('❌ 任务执行失败:', error);
       return {
         success: false,
-        error: '任务执行失败: ' + (error instanceof Error ? error.message : String(error))
+        error: `任务执行失败: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }

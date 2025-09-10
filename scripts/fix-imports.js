@@ -1,12 +1,12 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 console.log('🔧 修复 ES 模块导入路径...');
 
 const distDir = 'dist';
 
 // 需要修复的文件和导入映射
-const importFixes = [
+const _importFixes = [
   {
     file: 'index.js',
     fixes: [
@@ -47,12 +47,12 @@ function processFile(filePath) {
       // 检查是否存在对应的目录，如果存在则添加 /index.js
       if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
         modified = true;
-        return match.replace(importPath, importPath + '/index.js');
+        return match.replace(importPath, `${importPath}/index.js`);
       }
       // 检查是否存在对应的 .js 文件
-      else if (fs.existsSync(fullPath + '.js')) {
+      else if (fs.existsSync(`${fullPath}.js`)) {
         modified = true;
-        return match.replace(importPath, importPath + '.js');
+        return match.replace(importPath, `${importPath}.js`);
       }
     }
     return match;

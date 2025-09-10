@@ -1,6 +1,6 @@
 import { AgentOverChromeBridge } from "@midscene/web/bridge-mode"
 import { AppError } from "../utils/error"
-import { ConnectCurrentTabOption } from "../types/operate"
+import type { ConnectCurrentTabOption } from "../types/operate"
 import { serviceLogger } from "../utils/logger"
 
 export class OperateService {
@@ -52,7 +52,7 @@ export class OperateService {
       serviceLogger.error({ error }, "浏览器标签页连接失败")
 
       // 处理浏览器连接错误
-      if (error.message && error.message.includes("connect")) {
+      if (error.message?.includes("connect")) {
         throw new AppError("Failed to connect to browser", 503)
       }
       // 处理其他连接错误
@@ -70,7 +70,7 @@ export class OperateService {
       serviceLogger.info({ prompt }, "AI执行成功")
     } catch (error: any) {
       // 处理AI执行错误
-      if (error.message && error.message.includes("ai")) {
+      if (error.message?.includes("ai")) {
         serviceLogger.error({ error }, "AI执行失败")
         throw new AppError(`AI execution failed: ${error.message}`, 500)
       }
@@ -89,7 +89,7 @@ export class OperateService {
       serviceLogger.info({ prompt }, "AI断言成功")
     } catch (error: any) {
       // 处理AI断言错误
-      if (error.message && error.message.includes("ai")) {
+      if (error.message?.includes("ai")) {
         serviceLogger.error({ error }, "AI断言失败")
         throw new AppError(`AI assertion failed: ${error.message}`, 500)
       }
@@ -124,12 +124,6 @@ export class OperateService {
    * 检查是否已初始化
    */
   public isReady(): boolean {
-    return this.isInitialized
-    serviceLogger.info("浏览器标签页销毁成功")
-  }
-  catch(error: any) {
-    // 处理销毁错误
-    serviceLogger.error({ error }, "浏览器标签页销毁失败")
-    throw new AppError(`Failed to destroy agent: ${error.message}`, 500)
+    return this.isInitialized;
   }
 }

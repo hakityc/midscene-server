@@ -122,7 +122,7 @@ export class MessageBuilder {
    */
   static createParseErrorResponse(
     error: unknown,
-    connectionId?: string
+    _connectionId?: string
   ): WebSocketMessage {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return MessageBuilder.buildBaseMessage(

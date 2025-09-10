@@ -1,5 +1,5 @@
-import { Hono } from 'hono';
-import { Context } from 'hono';
+import type { Hono } from 'hono';
+import type { Context } from 'hono';
 import { serverLogger } from './logger';
 
 // 自定义错误类型

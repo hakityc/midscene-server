@@ -8,7 +8,7 @@ export const logger = new PinoLogger({
       return { level: label };
     },
     log: (object) => {
-      const timestamp = new Date().toISOString();
+      const _timestamp = new Date().toISOString();
       const level = (object.level as string)?.toUpperCase() || 'INFO';
       const message = object.msg || '';
 

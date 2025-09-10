@@ -1,7 +1,6 @@
 import { wsLogger } from '../../utils/logger';
 import type { WebSocketMessage } from '../index';
 import { MessageBuilder } from '../builders/messageBuilder';
-import { WebSocketAction } from '../../utils/enums';
 
 type WebSocketClient = any;
 
@@ -31,7 +30,7 @@ export class WebSocketErrorHandler {
     }, '消息处理失败');
 
     const errorResponse = MessageBuilder.createProcessingErrorResponse(message, error);
-    this.sendMessage(ws, errorResponse);
+    WebSocketErrorHandler.sendMessage(ws, errorResponse);
   }
 
   /**
@@ -50,7 +49,7 @@ export class WebSocketErrorHandler {
     }, '消息解析失败');
 
     const errorResponse = MessageBuilder.createParseErrorResponse(error, connectionId);
-    this.sendMessage(ws, errorResponse);
+    WebSocketErrorHandler.sendMessage(ws, errorResponse);
   }
 
   /**
@@ -67,7 +66,7 @@ export class WebSocketErrorHandler {
     }, '未知的 action 类型');
 
     const response = MessageBuilder.createUnknownActionResponse(message, action);
-    this.sendMessage(ws, response);
+    WebSocketErrorHandler.sendMessage(ws, response);
   }
 
   /**

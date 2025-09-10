@@ -3,7 +3,6 @@ import { serve } from '@hono/node-server';
 import { config } from 'dotenv';
 import { setupRouter } from './routes/index';
 import { setupWebSocket } from './websocket';
-import { config as appConfig } from './config';
 import { setupError } from './utils/error';
 import { serverLogger, cleanupLogger } from './utils/logger';
 

@@ -28,7 +28,7 @@ export const createModel = () => {
   // 验证 baseUrl 是否为有效的 URL
   try {
     new URL(baseUrl);
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
       `OPENAI_BASE_URL 不是有效的 URL: ${baseUrl}。请确保包含协议（如 https://）`
     );

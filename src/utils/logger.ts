@@ -1,6 +1,6 @@
 import pino from 'pino';
 import { TencentCLSTransport } from './tencentCLSTransport.js';
-import { hostname } from 'os';
+import { hostname } from 'node:os';
 
 // 日志级别配置
 const logLevel = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
@@ -12,7 +12,7 @@ if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
     clsTransport = new TencentCLSTransport({
       endpoint: process.env.CLS_ENDPOINT,
       topicId: process.env.CLS_TOPIC_ID,
-      maxCount: parseInt(process.env.CLS_MAX_COUNT || '100'),
+      maxCount: parseInt(process.env.CLS_MAX_COUNT || '100', 10),
       maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
       appendFieldsFn: () => ({
         appId: process.env.APP_ID || 'midscene-server',

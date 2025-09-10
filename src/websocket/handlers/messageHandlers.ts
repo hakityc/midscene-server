@@ -1,4 +1,4 @@
-import { OperateService } from '../../services/operateService';
+import type { OperateService } from '../../services/operateService';
 import { WebSocketAction } from '../../utils/enums';
 import type { ConnectCurrentTabOption } from '../../types/operate';
 import { wsLogger } from '../../utils/logger';

@@ -1,6 +1,5 @@
 import { Agent } from '@mastra/core/agent';
 import { mcpClient } from '../../mcp/client';
-import dotenv from 'dotenv';
 import { instructions } from '../prompt';
 import { createModel } from '../index';
 // import { memory } from '../memory';

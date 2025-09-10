@@ -1,11 +1,10 @@
-import { Hono } from 'hono';
+import type { Hono } from 'hono';
 import { requestLogger } from '../middleware/logger';
 import { operateRouter } from './modules/operate'
-import { AppError } from '../utils/error';
 
 // 模拟服务状态检查
-let browserConnected = false;
-let aiServiceAvailable = true;
+const browserConnected = false;
+const aiServiceAvailable = true;
 
 export const setupRouter = (app: Hono) => {
   // 全局中间件
