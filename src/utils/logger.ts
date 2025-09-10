@@ -1,7 +1,26 @@
 import pino from 'pino';
+import { TencentCLSTransport } from './tencentCLSTransport.js';
+import { hostname } from 'os';
 
 // 日志级别配置
 const logLevel = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+
+// 创建腾讯云CLS传输器（仅在配置了CLS相关环境变量时启用）
+let clsTransport: TencentCLSTransport | null = null;
+if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
+  clsTransport = new TencentCLSTransport({
+    endpoint: process.env.CLS_ENDPOINT,
+    topicId: process.env.CLS_TOPIC_ID,
+    maxCount: parseInt(process.env.CLS_MAX_COUNT || '100'),
+    maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
+    appendFieldsFn: () => ({
+      appId: process.env.APP_ID || 'midscene-server',
+      version: process.env.npm_package_version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      hostname: hostname()
+    })
+  });
+}
 
 // 创建 Pino 实例
 const logger = pino({
@@ -29,7 +48,24 @@ const logger = pino({
 
 // 创建子 logger 的工厂函数
 export const createLogger = (name: string) => {
-  return logger.child({ module: name });
+  const childLogger = logger.child({ module: name });
+
+  // 如果启用了CLS传输器，添加CLS日志写入功能
+  if (clsTransport) {
+    const originalLog = childLogger.info.bind(childLogger);
+    childLogger.info = (obj: any, msg?: string) => {
+      originalLog(obj, msg);
+      clsTransport!.write({
+        timestamp: Date.now(),
+        level: 'info',
+        message: msg || (typeof obj === 'string' ? obj : ''),
+        data: typeof obj === 'object' ? obj : {},
+        module: name
+      });
+    };
+  }
+
+  return childLogger;
 };
 
 // 导出默认 logger
@@ -58,3 +94,13 @@ export const controllerLogger = createLogger('controller');
 
 // 服务专用 logger
 export const serviceLogger = createLogger('service');
+
+// 导出CLS传输器用于清理
+export { clsTransport };
+
+// 清理函数，用于应用关闭时刷新剩余日志
+export const cleanupLogger = () => {
+  if (clsTransport) {
+    clsTransport.close();
+  }
+};

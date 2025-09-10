@@ -5,7 +5,7 @@ import { setupRouter } from './routes/index';
 import { setupWebSocket } from './websocket';
 import { config as appConfig } from './config';
 import { setupError } from './utils/error';
-import { serverLogger } from './utils/logger';
+import { serverLogger, cleanupLogger } from './utils/logger';
 
 // 全局错误处理，防止服务因未处理的 Promise 拒绝而停止
 process.on('unhandledRejection', (reason, promise) => {
@@ -35,11 +35,13 @@ process.on('uncaughtException', (error) => {
 // 优雅关闭处理
 process.on('SIGINT', () => {
   serverLogger.info('收到 SIGINT 信号，正在优雅关闭服务...');
+  cleanupLogger(); // 清理CLS传输器
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   serverLogger.info('收到 SIGTERM 信号，正在优雅关闭服务...');
+  cleanupLogger(); // 清理CLS传输器
   process.exit(0);
 });
 
