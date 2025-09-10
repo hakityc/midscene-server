@@ -1,4 +1,4 @@
-import { AsyncClient } from 'tencentcloud-cls-sdk-js-web';
+import { AsyncClient, PutLogsRequest, LogGroup, Log } from 'tencentcloud-cls-sdk-js-web';
 import { TencentCLSTransportOptions, LogEntry } from '../types/cls.js';
 
 export class TencentCLSTransport {
@@ -68,21 +68,39 @@ export class TencentCLSTransport {
 
   // 发送日志到腾讯云
   private async sendLogs(logs: LogEntry[]): Promise<void> {
-    const logGroup = {
-      topicId: process.env.CLS_TOPIC_ID!,
-      logs: logs.map(log => ({
-        timestamp: Math.floor(log.timestamp / 1000), // 转换为秒
-        contents: [
-          { key: 'level', value: log.level },
-          { key: 'message', value: log.message },
-          ...(log.data ? Object.entries(log.data).map(([k, v]) => ({ key: k, value: String(v) })) : []),
-          ...(log.module ? [{ key: 'module', value: log.module }] : []),
-          ...(this.appendFieldsFn ? Object.entries(this.appendFieldsFn()).map(([k, v]) => ({ key: k, value: String(v) })) : [])
-        ]
-      }))
-    };
+    const logGroup = new LogGroup();
+    
+    logs.forEach(logEntry => {
+      const log = new Log(Math.floor(logEntry.timestamp / 1000)); // 转换为秒
+      
+      // 添加基本字段
+      log.addContent('level', logEntry.level);
+      log.addContent('message', logEntry.message);
+      
+      // 添加模块信息
+      if (logEntry.module) {
+        log.addContent('module', logEntry.module);
+      }
+      
+      // 添加数据字段
+      if (logEntry.data) {
+        Object.entries(logEntry.data).forEach(([key, value]) => {
+          log.addContent(key, String(value));
+        });
+      }
+      
+      // 添加附加字段
+      if (this.appendFieldsFn) {
+        Object.entries(this.appendFieldsFn()).forEach(([key, value]) => {
+          log.addContent(key, String(value));
+        });
+      }
+      
+      logGroup.addLog(log);
+    });
 
-    await this.client.putLogs(logGroup);
+    const request = new PutLogsRequest(process.env.CLS_TOPIC_ID!, logGroup);
+    await this.client.PutLogs(request);
   }
 
   // 启动定时刷新

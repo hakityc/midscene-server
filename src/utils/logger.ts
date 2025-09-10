@@ -8,18 +8,23 @@ const logLevel = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production'
 // 创建腾讯云CLS传输器（仅在配置了CLS相关环境变量时启用）
 let clsTransport: TencentCLSTransport | null = null;
 if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
-  clsTransport = new TencentCLSTransport({
-    endpoint: process.env.CLS_ENDPOINT,
-    topicId: process.env.CLS_TOPIC_ID,
-    maxCount: parseInt(process.env.CLS_MAX_COUNT || '100'),
-    maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
-    appendFieldsFn: () => ({
-      appId: process.env.APP_ID || 'midscene-server',
-      version: process.env.npm_package_version || '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
-      hostname: hostname()
-    })
-  });
+  try {
+    clsTransport = new TencentCLSTransport({
+      endpoint: process.env.CLS_ENDPOINT,
+      topicId: process.env.CLS_TOPIC_ID,
+      maxCount: parseInt(process.env.CLS_MAX_COUNT || '100'),
+      maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
+      appendFieldsFn: () => ({
+        appId: process.env.APP_ID || 'midscene-server',
+        version: process.env.npm_package_version || '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        hostname: hostname()
+      })
+    });
+  } catch (error) {
+    console.error('CLS传输器初始化失败:', error);
+    clsTransport = null;
+  }
 }
 
 // 创建 Pino 实例

@@ -24,11 +24,15 @@ optionalEnvVars.forEach(envVar => {
 });
 
 console.log('\n2. 检查CLS传输器状态:');
+console.log(`   CLS_ENDPOINT: "${process.env.CLS_ENDPOINT}"`);
+console.log(`   CLS_TOPIC_ID: "${process.env.CLS_TOPIC_ID}"`);
+console.log(`   条件判断: ${process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID}`);
+
 if (clsTransport) {
   console.log('   ✅ CLS传输器已初始化');
 } else {
   console.log('   ❌ CLS传输器未初始化');
-  console.log('   原因: 缺少必要的环境变量配置');
+  console.log('   原因: 缺少必要的环境变量配置或初始化失败');
   process.exit(1);
 }
 

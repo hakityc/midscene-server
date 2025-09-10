@@ -17,7 +17,7 @@
     "start": "node dist/server/index.js | pino-pretty",
     "start:dev": "tsx src/index.ts",
     "test:logger": "tsx src/test/logger-test.ts",
-    "test:cls": "tsx src/test/verify-cls.ts",
+    "test:cls": "tsx src/test/simple-cls-test.ts",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check .",
