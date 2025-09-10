@@ -1,6 +1,6 @@
 import { wsLogger } from '../../utils/logger';
 import { MessageBuilder } from '../builders/messageBuilder';
-import type { WebSocketMessage } from '../index';
+import type { WebSocketMessage } from '../../types/websocket';
 
 type WebSocketClient = any;
 
