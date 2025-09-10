@@ -144,8 +144,8 @@ export interface BrowserTaskResult {
   };
 }
 
-// 浏览器控制器类
-export class BrowserController {
+// 浏览器服务类
+export class BrowserService {
   private logger = mastra.getLogger();
   private browserAgent = mastra.getAgent('browserAgent');
 
@@ -364,6 +364,3 @@ export class BrowserController {
     }
   }
 }
-
-// 导出控制器实例
-export const browserController = new BrowserController();

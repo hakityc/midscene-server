@@ -1,7 +1,7 @@
 import { createNodeWebSocket } from '@hono/node-ws';
 import { Hono } from 'hono';
 import { mastra } from '../mastra';
-import { OperateController } from '../controllers/operateController';
+import { OperateService } from '../services/operateService';
 
 // WebSocket 消息格式
 export interface WebSocketMessage {
@@ -21,8 +21,8 @@ export const setupWebSocket = (app: Hono) => {
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
   const logger = mastra.getLogger();
 
-  // 使用单例模式获取 OperateController 实例
-  const operateController = new OperateController();
+  // 使用单例模式获取 OperateService 实例
+  const operateService = OperateService.getInstance();
 
   // 发送消息到 WebSocket
   function sendMessage(ws: any, message: WebSocketMessage): boolean {
@@ -55,7 +55,7 @@ export const setupWebSocket = (app: Hono) => {
         });
 
         // 使用单例模式初始化连接
-        operateController.initialize({
+        operateService.initialize({
           forceSameTabNavigation: true,
         }).then(() => {
           sendMessage(ws, {
@@ -87,7 +87,7 @@ export const setupWebSocket = (app: Hono) => {
           connectionId,
           messageId: message.message_id,
         });
-        operateController.execute(message.content.body);
+        operateService.execute(message.content.body);
         // 这里可以集成 AI 处理逻辑
         sendMessage(ws, {
           message_id: message.message_id,
