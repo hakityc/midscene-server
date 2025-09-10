@@ -2,7 +2,7 @@
   "name": "midscene-server",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/index.ts | pino-pretty",
     "build": "npm run clean && npm run compile && npm run fix-imports && npm run prepare-deployment",
     "build:prod": "npm run build && npm run create-deployment-package",
     "clean": "rm -rf dist",
@@ -14,7 +14,7 @@
     "create-deployment-docs": "node scripts/create-deployment-docs.js",
     "create-start-script": "node scripts/create-start-script.js",
     "create-deployment-package": "tar -czf midscene-server-deployment.tar.gz -C dist .",
-    "start": "node dist/server/index.js",
+    "start": "node dist/server/index.js | pino-pretty",
     "start:dev": "tsx src/index.ts",
     "test:logger": "tsx src/test/logger-test.ts",
     "test:cls": "tsx src/test/verify-cls.ts",
