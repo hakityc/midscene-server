@@ -1,6 +1,9 @@
 import { hostname } from 'node:os';
 import pino from 'pino';
 import { TencentCLSTransport } from './tencentCLSTransport.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // 日志级别配置
 const logLevel =
@@ -23,6 +26,7 @@ if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
         hostname: hostname(),
       }),
     });
+    console.log('CLS传输器初始化成功');
   } catch (error) {
     console.error('CLS传输器初始化失败:', error);
     clsTransport = null;
