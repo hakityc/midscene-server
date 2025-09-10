@@ -1,8 +1,6 @@
 import { createNodeWebSocket } from '@hono/node-ws';
 import type { Hono } from 'hono';
-
-import { OperateService } from '../services/operateService';
-import type { WebSocketAction } from '../utils/enums';
+import type { WebSocketClient, WebSocketMessage } from '../types/websocket';
 import { wsLogger } from '../utils/logger';
 
 import { MessageBuilder } from './builders/messageBuilder';
@@ -13,19 +11,6 @@ import {
   handleUnknownAction,
 } from './handlers/errorHandler';
 import { createMessageHandlers } from './handlers/messageHandlers';
-
-// WebSocket 消息格式
-export interface WebSocketMessage {
-  message_id: string;
-  conversation_id: string;
-  content: {
-    action: WebSocketAction;
-    body: string;
-  };
-  timestamp: string;
-}
-
-type WebSocketClient = any;
 
 // 连接注册表：集中管理连接、统计与广播
 class ConnectionRegistry {
@@ -135,9 +120,8 @@ function parseWebSocketMessage(rawData: string): WebSocketMessage {
 
 export const setupWebSocket = (app: Hono) => {
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
-  const operateService = OperateService.getInstance();
   const connections = new ConnectionRegistry();
-  const handlers = createMessageHandlers(operateService);
+  const handlers = createMessageHandlers();
 
   // 统一的消息调度
   const dispatchMessage = async (

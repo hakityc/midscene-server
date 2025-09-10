@@ -7,7 +7,6 @@ import { setupGlobalErrorHandlers } from './utils/globalErrorHandler';
 import { serverLogger } from './utils/logger';
 import { setupWebSocket } from './websocket';
 
-
 const initApp = () => {
   const app = new Hono();
   setupRouter(app);
