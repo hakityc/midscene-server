@@ -1,12 +1,9 @@
 import type { Context, Hono } from 'hono';
 import { requestLogger } from '../middleware/logger';
-import { OperateService } from '../services/operateService';
 import { setupHealthRoutes } from './health';
 import { operateRouter } from './modules/operate';
 
 const initAppRoute = (c: Context) => {
-  const operateService = OperateService.getInstance();
-  operateService.initialize();
   return c.json({
     message: '欢迎使用 MidScene Server API',
     version: '1.0.0',

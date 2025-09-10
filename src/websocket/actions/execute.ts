@@ -5,6 +5,7 @@ import {
   createErrorResponse,
   createSuccessResponse,
 } from '../builders/messageBuilder';
+import { TaskService } from '../../services/taskService';
 
 // AI 请求处理器
 export function createAiHandler(): MessageHandler {
@@ -20,10 +21,13 @@ export function createAiHandler(): MessageHandler {
 
     try {
       const operateService = OperateService.getInstance();
-      await operateService.execute(message.content.body);
+      const prompt = message.content.body;
+      // const taskService = new TaskService();
+      // const taskResponse = await taskService.execute(prompt);
+      await operateService.execute(prompt);
       const response = createSuccessResponse(
         message,
-        `AI 处理完成: ${message.content.body}`,
+        `AI 处理完成: ${prompt}`,
       );
       send(response);
     } catch (error) {
