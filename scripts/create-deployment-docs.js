@@ -116,9 +116,6 @@ if (!fs.existsSync(distDir)) {
 }
 
 // 写入部署说明文档
-fs.writeFileSync(
-  path.join(distDir, 'DEPLOYMENT.md'),
-  deploymentDoc
-);
+fs.writeFileSync(path.join(distDir, 'DEPLOYMENT.md'), deploymentDoc);
 
 console.log('✅ 部署说明文档已创建');

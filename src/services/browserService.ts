@@ -166,7 +166,13 @@ export class BrowserService {
 
       // 使用流式响应来实时显示大模型的输出
       const response = await this.browserAgent.streamVNext(prompt, {
-        onStepFinish: ({ text, toolCalls, toolResults, finishReason, usage }) => {
+        onStepFinish: ({
+          text,
+          toolCalls,
+          toolResults,
+          finishReason,
+          usage,
+        }) => {
           console.log({ text, toolCalls, toolResults, finishReason, usage });
         },
       });
@@ -206,7 +212,8 @@ export class BrowserService {
         const retryPrompt = `${retryHint}\n\n原始指令：${prompt}\n\n【请严格按步骤执行：】\n1) 打开 https://www.baidu.com\n2) 等待搜索框出现（input#kw 或 input[name=wd]）\n3) 输入搜索词并提交\n4) 识别官网链接并打开`;
 
         try {
-          const retryResponse = await this.browserAgent.streamVNext(retryPrompt);
+          const retryResponse =
+            await this.browserAgent.streamVNext(retryPrompt);
           for await (const chunk of retryResponse.textStream) {
             chunkCount++;
             fullResponse += chunk;
@@ -312,7 +319,8 @@ export class BrowserService {
           error: 'AI 输出格式解析失败',
           details: parseError,
           data: {
-            validationErrors: validationErrors.length > 0 ? validationErrors : undefined,
+            validationErrors:
+              validationErrors.length > 0 ? validationErrors : undefined,
             rawResponse: fullResponse,
           },
           metadata: {

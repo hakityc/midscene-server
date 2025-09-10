@@ -1,5 +1,10 @@
-import { AsyncClient, PutLogsRequest, LogGroup, Log } from 'tencentcloud-cls-sdk-js-web';
-import type { TencentCLSTransportOptions, LogEntry } from '../types/cls.js';
+import {
+  AsyncClient,
+  Log,
+  LogGroup,
+  PutLogsRequest,
+} from 'tencentcloud-cls-sdk-js-web';
+import type { LogEntry, TencentCLSTransportOptions } from '../types/cls.js';
 
 export class TencentCLSTransport {
   private client: AsyncClient;
@@ -40,7 +45,10 @@ export class TencentCLSTransport {
 
   // 判断是否需要刷新
   private shouldFlush(): boolean {
-    return this.logBuffer.length >= this.maxCount || this.getBufferSize() >= this.maxSize * 1024 * 1024;
+    return (
+      this.logBuffer.length >= this.maxCount ||
+      this.getBufferSize() >= this.maxSize * 1024 * 1024
+    );
   }
 
   // 计算缓冲区大小
@@ -70,7 +78,7 @@ export class TencentCLSTransport {
   private async sendLogs(logs: LogEntry[]): Promise<void> {
     const logGroup = new LogGroup('midscene-server');
 
-    logs.forEach(logEntry => {
+    logs.forEach((logEntry) => {
       const log = new Log(Math.floor(logEntry.timestamp / 1000)); // 转换为秒
 
       // 添加基本字段

@@ -5,7 +5,7 @@ export const successResponse = <T>(
   c: Context,
   data: T,
   message?: string,
-  status = 200
+  status = 200,
 ) => {
   const response: ApiResponse<T> = {
     success: true,

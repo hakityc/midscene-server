@@ -12,7 +12,7 @@ const browserRouter = new Hono().post('/', async (c) => {
         error: '缺少必要参数',
         message: '请提供 prompt 参数',
       },
-      400
+      400,
     );
   }
 
@@ -33,7 +33,7 @@ const browserRouter = new Hono().post('/', async (c) => {
         details: result.details,
         metadata: result.metadata,
       },
-      statusCode
+      statusCode,
     );
   }
 });

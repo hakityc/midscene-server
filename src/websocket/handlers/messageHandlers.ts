@@ -1,9 +1,9 @@
 import type { OperateService } from '../../services/operateService';
-import { WebSocketAction } from '../../utils/enums';
 import type { ConnectCurrentTabOption } from '../../types/operate';
+import { WebSocketAction } from '../../utils/enums';
 import { wsLogger } from '../../utils/logger';
-import type { WebSocketMessage } from '../index';
 import { MessageBuilder } from '../builders/messageBuilder';
+import type { WebSocketMessage } from '../index';
 
 type WebSocketClient = any;
 
@@ -17,7 +17,7 @@ export interface MessageHandlerContext {
 // 消息处理器类型
 export type MessageHandler = (
   ctx: MessageHandlerContext,
-  message: WebSocketMessage
+  message: WebSocketMessage,
 ) => Promise<void>;
 
 // 使用 MessageBuilder 创建响应消息
@@ -25,12 +25,17 @@ const createSuccessResponse = MessageBuilder.createSuccessResponse;
 const createErrorResponse = MessageBuilder.createErrorResponse;
 
 // 连接标签页处理器
-export function createConnectTabHandler(operateService: OperateService): MessageHandler {
+export function createConnectTabHandler(
+  operateService: OperateService,
+): MessageHandler {
   return async ({ send }, message) => {
-    wsLogger.info({
-      messageId: message.message_id,
-      action: 'connect_tab',
-    }, '处理连接标签页请求');
+    wsLogger.info(
+      {
+        messageId: message.message_id,
+        action: 'connect_tab',
+      },
+      '处理连接标签页请求',
+    );
 
     try {
       const option: ConnectCurrentTabOption = { forceSameTabNavigation: true };
@@ -44,11 +49,14 @@ export function createConnectTabHandler(operateService: OperateService): Message
 
       const response = createSuccessResponse(
         message,
-        `标签页连接成功: ${message.content.body}`
+        `标签页连接成功: ${message.content.body}`,
       );
       send(response);
     } catch (error) {
-      wsLogger.error({ error, messageId: message.message_id }, '标签页连接失败');
+      wsLogger.error(
+        { error, messageId: message.message_id },
+        '标签页连接失败',
+      );
       const response = createErrorResponse(message, error, '标签页连接失败');
       send(response);
     }
@@ -56,27 +64,35 @@ export function createConnectTabHandler(operateService: OperateService): Message
 }
 
 // AI 请求处理器
-export function createAiHandler(operateService: OperateService): MessageHandler {
+export function createAiHandler(
+  operateService: OperateService,
+): MessageHandler {
   return async ({ connectionId, send }, message) => {
-    wsLogger.info({
-      connectionId,
-      messageId: message.message_id,
-      action: 'ai_request'
-    }, '处理 AI 请求');
+    wsLogger.info(
+      {
+        connectionId,
+        messageId: message.message_id,
+        action: 'ai_request',
+      },
+      '处理 AI 请求',
+    );
 
     try {
       await operateService.execute(message.content.body);
       const response = createSuccessResponse(
         message,
-        `AI 处理完成: ${message.content.body}`
+        `AI 处理完成: ${message.content.body}`,
       );
       send(response);
     } catch (error) {
-      wsLogger.error({
-        connectionId,
-        error,
-        messageId: message.message_id
-      }, 'AI 处理失败');
+      wsLogger.error(
+        {
+          connectionId,
+          error,
+          messageId: message.message_id,
+        },
+        'AI 处理失败',
+      );
       const response = createErrorResponse(message, error, 'AI 处理失败');
       send(response);
     }
@@ -84,7 +100,9 @@ export function createAiHandler(operateService: OperateService): MessageHandler 
 }
 
 // 创建所有消息处理器
-export function createMessageHandlers(operateService: OperateService): Record<WebSocketAction, MessageHandler> {
+export function createMessageHandlers(
+  operateService: OperateService,
+): Record<WebSocketAction, MessageHandler> {
   return {
     [WebSocketAction.CONNECT_TAB]: createConnectTabHandler(operateService),
     [WebSocketAction.AI]: createAiHandler(operateService),

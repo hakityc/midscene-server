@@ -1,19 +1,22 @@
-import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { config } from 'dotenv';
+import { Hono } from 'hono';
 import { setupRouter } from './routes/index';
-import { setupWebSocket } from './websocket';
 import { setupError } from './utils/error';
-import { serverLogger, cleanupLogger } from './utils/logger';
+import { cleanupLogger, serverLogger } from './utils/logger';
+import { setupWebSocket } from './websocket';
 
 // 全局错误处理，防止服务因未处理的 Promise 拒绝而停止
 process.on('unhandledRejection', (reason, promise) => {
-  serverLogger.error({
-    type: 'unhandled_rejection',
-    reason: reason instanceof Error ? reason.message : String(reason),
-    stack: reason instanceof Error ? reason.stack : undefined,
-    promise: promise.toString(),
-  }, '未处理的 Promise 拒绝');
+  serverLogger.error(
+    {
+      type: 'unhandled_rejection',
+      reason: reason instanceof Error ? reason.message : String(reason),
+      stack: reason instanceof Error ? reason.stack : undefined,
+      promise: promise.toString(),
+    },
+    '未处理的 Promise 拒绝',
+  );
 
   // 不退出进程，继续运行服务
   serverLogger.info('服务继续运行，错误已记录');
@@ -21,11 +24,14 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // 全局异常处理
 process.on('uncaughtException', (error) => {
-  serverLogger.fatal({
-    type: 'uncaught_exception',
-    message: error.message,
-    stack: error.stack,
-  }, '未捕获的异常');
+  serverLogger.fatal(
+    {
+      type: 'uncaught_exception',
+      message: error.message,
+      stack: error.stack,
+    },
+    '未捕获的异常',
+  );
 
   // 对于严重错误，可以选择退出，但这里我们选择继续运行
   serverLogger.info('服务继续运行，异常已记录');

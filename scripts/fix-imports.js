@@ -9,10 +9,8 @@ const distDir = 'dist';
 const _importFixes = [
   {
     file: 'index.js',
-    fixes: [
-      { from: "from './server';", to: "from './server/index.js';" }
-    ]
-  }
+    fixes: [{ from: "from './server';", to: "from './server/index.js';" }],
+  },
 ];
 
 // 递归处理目录中的所有 .js 文件

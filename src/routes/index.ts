@@ -1,6 +1,6 @@
 import type { Hono } from 'hono';
 import { requestLogger } from '../middleware/logger';
-import { operateRouter } from './modules/operate'
+import { operateRouter } from './modules/operate';
 
 // 模拟服务状态检查
 const browserConnected = false;
@@ -31,7 +31,7 @@ export const setupRouter = (app: Hono) => {
     };
 
     // 检查是否有服务不可用
-    const isHealthy = Object.values(checks).every(check => check === true);
+    const isHealthy = Object.values(checks).every((check) => check === true);
 
     return c.json({
       status: isHealthy ? 'healthy' : 'unhealthy',

@@ -18,7 +18,7 @@ export const browserTool = createTool({
   }),
   execute: async ({ context }) => {
     const { action, url, selector, text } = context;
-    
+
     // 这里应该调用实际的 Midscene MCP 工具
     // 目前返回模拟结果
     return {

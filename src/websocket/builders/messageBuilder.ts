@@ -8,7 +8,7 @@ function buildBaseMessage(
   messageId: string,
   conversationId: string,
   action: WebSocketAction,
-  body: string
+  body: string,
 ): WebSocketMessage {
   return {
     message_id: messageId,
@@ -24,13 +24,13 @@ function buildBaseMessage(
 export function createSuccessResponse(
   originalMessage: WebSocketMessage,
   body: string,
-  action: WebSocketAction = WebSocketAction.CALLBACK
+  action: WebSocketAction = WebSocketAction.CALLBACK,
 ): WebSocketMessage {
   return buildBaseMessage(
     originalMessage.message_id,
     originalMessage.conversation_id,
     action,
-    body
+    body,
   );
 }
 
@@ -40,14 +40,14 @@ export function createSuccessResponse(
 export function createErrorResponse(
   originalMessage: WebSocketMessage,
   error: unknown,
-  prefix: string = '操作失败'
+  prefix: string = '操作失败',
 ): WebSocketMessage {
   const errorMessage = error instanceof Error ? error.message : String(error);
   return buildBaseMessage(
     originalMessage.message_id,
     originalMessage.conversation_id,
     WebSocketAction.ERROR,
-    `${prefix}: ${errorMessage}`
+    `${prefix}: ${errorMessage}`,
   );
 }
 
@@ -58,7 +58,7 @@ export function createSystemMessage(
   messageId: string,
   body: string,
   conversationId: string = 'system',
-  action: WebSocketAction = WebSocketAction.CALLBACK
+  action: WebSocketAction = WebSocketAction.CALLBACK,
 ): WebSocketMessage {
   return buildBaseMessage(messageId, conversationId, action, body);
 }
@@ -68,14 +68,14 @@ export function createSystemMessage(
  */
 export function createBroadcastMessage(
   message: string | object,
-  conversationId: string = 'broadcast'
+  conversationId: string = 'broadcast',
 ): WebSocketMessage {
   const body = typeof message === 'string' ? message : JSON.stringify(message);
   return buildBaseMessage(
     `broadcast_${Date.now()}`,
     conversationId,
     WebSocketAction.CALLBACK,
-    body
+    body,
   );
 }
 
@@ -93,7 +93,7 @@ export function createWelcomeMessage(connectionId: string): WebSocketMessage {
     `welcome_${Date.now()}`,
     'system',
     WebSocketAction.CALLBACK,
-    JSON.stringify(welcomeData)
+    JSON.stringify(welcomeData),
   );
 }
 
@@ -102,13 +102,13 @@ export function createWelcomeMessage(connectionId: string): WebSocketMessage {
  */
 export function createUnknownActionResponse(
   originalMessage: WebSocketMessage,
-  action: string
+  action: string,
 ): WebSocketMessage {
   return buildBaseMessage(
     originalMessage.message_id,
     originalMessage.conversation_id,
     WebSocketAction.CALLBACK,
-    `未知的 action 类型: ${action}`
+    `未知的 action 类型: ${action}`,
   );
 }
 
@@ -117,14 +117,14 @@ export function createUnknownActionResponse(
  */
 export function createParseErrorResponse(
   error: unknown,
-  _connectionId?: string
+  _connectionId?: string,
 ): WebSocketMessage {
   const errorMessage = error instanceof Error ? error.message : String(error);
   return buildBaseMessage(
     `parse_error_${Date.now()}`,
     'system',
     WebSocketAction.ERROR,
-    `消息解析失败: ${errorMessage}`
+    `消息解析失败: ${errorMessage}`,
   );
 }
 
@@ -133,14 +133,14 @@ export function createParseErrorResponse(
  */
 export function createProcessingErrorResponse(
   originalMessage: WebSocketMessage,
-  error: unknown
+  error: unknown,
 ): WebSocketMessage {
   const errorMessage = error instanceof Error ? error.message : String(error);
   return buildBaseMessage(
     originalMessage.message_id || `error_${Date.now()}`,
     originalMessage.conversation_id || 'system',
     WebSocketAction.ERROR,
-    `消息处理失败: ${errorMessage}`
+    `消息处理失败: ${errorMessage}`,
   );
 }
 
@@ -153,4 +153,4 @@ export const MessageBuilder = {
   createUnknownActionResponse,
   createParseErrorResponse,
   createProcessingErrorResponse,
-}
+};

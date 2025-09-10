@@ -1,10 +1,10 @@
 // 腾讯云CLS配置类型定义
 export interface TencentCLSConfig {
-  endpoint: string;        // 腾讯云CLS端点
-  topicId: string;        // 日志主题ID
-  maxCount?: number;      // 单次上报数量（默认100）
-  maxSize?: number;       // 触发上报大小，单位MB（默认0.1）
-  retryCount?: number;    // 重试次数（默认2）
+  endpoint: string; // 腾讯云CLS端点
+  topicId: string; // 日志主题ID
+  maxCount?: number; // 单次上报数量（默认100）
+  maxSize?: number; // 触发上报大小，单位MB（默认0.1）
+  retryCount?: number; // 重试次数（默认2）
   flushInterval?: number; // 刷新间隔，单位毫秒（默认5000）
 }
 

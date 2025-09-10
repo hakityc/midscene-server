@@ -164,16 +164,10 @@ call npm start
 `;
 
 // 写入 Linux/Mac 启动脚本到 dist/server 目录
-fs.writeFileSync(
-  path.join(distDir, 'start.sh'),
-  startScript
-);
+fs.writeFileSync(path.join(distDir, 'start.sh'), startScript);
 
 // 写入 Windows 启动脚本到 dist/server 目录
-fs.writeFileSync(
-  path.join(distDir, 'start.bat'),
-  startScriptWindows
-);
+fs.writeFileSync(path.join(distDir, 'start.bat'), startScriptWindows);
 
 // 设置执行权限
 fs.chmodSync(path.join(distDir, 'start.sh'), '755');

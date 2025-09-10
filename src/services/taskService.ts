@@ -46,25 +46,26 @@ export class TaskService {
           return {
             success: false,
             error: '解析结果不是数组格式',
-            rawResponse: textResponse
+            rawResponse: textResponse,
           };
         }
 
         // 验证数组中的每个元素是否包含必要的字段
-        const isValid = parsed.every(step =>
-          typeof step === 'object' &&
-          step !== null &&
-          'action' in step &&
-          'verify' in step &&
-          typeof step.action === 'string' &&
-          typeof step.verify === 'string'
+        const isValid = parsed.every(
+          (step) =>
+            typeof step === 'object' &&
+            step !== null &&
+            'action' in step &&
+            'verify' in step &&
+            typeof step.action === 'string' &&
+            typeof step.verify === 'string',
         );
 
         if (!isValid) {
           return {
             success: false,
             error: '解析结果格式不正确，每个步骤必须包含action和verify字段',
-            rawResponse: textResponse
+            rawResponse: textResponse,
           };
         }
 
@@ -72,20 +73,20 @@ export class TaskService {
         return {
           success: true,
           data: parsed,
-          rawResponse: textResponse
+          rawResponse: textResponse,
         };
       } else {
         return {
           success: false,
           error: '未找到有效的JSON数组格式',
-          rawResponse: textResponse
+          rawResponse: textResponse,
         };
       }
     } catch (parseError) {
       return {
         success: false,
         error: `JSON解析失败: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
-        rawResponse: textResponse
+        rawResponse: textResponse,
       };
     }
   }
@@ -104,7 +105,7 @@ export class TaskService {
       console.error('任务规划失败:', error);
       return {
         success: false,
-        error: `任务规划失败: ${error instanceof Error ? error.message : String(error)}`
+        error: `任务规划失败: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -124,7 +125,7 @@ export class TaskService {
       if (!parseResult.success || !parseResult.data) {
         return {
           success: false,
-          error: parseResult.error || '任务解析失败'
+          error: parseResult.error || '任务解析失败',
         };
       }
 
@@ -132,22 +133,32 @@ export class TaskService {
       try {
         if (!this.operateService.isReady()) {
           console.log('🔄 初始化浏览器连接...');
-          await this.operateService.initialize({ forceSameTabNavigation: true });
+          await this.operateService.initialize({
+            forceSameTabNavigation: true,
+          });
         } else {
           console.log('✅ 浏览器连接已就绪');
         }
       } catch (connectError) {
         console.warn('⚠️ 浏览器连接失败，但继续执行任务:', connectError);
-        throw new Error(connectError instanceof Error ? connectError.message : String(connectError));
+        throw new Error(
+          connectError instanceof Error
+            ? connectError.message
+            : String(connectError),
+        );
       }
 
       // 执行任务步骤
-      const executedSteps: { action: string; verify: string, error: string }[] = [];
-      const failedSteps: { action: string; verify: string; error: string }[] = [];
+      const executedSteps: { action: string; verify: string; error: string }[] =
+        [];
+      const failedSteps: { action: string; verify: string; error: string }[] =
+        [];
 
       for (let i = 0; i < parseResult.data.length; i++) {
         const step = parseResult.data[i];
-        console.log(`🔄 执行步骤 ${i + 1}/${parseResult.data.length}: ${step.action}`);
+        console.log(
+          `🔄 执行步骤 ${i + 1}/${parseResult.data.length}: ${step.action}`,
+        );
 
         try {
           if (this.operateService) {
@@ -163,7 +174,10 @@ export class TaskService {
               console.warn(`⚠️ 步骤 ${i + 1} 验证失败:`, verifyError);
               executedSteps.push({
                 ...step,
-                error: verifyError instanceof Error ? verifyError.message : String(verifyError)
+                error:
+                  verifyError instanceof Error
+                    ? verifyError.message
+                    : String(verifyError),
               });
             }
           } else {
@@ -172,7 +186,8 @@ export class TaskService {
           }
         } catch (stepError) {
           console.error(`❌ 步骤 ${i + 1} 执行失败:`, stepError);
-          const errorMessage = stepError instanceof Error ? stepError.message : String(stepError);
+          const errorMessage =
+            stepError instanceof Error ? stepError.message : String(stepError);
           failedSteps.push({ ...step, error: errorMessage });
           throw new Error(errorMessage);
         }
@@ -185,15 +200,14 @@ export class TaskService {
         failedSteps: failedSteps.length,
         details: {
           executed: executedSteps,
-          failed: failedSteps
-        }
+          failed: failedSteps,
+        },
       };
-
     } catch (error) {
       console.error('❌ 任务执行失败:', error);
       return {
         success: false,
-        error: `任务执行失败: ${error instanceof Error ? error.message : String(error)}`
+        error: `任务执行失败: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }

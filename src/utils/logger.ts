@@ -1,9 +1,11 @@
+import { hostname } from 'node:os';
 import pino from 'pino';
 import { TencentCLSTransport } from './tencentCLSTransport.js';
-import { hostname } from 'node:os';
 
 // 日志级别配置
-const logLevel = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+const logLevel =
+  process.env.LOG_LEVEL ||
+  (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
 
 // 创建腾讯云CLS传输器（仅在配置了CLS相关环境变量时启用）
 let clsTransport: TencentCLSTransport | null = null;
@@ -18,8 +20,8 @@ if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
         appId: process.env.APP_ID || 'midscene-server',
         version: process.env.npm_package_version || '1.0.0',
         environment: process.env.NODE_ENV || 'development',
-        hostname: hostname()
-      })
+        hostname: hostname(),
+      }),
     });
   } catch (error) {
     console.error('CLS传输器初始化失败:', error);
@@ -31,15 +33,18 @@ if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
 const logger = pino({
   level: logLevel,
   // 开发环境使用 pino-pretty 进行美化输出
-  transport: process.env.NODE_ENV === 'development' ? {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname',
-      messageFormat: '[{level}] {msg}',
-    },
-  } : undefined,
+  transport:
+    process.env.NODE_ENV === 'development'
+      ? {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname',
+            messageFormat: '[{level}] {msg}',
+          },
+        }
+      : undefined,
   // 生产环境配置
   ...(process.env.NODE_ENV === 'production' && {
     formatters: {
@@ -54,30 +59,30 @@ const logger = pino({
 // 创建子 logger 的工厂函数
 export const createLogger = (name: string) => {
   const childLogger = logger.child({ module: name });
-  
+
   // 如果启用了CLS传输器，添加CLS日志写入功能
   if (clsTransport) {
     // 重写所有日志方法
     const methods = ['debug', 'info', 'warn', 'error', 'fatal'] as const;
-    
-    methods.forEach(method => {
+
+    methods.forEach((method) => {
       const originalMethod = childLogger[method].bind(childLogger);
       childLogger[method] = (obj: any, msg?: string) => {
         // 调用原始方法
         originalMethod(obj, msg);
-        
+
         // 写入CLS
         clsTransport!.write({
           timestamp: Date.now(),
           level: method,
           message: msg || (typeof obj === 'string' ? obj : ''),
           data: typeof obj === 'object' ? obj : {},
-          module: name
+          module: name,
         });
       };
     });
   }
-  
+
   return childLogger;
 };
 

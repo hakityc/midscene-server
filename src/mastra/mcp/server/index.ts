@@ -1,6 +1,6 @@
 import { MCPServer } from '@mastra/mcp';
-import { mcpClient } from '../client';
 import { logger } from '../../logger';
+import { mcpClient } from '../client';
 
 let cachedServer: MCPServer | null = null;
 
@@ -17,7 +17,7 @@ export async function getMcpServer(): Promise<MCPServer> {
     const toolNames = Object.keys(tools || {});
     logger.info('✅ MCP 服务器初始化成功', {
       toolCount: toolNames.length,
-      toolNames: toolNames
+      toolNames: toolNames,
     });
 
     cachedServer = new MCPServer({
@@ -29,10 +29,8 @@ export async function getMcpServer(): Promise<MCPServer> {
     return cachedServer;
   } catch (error) {
     logger.error('❌ MCP 服务器初始化失败', {
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
 }
-
-

@@ -1,6 +1,6 @@
 import { wsLogger } from '../../utils/logger';
-import type { WebSocketMessage } from '../index';
 import { MessageBuilder } from '../builders/messageBuilder';
+import type { WebSocketMessage } from '../index';
 
 type WebSocketClient = any;
 
@@ -30,18 +30,24 @@ export async function handleMessageProcessingError(
   context: {
     connectionId: string;
     action?: string;
-  }
+  },
 ): Promise<void> {
   const { connectionId, action } = context;
 
-  wsLogger.error({
-    connectionId,
-    error,
-    messageId: message.message_id,
-    action,
-  }, '消息处理失败');
+  wsLogger.error(
+    {
+      connectionId,
+      error,
+      messageId: message.message_id,
+      action,
+    },
+    '消息处理失败',
+  );
 
-  const errorResponse = MessageBuilder.createProcessingErrorResponse(message, error);
+  const errorResponse = MessageBuilder.createProcessingErrorResponse(
+    message,
+    error,
+  );
   sendMessage(ws, errorResponse);
 }
 
@@ -52,15 +58,21 @@ export function handleParseError(
   ws: WebSocketClient,
   error: unknown,
   rawData: string,
-  connectionId?: string
+  connectionId?: string,
 ): void {
-  wsLogger.error({
-    connectionId,
-    error,
-    rawData: rawData.substring(0, 200) + (rawData.length > 200 ? '...' : ''),
-  }, '消息解析失败');
+  wsLogger.error(
+    {
+      connectionId,
+      error,
+      rawData: rawData.substring(0, 200) + (rawData.length > 200 ? '...' : ''),
+    },
+    '消息解析失败',
+  );
 
-  const errorResponse = MessageBuilder.createParseErrorResponse(error, connectionId);
+  const errorResponse = MessageBuilder.createParseErrorResponse(
+    error,
+    connectionId,
+  );
   sendMessage(ws, errorResponse);
 }
 
@@ -70,12 +82,15 @@ export function handleParseError(
 export function handleUnknownAction(
   ws: WebSocketClient,
   message: WebSocketMessage,
-  action: string
+  action: string,
 ): void {
-  wsLogger.warn({
-    action,
-    messageId: message.message_id
-  }, '未知的 action 类型');
+  wsLogger.warn(
+    {
+      action,
+      messageId: message.message_id,
+    },
+    '未知的 action 类型',
+  );
 
   const response = MessageBuilder.createUnknownActionResponse(message, action);
   sendMessage(ws, response);
@@ -86,7 +101,7 @@ export function handleUnknownAction(
  */
 export function handleConnectionError(
   connectionId: string,
-  error: unknown
+  error: unknown,
 ): void {
   wsLogger.error({ connectionId, error }, 'WebSocket 连接错误');
 }
@@ -96,22 +111,25 @@ export function handleConnectionError(
  * 用于包装消息处理器，自动处理错误
  */
 export function withErrorHandling<T extends any[]>(
-  handler: (ws: WebSocketClient, message: WebSocketMessage, ...args: T) => Promise<void>,
+  handler: (
+    ws: WebSocketClient,
+    message: WebSocketMessage,
+    ...args: T
+  ) => Promise<void>,
   errorContext: {
     connectionId: string;
     action?: string;
-  }
+  },
 ) {
-  return async (ws: WebSocketClient, message: WebSocketMessage, ...args: T): Promise<void> => {
+  return async (
+    ws: WebSocketClient,
+    message: WebSocketMessage,
+    ...args: T
+  ): Promise<void> => {
     try {
       await handler(ws, message, ...args);
     } catch (error) {
-      await handleMessageProcessingError(
-        ws,
-        message,
-        error,
-        errorContext
-      );
+      await handleMessageProcessingError(ws, message, error, errorContext);
     }
   };
 }

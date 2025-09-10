@@ -1,5 +1,4 @@
-import type { Hono } from 'hono';
-import type { Context } from 'hono';
+import type { Context, Hono } from 'hono';
 import { serverLogger } from './logger';
 
 // 自定义错误类型
@@ -7,7 +6,7 @@ export class AppError extends Error {
   constructor(
     public message: string,
     public statusCode: number = 500,
-    public isOperational: boolean = true
+    public isOperational: boolean = true,
   ) {
     super(message);
     Object.setPrototypeOf(this, AppError.prototype);

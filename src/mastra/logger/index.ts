@@ -26,15 +26,15 @@ export const logger = new PinoLogger({
       }
 
       // 专门处理 MCP 相关的日志
-      const isMCPLog = typeof message === 'string' && (
-        message.includes('MCP') ||
-        message.includes('mcp') ||
-        message.includes('🔧') ||
-        message.includes('🚀') ||
-        message.includes('✅') ||
-        message.includes('❌') ||
-        message.includes('⚠️')
-      );
+      const isMCPLog =
+        typeof message === 'string' &&
+        (message.includes('MCP') ||
+          message.includes('mcp') ||
+          message.includes('🔧') ||
+          message.includes('🚀') ||
+          message.includes('✅') ||
+          message.includes('❌') ||
+          message.includes('⚠️'));
 
       // 根据日志级别设置颜色
       let color = '\x1b[37m'; // 默认白色
@@ -67,7 +67,7 @@ export const logger = new PinoLogger({
       // 格式化输出 - 只显示 MCP 相关的日志
       if (isMCPLog) {
         console.log(
-          `${color}${bold}[${timeStr}] ${level}${reset} ${color}${message}${reset}`
+          `${color}${bold}[${timeStr}] ${level}${reset} ${color}${message}${reset}`,
         );
 
         // 显示 MCP 相关的额外数据
