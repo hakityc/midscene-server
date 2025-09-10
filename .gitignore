@@ -12,6 +12,8 @@ dist/*
 # deps
 node_modules/
 
+midscene_run/*
+
 # env
 .env
 .env.production

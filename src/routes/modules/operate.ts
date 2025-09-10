@@ -13,7 +13,7 @@ const operateRouter = new Hono().post('/', async (c) => {
       return errorResponse(c, 'Prompt is required', 400);
     }
 
-    const operateService = new OperateService();
+    const operateService = OperateService.getInstance();
     await operateService.connectCurrentTab({
       forceSameTabNavigation: true,
       tabId: 0, // 默认使用第一个标签页
