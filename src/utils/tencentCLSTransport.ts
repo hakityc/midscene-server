@@ -68,34 +68,34 @@ export class TencentCLSTransport {
 
   // 发送日志到腾讯云
   private async sendLogs(logs: LogEntry[]): Promise<void> {
-    const logGroup = new LogGroup();
-    
+    const logGroup = new LogGroup('midscene-server');
+
     logs.forEach(logEntry => {
       const log = new Log(Math.floor(logEntry.timestamp / 1000)); // 转换为秒
-      
+
       // 添加基本字段
       log.addContent('level', logEntry.level);
       log.addContent('message', logEntry.message);
-      
+
       // 添加模块信息
       if (logEntry.module) {
         log.addContent('module', logEntry.module);
       }
-      
+
       // 添加数据字段
       if (logEntry.data) {
         Object.entries(logEntry.data).forEach(([key, value]) => {
           log.addContent(key, String(value));
         });
       }
-      
+
       // 添加附加字段
       if (this.appendFieldsFn) {
         Object.entries(this.appendFieldsFn()).forEach(([key, value]) => {
           log.addContent(key, String(value));
         });
       }
-      
+
       logGroup.addLog(log);
     });
 

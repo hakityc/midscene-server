@@ -54,22 +54,30 @@ const logger = pino({
 // 创建子 logger 的工厂函数
 export const createLogger = (name: string) => {
   const childLogger = logger.child({ module: name });
-
+  
   // 如果启用了CLS传输器，添加CLS日志写入功能
   if (clsTransport) {
-    const originalLog = childLogger.info.bind(childLogger);
-    childLogger.info = (obj: any, msg?: string) => {
-      originalLog(obj, msg);
-      clsTransport!.write({
-        timestamp: Date.now(),
-        level: 'info',
-        message: msg || (typeof obj === 'string' ? obj : ''),
-        data: typeof obj === 'object' ? obj : {},
-        module: name
-      });
-    };
+    // 重写所有日志方法
+    const methods = ['debug', 'info', 'warn', 'error', 'fatal'] as const;
+    
+    methods.forEach(method => {
+      const originalMethod = childLogger[method].bind(childLogger);
+      childLogger[method] = (obj: any, msg?: string) => {
+        // 调用原始方法
+        originalMethod(obj, msg);
+        
+        // 写入CLS
+        clsTransport!.write({
+          timestamp: Date.now(),
+          level: method,
+          message: msg || (typeof obj === 'string' ? obj : ''),
+          data: typeof obj === 'object' ? obj : {},
+          module: name
+        });
+      };
+    });
   }
-
+  
   return childLogger;
 };
 

@@ -15,32 +15,32 @@ console.log('\n发送测试日志...');
 const testId = `test-${Date.now()}`;
 
 // 发送不同类型的测试日志
-serverLogger.info(`[${testId}] 服务器日志测试`, { 
+serverLogger.info({ 
   testType: 'server', 
   timestamp: new Date().toISOString(),
   testId 
-});
+}, `[${testId}] 服务器日志测试`);
 
-controllerLogger.info(`[${testId}] 控制器日志测试`, { 
+controllerLogger.info({ 
   testType: 'controller', 
   action: 'test_action',
   userId: 'test-user-123',
   testId 
-});
+}, `[${testId}] 控制器日志测试`);
 
-serviceLogger.info(`[${testId}] 服务日志测试`, { 
+serviceLogger.info({ 
   testType: 'service', 
   serviceName: 'test-service',
   operation: 'test_operation',
   testId 
-});
+}, `[${testId}] 服务日志测试`);
 
-serviceLogger.error(`[${testId}] 错误日志测试`, { 
+serviceLogger.error({ 
   testType: 'error', 
   error: 'test error message',
   stack: 'test stack trace',
   testId 
-});
+}, `[${testId}] 错误日志测试`);
 
 console.log('✅ 测试日志已发送');
 console.log('\n等待5秒让日志上报到腾讯云CLS...');
