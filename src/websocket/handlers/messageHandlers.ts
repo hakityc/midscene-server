@@ -21,12 +21,12 @@ export type MessageHandler = (
 ) => Promise<void>;
 
 // 使用 MessageBuilder 创建响应消息
-export const createSuccessResponse = MessageBuilder.createSuccessResponse;
-export const createErrorResponse = MessageBuilder.createErrorResponse;
+const createSuccessResponse = MessageBuilder.createSuccessResponse;
+const createErrorResponse = MessageBuilder.createErrorResponse;
 
 // 连接标签页处理器
 export function createConnectTabHandler(operateService: OperateService): MessageHandler {
-  return async ({ ws, send }, message) => {
+  return async ({ send }, message) => {
     wsLogger.info({
       messageId: message.message_id,
       action: 'connect_tab',
@@ -57,7 +57,7 @@ export function createConnectTabHandler(operateService: OperateService): Message
 
 // AI 请求处理器
 export function createAiHandler(operateService: OperateService): MessageHandler {
-  return async ({ ws, connectionId, send }, message) => {
+  return async ({ connectionId, send }, message) => {
     wsLogger.info({
       connectionId,
       messageId: message.message_id,
