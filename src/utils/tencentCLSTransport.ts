@@ -24,8 +24,10 @@ export class TencentCLSTransport {
     this.appendFieldsFn = options.appendFieldsFn;
 
     // 初始化腾讯云CLS客户端
+    // 注意：这里需要根据实际的SDK API进行调整
     this.client = new AsyncClient({
       endpoint: options.endpoint,
+      // 认证信息需要通过环境变量或其他方式设置
       retry_times: this.retryCount,
     });
 
