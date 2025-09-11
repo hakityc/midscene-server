@@ -33,6 +33,7 @@
     "@mastra/loggers": "0.10.9",
     "@mastra/mcp": "0.11.2",
     "@mastra/memory": "0.14.2",
+    "@midscene/mcp": "0.28.4",
     "@midscene/web": "^0.27.6",
     "dotenv": "^17.2.1",
     "hono": "^4.9.5",
