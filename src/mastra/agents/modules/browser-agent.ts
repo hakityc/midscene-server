@@ -1,19 +1,69 @@
 import { Agent } from '@mastra/core/agent';
-import { mcpClient } from '../../mcp/client';
+// import { mcpClient } from '../../mcp/client'; // 已通过 toolManager 使用
 import { createModel } from '../index';
-import { instructions } from '../prompt';
-// import { memory } from '../memory';
+import { ENHANCED_INSTRUCTIONS } from '../prompt/enhanced-instructions';
+import { memory } from '../memory';
+import { ContextManager } from '../context/context-manager';
+import { EnhancedMidsceneWrapper } from './enhanced-midscene-wrapper';
+import { ToolIntegrationManager } from '../tools/tool-integration-manager';
 
+// 简化的日志记录，避免类型错误
+const log = {
+  info: (message: string, data?: any) => console.log(`[INFO] ${message}`, data || ''),
+  error: (message: string, data?: any) => console.error(`[ERROR] ${message}`, data || ''),
+  warn: (message: string, data?: any) => console.warn(`[WARN] ${message}`, data || '')
+};
+
+// 创建上下文管理器
+const contextManager = new ContextManager(memory);
+
+// 创建增强的 Midscene 包装器
+const enhancedWrapper = new EnhancedMidsceneWrapper(contextManager);
+
+// 创建工具集成管理器
+const toolManager = new ToolIntegrationManager(contextManager);
+
+/**
+ * 获取所有可用工具（MCP + Mastra 工具）
+ */
 const tools = async () => {
-  return await mcpClient.getTools();
-}
+  try {
+    // 使用工具集成管理器获取所有工具
+    const allTools = await toolManager.getAvailableTools();
 
+    log.info('✅ 工具加载成功', {
+      totalTools: Object.keys(allTools).length
+    });
+
+    return allTools;
+  } catch (error) {
+    log.error('❌ 工具加载失败', { error });
+    throw error;
+  }
+};
+
+/**
+ * 增强的浏览器自动化助手
+ * 融合 Midscene 的智能化能力与 Mastra 的框架优势
+ */
 export const browserAgent = new Agent({
-  name: 'Browser Agent',
-  description:
-    '专业的浏览器自动化助手，通过 Midscene MCP 工具来操控浏览器，帮助用户完成各种网页操作任务',
-  instructions: instructions,
+  name: 'Enhanced Browser Agent',
+  description: `专业的智能浏览器自动化助手，融合了 Midscene 的先进 AI 能力：
+    🧠 视觉理解 - 智能"看懂"页面内容和布局
+    🎯 精确定位 - 基于语义和视觉的元素定位
+    🔄 自适应执行 - 根据页面状态动态调整策略
+    📊 上下文感知 - 理解页面变化和操作影响
+    🛡️ 错误恢复 - 自动处理异常并寻找替代方案
+    📈 学习优化 - 从操作历史中学习和优化`,
+  instructions: ENHANCED_INSTRUCTIONS,
   model: createModel(),
   tools,
-  // memory: memory,
+  memory: memory
 });
+
+// 导出所有增强组件，供其他模块使用
+export {
+  contextManager,
+  enhancedWrapper,
+  toolManager
+};

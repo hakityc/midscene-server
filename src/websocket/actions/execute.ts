@@ -6,6 +6,7 @@ import {
   createSuccessResponse,
 } from '../builders/messageBuilder';
 import { TaskService } from '../../services/taskService';
+import { mastra } from '../../mastra';
 
 // AI 请求处理器
 export function createAiHandler(): MessageHandler {
@@ -20,16 +21,31 @@ export function createAiHandler(): MessageHandler {
     );
 
     try {
-      const operateService = OperateService.getInstance();
+      const browserAgent = mastra.getAgent('browserAgent');
+      // const operateService = OperateService.getInstance();
       const prompt = message.content.body;
       // const taskService = new TaskService();
       // const taskResponse = await taskService.execute(prompt);
-      await operateService.execute(prompt);
-      const response = createSuccessResponse(
-        message,
-        `AI 处理完成: ${prompt}`,
-      );
-      send(response);
+      // await operateService.execute(prompt);
+      await browserAgent.streamVNext(prompt, {
+        onStepFinish: ({ text, toolCalls, toolResults, finishReason, usage }) => {
+          wsLogger.info({ text, toolCalls, toolResults, finishReason, usage });
+          const response = createSuccessResponse(
+            message,
+            `AI 正在处理: ${text}`,
+          );
+          send(response);
+        },
+        onFinish: ({ steps, text, finishReason, usage }) => {
+          wsLogger.info({ steps, text, finishReason, usage });
+          const response = createSuccessResponse(
+            message,
+            `AI 处理完成: ${steps}`,
+          );
+          send(response);
+        },
+      });
+
     } catch (error) {
       wsLogger.error(
         {

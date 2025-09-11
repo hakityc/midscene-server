@@ -35,6 +35,9 @@ importers:
       '@mastra/memory':
         specifier: 0.14.2
         version: 0.14.2(@mastra/core@0.15.2(openapi-types@12.1.3)(react@18.3.1)(zod@3.25.76))(react@18.3.1)(zod@3.25.76)
+      '@midscene/core':
+        specifier: 0.28.4
+        version: 0.28.4(date-fns@4.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@midscene/mcp':
         specifier: 0.28.4
         version: 0.28.4
@@ -891,6 +894,10 @@ packages:
     resolution: {integrity: sha512-jqRBq1XYbzZfLswAyDADExeLgyQ6rZyQ3gehF66roCbJ4UR1vT2RkWC6VdpNNcAC/8HRz+FDRAr5bN1/FWUZVA==}
     engines: {node: '>=18.0.0'}
 
+  '@midscene/core@0.28.4':
+    resolution: {integrity: sha512-yi3l0KP1GFq3JFiPc+Bt8cfzG1+PjA6BM3vPYVoKVJXtVJ2RHHzvAo8UmV0NstIqjGFhzC3UewR5fD/LGAYJOg==}
+    engines: {node: '>=18.0.0'}
+
   '@midscene/mcp@0.28.4':
     resolution: {integrity: sha512-f1PGN5V+0eusHtLOMGZhR+NJos3Zjek+ijK/TP0UAulXdG9Rkt4ghGgk98s1tpWFMg8Jk0b4dze9ObvN63Tnvg==}
     hasBin: true
@@ -904,8 +911,17 @@ packages:
       react: 18.3.1
       react-dom: 18.3.1
 
+  '@midscene/recorder@0.28.4':
+    resolution: {integrity: sha512-oRgJz9gLqNQR0HYfPLyE4lpJdt1bu5owcLGDBG5ctpyx15QoawQFdXiR0FvfN0MloWDT3cUXVv/YX0Pmmoiv+g==}
+    peerDependencies:
+      react: 18.3.1
+      react-dom: 18.3.1
+
   '@midscene/shared@0.27.6':
     resolution: {integrity: sha512-M0i/E4HMfXHPU1o1lCT83k0sI6cYPa7cBrewBf6Yk25T9ArDRGCsZaXBlk4wfi83+n57FTIRwLJCFm+1HdfqPQ==}
+
+  '@midscene/shared@0.28.4':
+    resolution: {integrity: sha512-mVsbTWW7vo+OfzQkzdh4lNs1KEQSJD1T+D9aI7p4J2tUCuxxlU+M7BreF8tH4PI2I7UcXffRWVemcZkgKx9Yeg==}
 
   '@midscene/web@0.27.6':
     resolution: {integrity: sha512-1n/fln4XyuBJ8gAW5JZ2A2gMRXPZD6jI/k14in2HLsE+dEC79tdstbki2/YjwpU+rimgKHx6pj5T0kvcPcvwQg==}
@@ -4486,6 +4502,33 @@ snapshots:
       - supports-color
       - ws
 
+  '@midscene/core@0.28.4(date-fns@4.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@anthropic-ai/sdk': 0.33.1
+      '@azure/identity': 4.5.0
+      '@langchain/core': 0.3.26(openai@4.81.0(zod@3.25.76))
+      '@midscene/recorder': 0.28.4(date-fns@4.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@midscene/shared': 0.28.4
+      '@ui-tars/action-parser': 1.2.3
+      dotenv: 16.4.5
+      https-proxy-agent: 7.0.2
+      js-yaml: 4.1.0
+      jsonrepair: 3.12.0
+      langsmith: 0.3.7(openai@4.81.0(zod@3.25.76))
+      openai: 4.81.0(zod@3.24.3)
+      semver: 7.5.2
+      socks-proxy-agent: 8.0.4
+      zod: 3.24.3
+    transitivePeerDependencies:
+      - date-fns
+      - encoding
+      - luxon
+      - moment
+      - react
+      - react-dom
+      - supports-color
+      - ws
+
   '@midscene/mcp@0.28.4':
     dependencies:
       '@silvia-odwyer/photon': 0.3.3
@@ -4526,7 +4569,34 @@ snapshots:
       - moment
       - supports-color
 
+  '@midscene/recorder@0.28.4(date-fns@4.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@ant-design/icons': 5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@midscene/shared': 0.28.4
+      antd: 5.27.1(date-fns@4.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      dayjs: 1.11.18
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+    transitivePeerDependencies:
+      - date-fns
+      - encoding
+      - luxon
+      - moment
+      - supports-color
+
   '@midscene/shared@0.27.6':
+    dependencies:
+      '@silvia-odwyer/photon': 0.3.3
+      '@silvia-odwyer/photon-node': 0.3.3
+      debug: 4.4.0
+      jimp: 0.22.12(debug@4.4.0)
+      js-sha256: 0.11.0
+      sharp: 0.34.3
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+
+  '@midscene/shared@0.28.4':
     dependencies:
       '@silvia-odwyer/photon': 0.3.3
       '@silvia-odwyer/photon-node': 0.3.3
@@ -6473,7 +6543,7 @@ snapshots:
       semver: 7.7.2
       uuid: 10.0.0
     optionalDependencies:
-      openai: 4.81.0(zod@3.25.76)
+      openai: 4.81.0(zod@3.24.3)
 
   langsmith@0.3.7(openai@4.81.0(zod@3.25.76)):
     dependencies:
@@ -6485,7 +6555,7 @@ snapshots:
       semver: 7.7.2
       uuid: 10.0.0
     optionalDependencies:
-      openai: 4.81.0(zod@3.25.76)
+      openai: 4.81.0(zod@3.24.3)
 
   libsql@0.5.22:
     dependencies:
@@ -6636,21 +6706,6 @@ snapshots:
       zod: 3.24.3
     transitivePeerDependencies:
       - encoding
-
-  openai@4.81.0(zod@3.25.76):
-    dependencies:
-      '@types/node': 18.19.123
-      '@types/node-fetch': 2.6.13
-      abort-controller: 3.0.0
-      agentkeepalive: 4.6.0
-      form-data-encoder: 1.7.2
-      formdata-node: 4.4.1
-      node-fetch: 2.7.0
-    optionalDependencies:
-      zod: 3.25.76
-    transitivePeerDependencies:
-      - encoding
-    optional: true
 
   openapi-types@12.1.3: {}
 

@@ -146,8 +146,8 @@ export const setupWebSocket = (app: Hono) => {
     upgradeWebSocket((_c) => {
       const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      const operateService = OperateService.getInstance();
-      operateService.initialize();
+      // const operateService = OperateService.getInstance();
+      // operateService.initialize();
 
       return {
         onOpen(ws: WebSocketClient) {

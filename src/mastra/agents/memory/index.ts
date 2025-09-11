@@ -3,7 +3,7 @@ import { Memory } from '@mastra/memory';
 
 const memory = new Memory({
   storage: new LibSQLStore({
-    url: 'file:./db/memory.db',
+    url: 'file:./src/mastra/agents/memory/db/memory.db',
   }),
 });
 
