@@ -26,6 +26,9 @@ export function createAiHandler(): MessageHandler {
       const prompt = message.content.body;
       // const taskService = new TaskService();
       // const taskResponse = await taskService.execute(prompt);
+
+      // TODO 这里调试 MCP 方式，临时禁用 SDK 方式
+
       // await operateService.execute(prompt);
       await browserAgent.streamVNext(prompt, {
         onStepFinish: ({ text, toolCalls, toolResults, finishReason, usage }) => {
