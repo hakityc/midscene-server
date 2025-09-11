@@ -1,21 +1,24 @@
 import { MCPClient } from '@mastra/mcp';
+import dotenv from 'dotenv';
 
-// dotenv.config();
+dotenv.config();
 
 // 创建 MCP 客户端并添加日志记录
 export const mcpClient = new MCPClient({
   servers: {
-    // 'mcp-midscene': {
-    //   command: 'npx',
-    //   args: ['-y', '@midscene/mcp'],
-    //   env: {
-    //     OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-    //     MIDSCENE_MODEL_NAME: process.env.MIDSCENE_MODEL_NAME || '',
-    //     OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
-    //     MIDSCENE_USE_VLM_UI_TARS: process.env.MIDSCENE_USE_VLM_UI_TARS || '',
-    //     MCP_SERVER_REQUEST_TIMEOUT: '800000',
-    //   },
-    // },
+    'mcp-midscene': {
+      command: 'npx',
+      args: ['-y', '@midscene/mcp'],
+      env: {
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+        MIDSCENE_MODEL_NAME: process.env.MIDSCENE_MODEL_NAME || '',
+        OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
+        MIDSCENE_USE_QWEN_VL: process.env.MIDSCENE_USE_QWEN_VL || '',
+        MIDSCENE_CACHE: process.env.MIDSCENE_CACHE || '',
+        DEBUG: 'midscene:ai:call',
+        MCP_SERVER_REQUEST_TIMEOUT: '800000',
+      },
+    },
     // "taskmaster-ai": {
     //     "command": "npx",
     //     "args": ["-y", "--package=task-master-ai", "task-master-ai"],
