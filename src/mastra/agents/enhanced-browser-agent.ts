@@ -42,9 +42,9 @@ export class EnhancedBrowserAgent {
       }
 
       // 初始化错误处理器 (已在全局导出中定义)
-      
+
       this.initialized = true;
-      
+
       logger.info('✅ 增强浏览器自动化助手初始化完成');
       logger.info('🎯 可用功能:', {
         智能元素定位: '✓',
@@ -123,9 +123,9 @@ export class EnhancedBrowserAgent {
         ...options
       });
 
-      logger.info(`✅ 操作完成: ${operation}`, { 
+      logger.info(`✅ 操作完成: ${operation}`, {
         success: result.success,
-        duration: result.duration 
+        duration: result.duration
       });
 
       return result;
@@ -143,7 +143,7 @@ export class EnhancedBrowserAgent {
 
       if (recoveryResult.shouldRetry) {
         logger.info(`🔄 尝试恢复操作: ${operation}`, recoveryResult);
-        
+
         if (recoveryResult.waitTime) {
           await new Promise(resolve => setTimeout(resolve, recoveryResult.waitTime));
         }
@@ -168,15 +168,15 @@ export class EnhancedBrowserAgent {
     options?: any;
   }>): Promise<any[]> {
     const results = [];
-    
+
     for (const op of operations) {
       try {
         const result = await this.executeOperation(op.operation, op.target, op.options);
         results.push({ success: true, result });
       } catch (error) {
-        results.push({ 
-          success: false, 
-          error: error instanceof Error ? error.message : String(error) 
+        results.push({
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
         });
       }
     }
@@ -214,7 +214,7 @@ export class EnhancedBrowserAgent {
    */
   private async getPageCapabilities(): Promise<string[]> {
     const capabilities = [];
-    
+
     try {
       // 检测可用的操作类型
       const tools = await toolManager.getAvailableTools();
@@ -264,7 +264,7 @@ export class EnhancedBrowserAgent {
       },
       capabilities: [
         '🧠 智能视觉理解',
-        '🎯 精确元素定位', 
+        '🎯 精确元素定位',
         '🔄 自适应执行',
         '📊 上下文感知',
         '🛡️ 错误恢复',

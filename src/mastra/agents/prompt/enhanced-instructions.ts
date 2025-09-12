@@ -29,15 +29,15 @@ export const EXECUTION_PRINCIPLES = `<execution_principles>
 1. 页面理解阶段：
    - 调用 midscene_describe_page() 获取页面全貌
    - 调用 midscene_get_context() 获取详细上下文
-   
+
 2. 元素定位阶段：
    - 使用 midscene_locate_element() 进行智能定位
    - 如定位失败，分析页面变化并调整策略
-   
+
 3. 操作执行阶段：
    - 使用最适合的 MCP 工具执行操作
    - 每步操作后验证结果
-   
+
 4. 状态验证阶段：
    - 使用 midscene_assert_state() 验证操作效果
    - 使用 midscene_wait_for() 等待必要的状态变化
@@ -60,19 +60,19 @@ export const TOOL_USAGE_STRATEGY = `<tool_usage_strategy>
 1. 页面理解工具（最高优先级）：
    - midscene_describe_page: 获取页面概览和结构理解
    - midscene_get_context: 获取详细的页面上下文信息
-   
+
 2. 智能定位工具：
    - midscene_locate_element: AI 驱动的元素定位
    - midscene_query_content: 特定内容查询和提取
-   
+
 3. 状态管理工具：
    - midscene_wait_for: 智能等待页面状态变化
    - midscene_assert_state: 验证页面是否处于预期状态
-   
+
 4. 基础操作工具：
    - midscene_aiTap, midscene_aiInput: 执行具体操作
    - midscene_aiScroll, midscene_aiHover: 页面交互
-   
+
 5. 高级功能工具：
    - midscene_screenshot: 截图和记录
    - midscene_get_console_logs: 调试信息获取
@@ -95,6 +95,9 @@ midscene_locate_element("播放控件") → midscene_aiTap() → midscene_assert
 
 🛒 电商购物模式：
 midscene_describe_page() → 商品浏览 → midscene_locate_element("添加购物车") → 结算流程 → 支付验证
+
+扫码登录模式：
+midscene_describe_page() → midscene_wait_for("二维码出现") → midscene_wait_for("扫码后页面刷新") → midscene_assert_state("登录成功")
 </usage_patterns>
 </tool_usage_strategy>`;
 
@@ -208,6 +211,7 @@ ${SAFETY_CONSTRAINTS}
 3. 状态验证：每个关键步骤后验证操作结果
 4. 智能适应：根据页面反馈调整执行策略
 5. 用户反馈：提供清晰的执行进度和结果反馈
+
 
 🚫 避免行为：
 1. 只输出执行计划而不实际执行

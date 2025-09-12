@@ -52,7 +52,7 @@ export class ToolIntegrationManager {
 
       // 检查是否是 Mastra 工具
       const mastraTool = midsceneTools.find(tool => tool.id === toolName);
-      
+
       if (mastraTool) {
         // 使用 Mastra 工具
         toolType = 'mastra';
@@ -85,9 +85,9 @@ export class ToolIntegrationManager {
         });
       }
 
-      logger.info(`✅ 工具调用成功: ${toolName}`, { 
-        duration: toolResult.duration, 
-        toolType 
+      logger.info(`✅ 工具调用成功: ${toolName}`, {
+        duration: toolResult.duration,
+        toolType
       });
 
       return toolResult;
@@ -116,9 +116,9 @@ export class ToolIntegrationManager {
         });
       }
 
-      logger.error(`❌ 工具调用失败: ${toolName}`, { 
-        error: toolResult.error, 
-        duration: toolResult.duration 
+      logger.error(`❌ 工具调用失败: ${toolName}`, {
+        error: toolResult.error,
+        duration: toolResult.duration
       });
 
       throw error;
@@ -155,32 +155,60 @@ export class ToolIntegrationManager {
     try {
       // 获取可用工具列表
       const tools = await mcpClient.getTools();
-      
+
       if (!tools || !tools[toolName]) {
+        logger.warn(`MCP 工具不存在: ${toolName}，可用工具: ${Object.keys(tools || {}).join(', ')}`);
         throw new Error(`MCP 工具不存在: ${toolName}`);
       }
+
+      logger.info(`调用 MCP 工具: ${toolName}`, { args });
 
       // 这里需要根据实际的 MCP 客户端 API 进行调用
       // 由于当前 mcpClient 可能没有直接的 callTool 方法，我们提供一个通用实现
       if (typeof (mcpClient as any).callTool === 'function') {
         return await (mcpClient as any).callTool(toolName, args);
       } else {
-        // 模拟 MCP 工具调用 - 在实际部署时需要替换为真实的调用逻辑
-        logger.warn(`模拟 MCP 工具调用: ${toolName}`, args);
-        return {
-          content: [{ 
-            text: JSON.stringify({ 
-              toolName, 
-              args, 
-              result: 'success', 
-              message: `${toolName} 执行成功` 
-            }) 
-          }],
-          isError: false
-        };
+        // 尝试使用 MCP 客户端的其他方法
+        try {
+          // 检查是否有其他可用的调用方法
+          if (typeof (mcpClient as any).invoke === 'function') {
+            return await (mcpClient as any).invoke(toolName, args);
+          } else if (typeof (mcpClient as any).execute === 'function') {
+            return await (mcpClient as any).execute(toolName, args);
+          } else {
+            // 模拟 MCP 工具调用 - 在实际部署时需要替换为真实的调用逻辑
+            logger.warn(`模拟 MCP 工具调用: ${toolName}`, args);
+            return {
+              content: [{
+                text: JSON.stringify({
+                  toolName,
+                  args,
+                  result: 'success',
+                  message: `${toolName} 执行成功`,
+                  timestamp: new Date().toISOString(),
+                  simulated: true
+                })
+              }],
+              isError: false
+            };
+          }
+        } catch (mcpError) {
+          logger.error(`MCP 工具调用失败: ${toolName}`, {
+            error: mcpError instanceof Error ? mcpError.message : String(mcpError),
+            stack: mcpError instanceof Error ? mcpError.stack : undefined,
+            toolName,
+            args
+          });
+          throw mcpError;
+        }
       }
     } catch (error) {
-      logger.error(`MCP 工具执行失败: ${toolName}`, error);
+      logger.error(`MCP 工具执行失败: ${toolName}`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        toolName,
+        args
+      });
       throw error;
     }
   }
@@ -193,30 +221,30 @@ export class ToolIntegrationManager {
       // 获取 MCP 工具
       const mcpTools = await mcpClient.getTools() || {};
 
-      // 获取 Mastra 工具
-      const mastraToolsMap = midsceneTools.reduce((acc, tool) => {
-        acc[tool.id] = {
-          name: tool.id,
-          description: tool.description,
-          inputSchema: tool.inputSchema,
-          type: 'mastra'
-        };
-        return acc;
-      }, {} as Record<string, any>);
+      // // 获取 Mastra 工具
+      // const mastraToolsMap = midsceneTools.reduce((acc, tool) => {
+      //   acc[tool.id] = {
+      //     name: tool.id,
+      //     description: tool.description,
+      //     inputSchema: tool.inputSchema,
+      //     type: 'mastra'
+      //   };
+      //   return acc;
+      // }, {} as Record<string, any>);
 
-      // 合并所有工具
-      const allTools = {
-        ...mcpTools,
-        ...mastraToolsMap
-      };
+      // // 合并所有工具
+      // const allTools = {
+      //   ...mcpTools,
+      //   ...mastraToolsMap
+      // };
 
-      logger.info('可用工具列表', {
-        mcpToolCount: Object.keys(mcpTools).length,
-        mastraToolCount: midsceneTools.length,
-        totalTools: Object.keys(allTools).length
-      });
+      // logger.info('可用工具列表', {
+      //   mcpToolCount: Object.keys(mcpTools).length,
+      //   mastraToolCount: midsceneTools.length,
+      //   totalTools: Object.keys(allTools).length
+      // });
 
-      return allTools;
+      return mcpTools;
     } catch (error) {
       logger.error('获取工具列表失败', error);
       throw error;
@@ -229,8 +257,8 @@ export class ToolIntegrationManager {
   getToolCallStats(): any {
     const total = this.toolCallHistory.length;
     const successful = this.toolCallHistory.filter(call => call.result.success).length;
-    const avgDuration = total > 0 
-      ? this.toolCallHistory.reduce((sum, call) => sum + call.result.duration, 0) / total 
+    const avgDuration = total > 0
+      ? this.toolCallHistory.reduce((sum, call) => sum + call.result.duration, 0) / total
       : 0;
 
     const toolTypeStats = this.toolCallHistory.reduce((acc, call) => {

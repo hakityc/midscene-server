@@ -32,13 +32,20 @@ const tools = async () => {
     const allTools = await toolManager.getAvailableTools();
 
     log.info('✅ 工具加载成功', {
-      totalTools: Object.keys(allTools).length
+      totalTools: Object.keys(allTools).length,
+      toolNames: Object.keys(allTools) // 显示前10个工具名称
     });
 
     return allTools;
   } catch (error) {
-    log.error('❌ 工具加载失败', { error });
-    throw error;
+    log.error('❌ 工具加载失败', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
+    // 返回空工具集而不是抛出错误，让 Agent 能够继续工作
+    log.warn('⚠️ 返回空工具集，Agent 将以纯文本模式工作');
+    return {};
   }
 };
 

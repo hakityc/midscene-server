@@ -5,8 +5,6 @@ import {
   createErrorResponse,
   createSuccessResponse,
 } from '../builders/messageBuilder';
-import { TaskService } from '../../services/taskService';
-import { mastra } from '../../mastra';
 
 // AI 请求处理器
 export function createAiHandler(): MessageHandler {
@@ -21,34 +19,13 @@ export function createAiHandler(): MessageHandler {
     );
 
     try {
-      const browserAgent = mastra.getAgent('browserAgent');
-      // const operateService = OperateService.getInstance();
-      const prompt = message.content.body;
-      // const taskService = new TaskService();
-      // const taskResponse = await taskService.execute(prompt);
-
-      // TODO 这里调试 MCP 方式，临时禁用 SDK 方式
-
-      // await operateService.execute(prompt);
-      await browserAgent.streamVNext(prompt, {
-        onStepFinish: ({ text, toolCalls, toolResults, finishReason, usage }) => {
-          wsLogger.info({ text, toolCalls, toolResults, finishReason, usage });
-          const response = createSuccessResponse(
-            message,
-            `AI 正在处理: ${text}`,
-          );
-          send(response);
-        },
-        onFinish: ({ steps, text, finishReason, usage }) => {
-          wsLogger.info({ steps, text, finishReason, usage });
-          const response = createSuccessResponse(
-            message,
-            `AI 处理完成: ${steps}`,
-          );
-          send(response);
-        },
-      });
-
+      const operateService = OperateService.getInstance();
+      await operateService.execute(message.content.body);
+      const response = createSuccessResponse(
+        message,
+        `AI 处理完成: ${message.content.body}`,
+      );
+      send(response);
     } catch (error) {
       wsLogger.error(
         {
