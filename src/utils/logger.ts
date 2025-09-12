@@ -22,8 +22,6 @@ if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
       clsTransport = new TencentCLSTransport({
         endpoint: process.env.CLS_ENDPOINT,
         topicId: process.env.CLS_TOPIC_ID,
-        secretId: process.env.CLS_SECRET_ID,
-        secretKey: process.env.CLS_SECRET_KEY,
         maxCount: parseInt(process.env.CLS_MAX_COUNT || '100', 10),
         maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
         appendFieldsFn: () => ({

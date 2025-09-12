@@ -15,5 +15,6 @@ export function createMessageHandlers(): Record<
     [WebSocketAction.CALLBACK]: async () => {},
     [WebSocketAction.ERROR]: async () => {},
     [WebSocketAction.DOWNLOAD_VIDEO]: createDownloadVideoHandler(),
+    [WebSocketAction.DOWNLOAD_VIDEO_CALLBACK]: async () => {},
   } as Record<WebSocketAction, MessageHandler>;
 }
