@@ -5,13 +5,17 @@ import {
   createSuccessResponse,
 } from '../builders/messageBuilder';
 // import { mastra } from '../../mastra';
-import { WebSocketAction } from '../../utils/enums'
+import { WebSocketAction } from '../../utils/enums';
 
 // 处理抖音链接，提取域名和 modal_id 参数
 function normalizeDouyinUrl(url: string): string {
   try {
     const urlObj = new URL(url);
+    const search = urlObj.searchParams.get('search');
 
+    if (!search) {
+      return url;
+    }
     // 检查是否是抖音域名
     if (!urlObj.hostname.includes('douyin.com')) {
       return url; // 如果不是抖音链接，直接返回原链接
@@ -21,6 +25,7 @@ function normalizeDouyinUrl(url: string): string {
     const modalId = urlObj.searchParams.get('modal_id');
 
     if (modalId) {
+      console.log('有 modalId');
       // 返回标准格式：https://www.douyin.com/jingxuan?modal_id=xxx
       return `https://www.douyin.com/jingxuan?modal_id=${modalId}`;
     }
@@ -42,7 +47,7 @@ export function createDownloadVideoHandler(): MessageHandler {
         messageId: message.message_id,
         action: 'ai_request',
       },
-      '处理 AI 请求',
+      '处理 视频下载 请求',
     );
 
     try {
@@ -52,17 +57,52 @@ export function createDownloadVideoHandler(): MessageHandler {
       // 标准化抖音链接
       const normalizedUrl = normalizeDouyinUrl(originalUrl);
 
-      wsLogger.info({
-        originalUrl,
-        normalizedUrl
-      }, 'URL 标准化处理');
+      wsLogger.info(
+        {
+          originalUrl,
+          normalizedUrl,
+        },
+        'URL 标准化处理',
+      );
 
-      await fetch('https://api.xinyew.cn/api/douyinjx?url=' + encodeURIComponent(normalizedUrl)).then(res => res.json()).then(res => {
-        const data = res.data
-        wsLogger.info(data)
-        console.log(data)
-        send(createSuccessResponse(message, data.video_url, WebSocketAction.DOWNLOAD_VIDEO_CALLBACK))
-      });
+      await fetch(
+        'https://meishijiao.cn/api/v1/parse?url=' +
+          encodeURIComponent(normalizedUrl),
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: normalizedUrl,
+          }),
+        }
+      )
+        .then((res) => res.json())
+        .then((res) => {
+          const data = res.data;
+          wsLogger.info(res);
+          // 检查多个可能的视频URL字段
+          const videoUrl = data?.play_url || data?.download_url;
+          if (videoUrl) {
+            send(
+              createSuccessResponse(
+                message,
+                videoUrl,
+                WebSocketAction.DOWNLOAD_VIDEO_CALLBACK,
+              ),
+            );
+          } else {
+            const errorMsg = res.msg || res.message || '未找到视频URL';
+            wsLogger.error({ data, response: res }, 'API响应中未找到视频URL');
+            throw new Error(errorMsg);
+          }
+        })
+        .catch((error) => {
+          wsLogger.error(error);
+          console.log(error);
+          throw error;
+        });
       // wsLogger.info({
       //   connectionId,
       //   messageId: message.message_id,
@@ -127,25 +167,30 @@ export function createDownloadVideoHandler(): MessageHandler {
       //   }, '流式响应处理失败');
       //   throw streamError;
       // }
-
     } catch (error) {
-      const errorInfo = error instanceof Error ? {
-        message: error.message,
-        name: error.name,
-        code: (error as any).code,
-        stack: error.stack
-      } : {
-        message: String(error),
-        name: 'UnknownError',
-        code: undefined,
-        stack: undefined
-      };
+      const errorInfo =
+        error instanceof Error
+          ? {
+              message: error.message,
+              name: error.name,
+              code: (error as any).code,
+              stack: error.stack,
+            }
+          : {
+              message: String(error),
+              name: 'UnknownError',
+              code: undefined,
+              stack: undefined,
+            };
 
-      wsLogger.error({
-        connectionId,
-        error: errorInfo,
-        messageId: message.message_id,
-      }, 'AI 处理失败');
+      wsLogger.error(
+        {
+          connectionId,
+          error: errorInfo,
+          messageId: message.message_id,
+        },
+        'AI 处理失败',
+      );
 
       const response = createErrorResponse(message, error, 'AI 处理失败');
       send(response);
