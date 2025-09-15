@@ -99,13 +99,10 @@ export const videoDownloadTools = async () => {
            MCP_SERVER_REQUEST_TIMEOUT: '800000',
          },
        },
-      "douyin-mcp": {
-        "command": "uvx",
-        "args": ["douyin-mcp-server"],
-        "env": {
-          "DASHSCOPE_API_KEY": process.env.OPENAI_API_KEY || ''
-        }
-      }
+      //  "smartrui-douyin-mcp-server": {
+      //    "type": "sse",
+      //    "url": "https://mcp.api-inference.modelscope.net/10f2a49665cf45/sse"
+      //  }
     },
   });
 

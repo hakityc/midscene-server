@@ -13,35 +13,29 @@ const logLevel =
 // 创建腾讯云CLS传输器（仅在配置了CLS相关环境变量时启用）
 let clsTransport: TencentCLSTransport | null = null;
 if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
-  // 检查必要的认证环境变量
-  if (!process.env.CLS_SECRET_ID || !process.env.CLS_SECRET_KEY) {
-    console.warn('⚠️ CLS认证信息缺失: 需要设置 CLS_SECRET_ID 和 CLS_SECRET_KEY 环境变量');
-    console.warn('CLS日志上报功能已禁用');
-  } else {
-    try {
-      clsTransport = new TencentCLSTransport({
-        endpoint: process.env.CLS_ENDPOINT,
-        topicId: process.env.CLS_TOPIC_ID,
-        maxCount: parseInt(process.env.CLS_MAX_COUNT || '100', 10),
-        maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
-        appendFieldsFn: () => ({
-          appId: process.env.APP_ID || 'midscene-server',
-          version: process.env.npm_package_version || '1.0.0',
-          environment: process.env.NODE_ENV || 'development',
-          hostname: hostname(),
-        }),
-      });
-      console.log('✅ CLS传输器初始化成功');
-    } catch (error) {
-      console.error('❌ CLS传输器初始化失败:', error);
-      console.error('请检查CLS配置是否正确:', {
-        endpoint: process.env.CLS_ENDPOINT,
-        topicId: process.env.CLS_TOPIC_ID,
-        hasSecretId: !!process.env.CLS_SECRET_ID,
-        hasSecretKey: !!process.env.CLS_SECRET_KEY,
-      });
-      clsTransport = null;
-    }
+  try {
+    clsTransport = new TencentCLSTransport({
+      endpoint: process.env.CLS_ENDPOINT,
+      topicId: process.env.CLS_TOPIC_ID,
+      maxCount: parseInt(process.env.CLS_MAX_COUNT || '100', 10),
+      maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
+      appendFieldsFn: () => ({
+        appId: process.env.APP_ID || 'midscene-server',
+        version: process.env.npm_package_version || '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        hostname: hostname(),
+      }),
+    });
+    console.log('✅ CLS传输器初始化成功');
+  } catch (error) {
+    console.error('❌ CLS传输器初始化失败:', error);
+    console.error('请检查CLS配置是否正确:', {
+      endpoint: process.env.CLS_ENDPOINT,
+      topicId: process.env.CLS_TOPIC_ID,
+      hasSecretId: !!process.env.CLS_SECRET_ID,
+      hasSecretKey: !!process.env.CLS_SECRET_KEY,
+    });
+    clsTransport = null;
   }
 } else {
   console.log('ℹ️ CLS环境变量未配置，跳过CLS日志上报功能');
