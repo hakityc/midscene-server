@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_ENV=development tsx watch src/index.ts | pino-pretty",
-    "build": "NODE_ENV=production npm run clean && npm run compile && npm run fix-imports && npm run prepare-deployment",
+    "build": "NODE_ENV=staging npm run clean && npm run compile && npm run fix-imports && npm run prepare-deployment",
     "clean": "rm -rf dist",
     "compile": "tsc",
     "fix-imports": "node scripts/fix-imports.js",
@@ -13,7 +13,7 @@
     "create-deployment-docs": "node scripts/create-deployment-docs.js",
     "create-start-script": "node scripts/create-start-script.js",
     "create-deployment-package": "tar -czf midscene-server-deployment.tar.gz -C dist .",
-    "start": "NODE_ENV=production node dist/server/index.js | pino-pretty",
+    "start": "NODE_ENV=staging node dist/server/index.js | pino-pretty",
     "start:dev": "tsx src/index.ts",
     "test:logger": "tsx src/test/logger-test.ts",
     "test:cls": "tsx src/test/simple-cls-test.ts",
