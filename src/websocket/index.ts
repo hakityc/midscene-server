@@ -1,8 +1,9 @@
 import { createNodeWebSocket } from '@hono/node-ws';
 import type { Hono } from 'hono';
-import type { WebSocketClient, WebSocketMessage } from '../types/websocket';
-import { wsLogger } from '../utils/logger';
 import { OperateService } from '../services/operateService';
+import type { WebSocketClient, WebSocketMessage } from '../types/websocket';
+import { WebSocketAction } from '../utils/enums';
+import { wsLogger } from '../utils/logger';
 import { MessageBuilder } from './builders/messageBuilder';
 import {
   handleConnectionError,
@@ -42,7 +43,7 @@ class ConnectionRegistry {
 }
 
 // 单一职责：发送消息
-function sendMessage(ws: WebSocketClient, message: WebSocketMessage): boolean {
+function sendMessage(ws: WebSocketClient, message: any): boolean {
   try {
     if (ws && typeof ws.send === 'function') {
       ws.send(JSON.stringify(message));
@@ -94,25 +95,25 @@ function parseWebSocketMessage(rawData: string): WebSocketMessage {
     );
   }
 
-  try {
-    const safeEval = new Function(`return ${cleanedData}`);
-    const result = safeEval();
-    if (
-      result &&
-      typeof result === 'object' &&
-      result.content &&
-      result.content.action
-    ) {
-      return result as WebSocketMessage;
+  // 仅支持新结构
+  const result = (() => {
+    try {
+      return JSON.parse(cleanedData);
+    } catch {
+      return undefined;
     }
-  } catch (evalError) {
-    wsLogger.debug(
-      {
-        error:
-          evalError instanceof Error ? evalError.message : String(evalError),
-      },
-      'eval 解析也失败',
-    );
+  })();
+  if (
+    result &&
+    typeof result === 'object' &&
+    (result as any).meta &&
+    typeof (result as any).meta.messageId === 'string' &&
+    typeof (result as any).meta.conversationId === 'string' &&
+    typeof (result as any).meta.timestamp === 'number' &&
+    (result as any).payload &&
+    typeof (result as any).payload.action === 'string'
+  ) {
+    return result as unknown as WebSocketMessage;
   }
 
   throw new Error(`无法解析 WebSocket 消息: ${rawData.substring(0, 200)}...`);
@@ -129,13 +130,22 @@ export const setupWebSocket = (app: Hono) => {
     message: WebSocketMessage,
     ws: WebSocketClient,
   ) => {
-    const handler = handlers[message.content.action];
+    const action =
+      (message as any).payload?.action ?? (message as any).content?.action;
+    const isKnownAction = (Object.values(WebSocketAction) as string[]).includes(
+      String(action),
+    );
+    if (!isKnownAction) {
+      handleUnknownAction(ws, message as any, String(action));
+      return;
+    }
+    const handler = handlers[action as WebSocketAction];
     if (!handler) {
-      handleUnknownAction(ws, message, message.content.action);
+      handleUnknownAction(ws, message as any, String(action));
       return;
     }
     await handler(
-      { connectionId, ws, send: (m) => sendMessage(ws, m) },
+      { connectionId, ws, send: (m: any) => sendMessage(ws, m) },
       message,
     );
   };
@@ -176,8 +186,12 @@ export const setupWebSocket = (app: Hono) => {
             wsLogger.debug(
               {
                 connectionId,
-                action: message.content.action,
-                messageId: message.message_id,
+                action:
+                  (message as any).payload?.action ??
+                  (message as any).content?.action,
+                messageId:
+                  (message as any).meta?.messageId ??
+                  (message as any).message_id,
               },
               '解析成功',
             );
@@ -186,7 +200,9 @@ export const setupWebSocket = (app: Hono) => {
             dispatchMessage(connectionId, message, ws).catch((error) => {
               handleMessageProcessingError(ws, message, error, {
                 connectionId,
-                action: message.content.action,
+                action:
+                  (message as any).payload?.action ??
+                  (message as any).content?.action,
               });
             });
           } catch (error) {
@@ -221,13 +237,10 @@ export const setupWebSocket = (app: Hono) => {
   app.post('/ws/broadcast', async (c) => {
     try {
       const body = await c.req.json();
-      const { message, conversationId = 'broadcast' } = body;
+      const { message } = body;
 
       let sentCount = 0;
-      const broadcastMessage = MessageBuilder.createBroadcastMessage(
-        message,
-        conversationId,
-      );
+      const broadcastMessage = MessageBuilder.createBroadcastMessage(message);
       connections.forEach((_id, ws) => {
         if (sendMessage(ws, broadcastMessage)) {
           sentCount++;

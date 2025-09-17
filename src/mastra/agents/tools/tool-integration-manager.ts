@@ -9,9 +9,12 @@ import type { ContextManager } from '../context/context-manager';
 
 // 简化的日志记录
 const logger = {
-  info: (message: string, data?: any) => console.log(`[INFO] ${message}`, data || ''),
-  error: (message: string, data?: any) => console.error(`[ERROR] ${message}`, data || ''),
-  warn: (message: string, data?: any) => console.warn(`[WARN] ${message}`, data || '')
+  info: (message: string, data?: any) =>
+    console.log(`[INFO] ${message}`, data || ''),
+  error: (message: string, data?: any) =>
+    console.error(`[ERROR] ${message}`, data || ''),
+  warn: (message: string, data?: any) =>
+    console.warn(`[WARN] ${message}`, data || ''),
 };
 
 export interface ToolCallResult {
@@ -51,7 +54,7 @@ export class ToolIntegrationManager {
       let toolType: 'mcp' | 'mastra';
 
       // 检查是否是 Mastra 工具
-      const mastraTool = midsceneTools.find(tool => tool.id === toolName);
+      const mastraTool = midsceneTools.find((tool) => tool.id === toolName);
 
       if (mastraTool) {
         // 使用 Mastra 工具
@@ -67,7 +70,7 @@ export class ToolIntegrationManager {
         success: true,
         result,
         duration: Date.now() - startTime,
-        toolType
+        toolType,
       };
 
       // 记录工具调用历史
@@ -81,13 +84,13 @@ export class ToolIntegrationManager {
           parameters: args,
           result: 'success',
           duration: toolResult.duration,
-          retryCount: 0
+          retryCount: 0,
         });
       }
 
       logger.info(`✅ 工具调用成功: ${toolName}`, {
         duration: toolResult.duration,
-        toolType
+        toolType,
       });
 
       return toolResult;
@@ -97,7 +100,7 @@ export class ToolIntegrationManager {
         result: null,
         error: error instanceof Error ? error.message : String(error),
         duration: Date.now() - startTime,
-        toolType: 'unknown' as any
+        toolType: 'unknown' as any,
       };
 
       // 记录失败的工具调用
@@ -112,13 +115,13 @@ export class ToolIntegrationManager {
           result: 'failure',
           duration: toolResult.duration,
           retryCount: 0,
-          errorMessage: toolResult.error
+          errorMessage: toolResult.error,
         });
       }
 
       logger.error(`❌ 工具调用失败: ${toolName}`, {
         error: toolResult.error,
-        duration: toolResult.duration
+        duration: toolResult.duration,
       });
 
       throw error;
@@ -137,8 +140,8 @@ export class ToolIntegrationManager {
           // 提供必要的运行时上下文
           requestId: this.generateRequestId(),
           timestamp: Date.now(),
-          source: 'tool-integration-manager'
-        }
+          source: 'tool-integration-manager',
+        },
       };
 
       return await tool.execute(executionContext);
@@ -157,7 +160,9 @@ export class ToolIntegrationManager {
       const tools = await mcpClient.getTools();
 
       if (!tools || !tools[toolName]) {
-        logger.warn(`MCP 工具不存在: ${toolName}，可用工具: ${Object.keys(tools || {}).join(', ')}`);
+        logger.warn(
+          `MCP 工具不存在: ${toolName}，可用工具: ${Object.keys(tools || {}).join(', ')}`,
+        );
         throw new Error(`MCP 工具不存在: ${toolName}`);
       }
 
@@ -179,25 +184,28 @@ export class ToolIntegrationManager {
             // 模拟 MCP 工具调用 - 在实际部署时需要替换为真实的调用逻辑
             logger.warn(`模拟 MCP 工具调用: ${toolName}`, args);
             return {
-              content: [{
-                text: JSON.stringify({
-                  toolName,
-                  args,
-                  result: 'success',
-                  message: `${toolName} 执行成功`,
-                  timestamp: new Date().toISOString(),
-                  simulated: true
-                })
-              }],
-              isError: false
+              content: [
+                {
+                  text: JSON.stringify({
+                    toolName,
+                    args,
+                    result: 'success',
+                    message: `${toolName} 执行成功`,
+                    timestamp: new Date().toISOString(),
+                    simulated: true,
+                  }),
+                },
+              ],
+              isError: false,
             };
           }
         } catch (mcpError) {
           logger.error(`MCP 工具调用失败: ${toolName}`, {
-            error: mcpError instanceof Error ? mcpError.message : String(mcpError),
+            error:
+              mcpError instanceof Error ? mcpError.message : String(mcpError),
             stack: mcpError instanceof Error ? mcpError.stack : undefined,
             toolName,
-            args
+            args,
           });
           throw mcpError;
         }
@@ -207,7 +215,7 @@ export class ToolIntegrationManager {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         toolName,
-        args
+        args,
       });
       throw error;
     }
@@ -219,7 +227,7 @@ export class ToolIntegrationManager {
   async getAvailableTools(): Promise<Record<string, any>> {
     try {
       // 获取 MCP 工具
-      const mcpTools = await mcpClient.getTools() || {};
+      const mcpTools = (await mcpClient.getTools()) || {};
 
       // // 获取 Mastra 工具
       // const mastraToolsMap = midsceneTools.reduce((acc, tool) => {
@@ -256,22 +264,31 @@ export class ToolIntegrationManager {
    */
   getToolCallStats(): any {
     const total = this.toolCallHistory.length;
-    const successful = this.toolCallHistory.filter(call => call.result.success).length;
-    const avgDuration = total > 0
-      ? this.toolCallHistory.reduce((sum, call) => sum + call.result.duration, 0) / total
-      : 0;
+    const successful = this.toolCallHistory.filter(
+      (call) => call.result.success,
+    ).length;
+    const avgDuration =
+      total > 0
+        ? this.toolCallHistory.reduce(
+            (sum, call) => sum + call.result.duration,
+            0,
+          ) / total
+        : 0;
 
-    const toolTypeStats = this.toolCallHistory.reduce((acc, call) => {
-      const type = call.result.toolType;
-      if (!acc[type]) {
-        acc[type] = { count: 0, successCount: 0 };
-      }
-      acc[type].count++;
-      if (call.result.success) {
-        acc[type].successCount++;
-      }
-      return acc;
-    }, {} as Record<string, { count: number; successCount: number }>);
+    const toolTypeStats = this.toolCallHistory.reduce(
+      (acc, call) => {
+        const type = call.result.toolType;
+        if (!acc[type]) {
+          acc[type] = { count: 0, successCount: 0 };
+        }
+        acc[type].count++;
+        if (call.result.success) {
+          acc[type].successCount++;
+        }
+        return acc;
+      },
+      {} as Record<string, { count: number; successCount: number }>,
+    );
 
     return {
       total,
@@ -279,7 +296,7 @@ export class ToolIntegrationManager {
       successRate: total > 0 ? (successful / total) * 100 : 0,
       averageDuration: avgDuration,
       toolTypeStats,
-      recentCalls: this.toolCallHistory.slice(-10)
+      recentCalls: this.toolCallHistory.slice(-10),
     };
   }
 
@@ -290,19 +307,35 @@ export class ToolIntegrationManager {
     const suggestions: string[] = [];
 
     // 基于任务描述推荐工具
-    if (taskDescription.includes('定位') || taskDescription.includes('查找') || taskDescription.includes('元素')) {
+    if (
+      taskDescription.includes('定位') ||
+      taskDescription.includes('查找') ||
+      taskDescription.includes('元素')
+    ) {
       suggestions.push('midscene_locate_element', 'midscene_aiLocate');
     }
 
-    if (taskDescription.includes('描述') || taskDescription.includes('分析') || taskDescription.includes('理解')) {
+    if (
+      taskDescription.includes('描述') ||
+      taskDescription.includes('分析') ||
+      taskDescription.includes('理解')
+    ) {
       suggestions.push('midscene_describe_page', 'midscene_get_context');
     }
 
-    if (taskDescription.includes('查询') || taskDescription.includes('提取') || taskDescription.includes('获取')) {
+    if (
+      taskDescription.includes('查询') ||
+      taskDescription.includes('提取') ||
+      taskDescription.includes('获取')
+    ) {
       suggestions.push('midscene_query_content', 'midscene_aiQuery');
     }
 
-    if (taskDescription.includes('验证') || taskDescription.includes('检查') || taskDescription.includes('确认')) {
+    if (
+      taskDescription.includes('验证') ||
+      taskDescription.includes('检查') ||
+      taskDescription.includes('确认')
+    ) {
       suggestions.push('midscene_assert_state', 'midscene_aiAssert');
     }
 
@@ -328,12 +361,16 @@ export class ToolIntegrationManager {
   /**
    * 记录工具调用历史
    */
-  private recordToolCall(toolName: string, args: any, result: ToolCallResult): void {
+  private recordToolCall(
+    toolName: string,
+    args: any,
+    result: ToolCallResult,
+  ): void {
     this.toolCallHistory.push({
       toolName,
       args,
       result,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // 保留最近100条记录

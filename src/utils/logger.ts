@@ -1,7 +1,7 @@
 import { hostname } from 'node:os';
+import dotenv from 'dotenv';
 import pino from 'pino';
 import { TencentCLSTransport } from './tencentCLSTransport.js';
-import dotenv from 'dotenv';
 
 dotenv.config();
 

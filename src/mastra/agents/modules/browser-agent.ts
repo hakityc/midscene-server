@@ -1,17 +1,20 @@
 import { Agent } from '@mastra/core/agent';
+import { ContextManager } from '../context/context-manager';
 // import { mcpClient } from '../../mcp/client'; // 已通过 toolManager 使用
 import { createModel } from '../index';
-import { ENHANCED_INSTRUCTIONS } from '../prompt/enhanced-instructions';
 import { memory } from '../memory';
-import { ContextManager } from '../context/context-manager';
-import { EnhancedMidsceneWrapper } from './enhanced-midscene-wrapper';
+import { ENHANCED_INSTRUCTIONS } from '../prompt/enhanced-instructions';
 import { ToolIntegrationManager } from '../tools/tool-integration-manager';
+import { EnhancedMidsceneWrapper } from './enhanced-midscene-wrapper';
 
 // 简化的日志记录，避免类型错误
 const log = {
-  info: (message: string, data?: any) => console.log(`[INFO] ${message}`, data || ''),
-  error: (message: string, data?: any) => console.error(`[ERROR] ${message}`, data || ''),
-  warn: (message: string, data?: any) => console.warn(`[WARN] ${message}`, data || '')
+  info: (message: string, data?: any) =>
+    console.log(`[INFO] ${message}`, data || ''),
+  error: (message: string, data?: any) =>
+    console.error(`[ERROR] ${message}`, data || ''),
+  warn: (message: string, data?: any) =>
+    console.warn(`[WARN] ${message}`, data || ''),
 };
 
 // 创建上下文管理器
@@ -33,14 +36,14 @@ const tools = async () => {
 
     log.info('✅ 工具加载成功', {
       totalTools: Object.keys(allTools).length,
-      toolNames: Object.keys(allTools) // 显示前10个工具名称
+      toolNames: Object.keys(allTools), // 显示前10个工具名称
     });
 
     return allTools;
   } catch (error) {
     log.error('❌ 工具加载失败', {
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
     // 返回空工具集而不是抛出错误，让 Agent 能够继续工作
@@ -65,12 +68,8 @@ export const browserAgent = new Agent({
   instructions: ENHANCED_INSTRUCTIONS,
   model: createModel(),
   tools,
-  memory: memory
+  memory: memory,
 });
 
 // 导出所有增强组件，供其他模块使用
-export {
-  contextManager,
-  enhancedWrapper,
-  toolManager
-};
+export { contextManager, enhancedWrapper, toolManager };

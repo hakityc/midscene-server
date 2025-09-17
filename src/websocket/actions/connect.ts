@@ -1,6 +1,6 @@
 import { OperateService } from '../../services/operateService';
 import type { ConnectCurrentTabOption } from '../../types/operate';
-import type { MessageHandler } from '../../types/websocket';
+import type { MessageHandler, WebSocketMessage } from '../../types/websocket';
 import { wsLogger } from '../../utils/logger';
 import {
   createErrorResponse,
@@ -10,9 +10,10 @@ import {
 // 连接标签页处理器
 export function createConnectTabHandler(): MessageHandler {
   return async ({ send }, message) => {
+    const { meta, payload } = message;
     wsLogger.info(
       {
-        messageId: message.message_id,
+        messageId: meta.messageId,
         action: 'connect_tab',
       },
       '处理连接标签页请求',
@@ -20,8 +21,9 @@ export function createConnectTabHandler(): MessageHandler {
 
     try {
       const option: ConnectCurrentTabOption = { forceSameTabNavigation: true };
-      if (message.content.body !== '') {
-        const maybeIndex = Number(message.content.body);
+      const params = payload.params;
+      if (params !== '') {
+        const maybeIndex = Number(params);
         if (!Number.isNaN(maybeIndex)) option.tabIndex = maybeIndex;
       }
 
@@ -30,16 +32,17 @@ export function createConnectTabHandler(): MessageHandler {
       wsLogger.info({ option }, '标签页连接成功');
 
       const response = createSuccessResponse(
-        message,
-        `标签页连接成功: ${message.content.body}`,
+        message as WebSocketMessage,
+        `标签页连接成功`,
       );
       send(response);
     } catch (error) {
-      wsLogger.error(
-        { error, messageId: message.message_id },
+      wsLogger.error({ error, messageId: meta.messageId }, '标签页连接失败');
+      const response = createErrorResponse(
+        message as WebSocketMessage,
+        error,
         '标签页连接失败',
       );
-      const response = createErrorResponse(message, error, '标签页连接失败');
       send(response);
     }
   };

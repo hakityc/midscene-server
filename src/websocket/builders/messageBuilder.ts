@@ -1,37 +1,47 @@
-import type { WebSocketMessage } from '../../types/websocket';
+import type {
+  WebSocketMessage,
+  WsOutboundMessage,
+} from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
 
 /**
  * 构建基础消息
  */
-function buildBaseMessage(
+function buildOutbound<R = unknown>(
   messageId: string,
   conversationId: string,
   action: WebSocketAction,
-  body: string,
-): WebSocketMessage {
+  status: 'success' | 'failed',
+  data?: { result?: R; error?: string },
+): WsOutboundMessage<R> {
   return {
-    message_id: messageId,
-    conversation_id: conversationId,
-    content: { action, body },
-    timestamp: new Date().toISOString(),
+    meta: {
+      messageId,
+      conversationId,
+      timestamp: Math.floor(Date.now() / 1000),
+    },
+    payload: {
+      action,
+      status,
+      ...(status === 'success' ? { result: data?.result as R } : {}),
+      ...(status === 'failed' ? { error: data?.error ?? 'UNKNOWN_ERROR' } : {}),
+    },
   };
 }
 
 /**
  * 构建成功响应消息
  */
-export function createSuccessResponse(
+export function createSuccessResponse<R = string>(
   originalMessage: WebSocketMessage,
-  body: string,
+  result: R,
   action: WebSocketAction = WebSocketAction.CALLBACK,
-): WebSocketMessage {
-  return buildBaseMessage(
-    originalMessage.message_id,
-    originalMessage.conversation_id,
-    action,
-    body,
-  );
+): WsOutboundMessage<R> {
+  const messageId = originalMessage.meta.messageId;
+  const conversationId = originalMessage.meta.conversationId;
+  return buildOutbound<R>(messageId, conversationId, action, 'success', {
+    result,
+  });
 }
 
 /**
@@ -41,13 +51,18 @@ export function createErrorResponse(
   originalMessage: WebSocketMessage,
   error: unknown,
   prefix: string = '操作失败',
-): WebSocketMessage {
+): WsOutboundMessage<string> {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  return buildBaseMessage(
-    originalMessage.message_id,
-    originalMessage.conversation_id,
+  const messageId = originalMessage.meta.messageId;
+  const conversationId = originalMessage.meta.conversationId;
+  return buildOutbound<string>(
+    messageId,
+    conversationId,
     WebSocketAction.ERROR,
-    `${prefix}: ${errorMessage}`,
+    'failed',
+    {
+      error: `${prefix}: ${errorMessage}`,
+    },
   );
 }
 
@@ -57,10 +72,11 @@ export function createErrorResponse(
 export function createSystemMessage(
   messageId: string,
   body: string,
-  conversationId: string = 'system',
   action: WebSocketAction = WebSocketAction.CALLBACK,
-): WebSocketMessage {
-  return buildBaseMessage(messageId, conversationId, action, body);
+): WsOutboundMessage<string> {
+  return buildOutbound<string>(messageId, 'system', action, 'success', {
+    result: body,
+  });
 }
 
 /**
@@ -68,32 +84,35 @@ export function createSystemMessage(
  */
 export function createBroadcastMessage(
   message: string | object,
-  conversationId: string = 'broadcast',
-): WebSocketMessage {
+): WsOutboundMessage<string> {
   const body = typeof message === 'string' ? message : JSON.stringify(message);
-  return buildBaseMessage(
+  return buildOutbound<string>(
     `broadcast_${Date.now()}`,
-    conversationId,
+    'broadcast',
     WebSocketAction.CALLBACK,
-    body,
+    'success',
+    { result: body },
   );
 }
 
 /**
  * 构建欢迎消息
  */
-export function createWelcomeMessage(connectionId: string): WebSocketMessage {
+export function createWelcomeMessage(
+  connectionId: string,
+): WsOutboundMessage<string> {
   const welcomeData = {
     connectionId,
     message: '连接已建立',
     serverTime: new Date().toISOString(),
   };
 
-  return buildBaseMessage(
+  return buildOutbound<string>(
     `welcome_${Date.now()}`,
     'system',
     WebSocketAction.CALLBACK,
-    JSON.stringify(welcomeData),
+    'success',
+    { result: JSON.stringify(welcomeData) },
   );
 }
 
@@ -103,12 +122,15 @@ export function createWelcomeMessage(connectionId: string): WebSocketMessage {
 export function createUnknownActionResponse(
   originalMessage: WebSocketMessage,
   action: string,
-): WebSocketMessage {
-  return buildBaseMessage(
-    originalMessage.message_id,
-    originalMessage.conversation_id,
+): WsOutboundMessage<string> {
+  const messageId = originalMessage.meta.messageId;
+  const conversationId = originalMessage.meta.conversationId;
+  return buildOutbound<string>(
+    messageId,
+    conversationId,
     WebSocketAction.CALLBACK,
-    `未知的 action 类型: ${action}`,
+    'failed',
+    { error: `未知的 action 类型: ${action}` },
   );
 }
 
@@ -118,13 +140,14 @@ export function createUnknownActionResponse(
 export function createParseErrorResponse(
   error: unknown,
   _connectionId?: string,
-): WebSocketMessage {
+): WsOutboundMessage<string> {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  return buildBaseMessage(
+  return buildOutbound<string>(
     `parse_error_${Date.now()}`,
     'system',
     WebSocketAction.ERROR,
-    `消息解析失败: ${errorMessage}`,
+    'failed',
+    { error: `消息解析失败: ${errorMessage}` },
   );
 }
 
@@ -134,13 +157,16 @@ export function createParseErrorResponse(
 export function createProcessingErrorResponse(
   originalMessage: WebSocketMessage,
   error: unknown,
-): WebSocketMessage {
+): WsOutboundMessage<string> {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  return buildBaseMessage(
-    originalMessage.message_id || `error_${Date.now()}`,
-    originalMessage.conversation_id || 'system',
+  const messageId = originalMessage.meta.messageId;
+  const conversationId = originalMessage.meta.conversationId;
+  return buildOutbound<string>(
+    messageId,
+    conversationId,
     WebSocketAction.ERROR,
-    `消息处理失败: ${errorMessage}`,
+    'failed',
+    { error: `消息处理失败: ${errorMessage}` },
   );
 }
 

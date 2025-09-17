@@ -30,11 +30,11 @@ export const ELEMENT_LOCATION_STRATEGIES = {
       'midscene_describe_page()',
       'midscene_locate_element(具体描述)',
       '验证元素位置和可见性',
-      '执行操作'
+      '执行操作',
     ],
-    conditions: ['页面加载完成', '元素可见', '无遮挡']
+    conditions: ['页面加载完成', '元素可见', '无遮挡'],
   },
-  
+
   semanticBased: {
     name: '语义定位策略',
     description: '基于元素语义和功能定位',
@@ -42,22 +42,17 @@ export const ELEMENT_LOCATION_STRATEGIES = {
       'midscene_get_context()',
       'midscene_query_content(功能描述)',
       'midscene_locate_element(语义描述)',
-      '执行操作'
+      '执行操作',
     ],
-    conditions: ['页面结构清晰', '元素具有明确语义']
+    conditions: ['页面结构清晰', '元素具有明确语义'],
   },
 
   adaptiveRetry: {
     name: '自适应重试策略',
     description: '根据失败原因调整定位方式',
-    steps: [
-      '分析失败原因',
-      '调整定位描述',
-      '等待页面稳定',
-      '重新尝试定位'
-    ],
-    conditions: ['首次定位失败', '页面状态可能变化']
-  }
+    steps: ['分析失败原因', '调整定位描述', '等待页面稳定', '重新尝试定位'],
+    conditions: ['首次定位失败', '页面状态可能变化'],
+  },
 };
 
 // 任务执行模式
@@ -71,9 +66,9 @@ export const EXECUTION_PATTERNS: Record<string, OperationStrategy> = {
       'midscene_aiInput(搜索关键词)',
       'midscene_aiKeyboardPress("Enter")',
       'midscene_wait_for("搜索结果出现")',
-      'midscene_assert_state("搜索完成")'
+      'midscene_assert_state("搜索完成")',
     ],
-    conditions: ['页面包含搜索功能', '搜索框可见']
+    conditions: ['页面包含搜索功能', '搜索框可见'],
   },
 
   form: {
@@ -84,9 +79,9 @@ export const EXECUTION_PATTERNS: Record<string, OperationStrategy> = {
       '遍历表单字段[midscene_locate_element() → midscene_aiInput()]',
       'midscene_locate_element("提交按钮")',
       'midscene_aiTap(提交)',
-      'midscene_assert_state("提交成功")'
+      'midscene_assert_state("提交成功")',
     ],
-    conditions: ['页面包含表单', '表单字段可编辑']
+    conditions: ['页面包含表单', '表单字段可编辑'],
   },
 
   dataExtraction: {
@@ -96,9 +91,9 @@ export const EXECUTION_PATTERNS: Record<string, OperationStrategy> = {
       'midscene_describe_page()',
       'midscene_wait_for("数据加载完成")',
       'midscene_query_content("目标数据类型")',
-      'midscene_assert_state("数据完整性验证")'
+      'midscene_assert_state("数据完整性验证")',
     ],
-    conditions: ['页面包含目标数据', '数据已加载']
+    conditions: ['页面包含目标数据', '数据已加载'],
   },
 
   navigation: {
@@ -109,9 +104,9 @@ export const EXECUTION_PATTERNS: Record<string, OperationStrategy> = {
       'midscene_locate_element("导航目标")',
       'midscene_aiTap(点击)',
       'midscene_wait_for("页面加载完成")',
-      'midscene_assert_state("导航成功")'
+      'midscene_assert_state("导航成功")',
     ],
-    conditions: ['目标链接或按钮存在', '页面可导航']
+    conditions: ['目标链接或按钮存在', '页面可导航'],
   },
 
   mediaControl: {
@@ -121,10 +116,10 @@ export const EXECUTION_PATTERNS: Record<string, OperationStrategy> = {
       'midscene_locate_element("播放控件")',
       'midscene_aiTap(控制操作)',
       'midscene_assert_state("播放状态变化")',
-      'midscene_query_content("媒体信息")'
+      'midscene_query_content("媒体信息")',
     ],
-    conditions: ['页面包含媒体内容', '控件可用']
-  }
+    conditions: ['页面包含媒体内容', '控件可用'],
+  },
 };
 
 // 错误恢复策略
@@ -136,10 +131,10 @@ export const ERROR_RECOVERY_STRATEGIES = {
       '2. 分析页面变化：midscene_describe_page()',
       '3. 调整定位描述：使用更具体或更抽象的描述',
       '4. 等待元素出现：midscene_wait_for()',
-      '5. 寻找替代元素：查找功能相似的元素'
+      '5. 寻找替代元素：查找功能相似的元素',
     ],
     maxRetries: 3,
-    backoffStrategy: 'exponential'
+    backoffStrategy: 'exponential',
   },
 
   operationTimeout: {
@@ -149,10 +144,10 @@ export const ERROR_RECOVERY_STRATEGIES = {
       '2. 验证网络连接',
       '3. 增加等待时间',
       '4. 重新执行操作',
-      '5. 考虑分步执行'
+      '5. 考虑分步执行',
     ],
     maxRetries: 2,
-    backoffStrategy: 'linear'
+    backoffStrategy: 'linear',
   },
 
   unexpectedState: {
@@ -162,11 +157,11 @@ export const ERROR_RECOVERY_STRATEGIES = {
       '2. 识别状态差异',
       '3. 确定恢复路径',
       '4. 执行状态恢复操作',
-      '5. 验证恢复结果'
+      '5. 验证恢复结果',
     ],
     maxRetries: 2,
-    backoffStrategy: 'immediate'
-  }
+    backoffStrategy: 'immediate',
+  },
 };
 
 // 性能优化策略
@@ -174,7 +169,7 @@ export const PERFORMANCE_STRATEGIES = {
   batchOperations: {
     name: '批量操作优化',
     description: '将相似操作合并执行以提高效率',
-    applicableScenarios: ['多个表单字段填写', '多个元素点击', '批量数据提取']
+    applicableScenarios: ['多个表单字段填写', '多个元素点击', '批量数据提取'],
   },
 
   intelligentWaiting: {
@@ -182,22 +177,22 @@ export const PERFORMANCE_STRATEGIES = {
     description: '根据页面复杂度和历史数据动态调整等待时间',
     basewait: 1000,
     maxWait: 30000,
-    adaptiveFactor: 1.5
+    adaptiveFactor: 1.5,
   },
 
   contextCaching: {
     name: '上下文缓存策略',
     description: '缓存页面结构信息，减少重复分析',
     cacheKey: 'pageUrl + pageStructureHash',
-    ttl: 300000 // 5分钟
+    ttl: 300000, // 5分钟
   },
 
   resourceOptimization: {
     name: '资源优化策略',
     description: '优化网络请求和内存使用',
     maxConcurrentOperations: 3,
-    memoryCleanupInterval: 60000
-  }
+    memoryCleanupInterval: 60000,
+  },
 };
 
 // 策略选择器
@@ -207,29 +202,45 @@ export class StrategySelector {
    */
   static selectExecutionPattern(
     taskType: string,
-    _context: OperationContext
+    _context: OperationContext,
   ): OperationStrategy | null {
     // 根据任务类型和上下文选择策略
     if (taskType.includes('搜索') || taskType.includes('查找')) {
       return EXECUTION_PATTERNS.search;
     }
-    
-    if (taskType.includes('填写') || taskType.includes('表单') || taskType.includes('输入')) {
+
+    if (
+      taskType.includes('填写') ||
+      taskType.includes('表单') ||
+      taskType.includes('输入')
+    ) {
       return EXECUTION_PATTERNS.form;
     }
-    
-    if (taskType.includes('提取') || taskType.includes('获取') || taskType.includes('数据')) {
+
+    if (
+      taskType.includes('提取') ||
+      taskType.includes('获取') ||
+      taskType.includes('数据')
+    ) {
       return EXECUTION_PATTERNS.dataExtraction;
     }
-    
-    if (taskType.includes('点击') || taskType.includes('导航') || taskType.includes('跳转')) {
+
+    if (
+      taskType.includes('点击') ||
+      taskType.includes('导航') ||
+      taskType.includes('跳转')
+    ) {
       return EXECUTION_PATTERNS.navigation;
     }
-    
-    if (taskType.includes('播放') || taskType.includes('视频') || taskType.includes('音频')) {
+
+    if (
+      taskType.includes('播放') ||
+      taskType.includes('视频') ||
+      taskType.includes('音频')
+    ) {
       return EXECUTION_PATTERNS.mediaControl;
     }
-    
+
     // 默认返回导航模式
     return EXECUTION_PATTERNS.navigation;
   }
@@ -241,11 +252,11 @@ export class StrategySelector {
     if (errorType.includes('not found') || errorType.includes('定位失败')) {
       return ERROR_RECOVERY_STRATEGIES.elementNotFound;
     }
-    
+
     if (errorType.includes('timeout') || errorType.includes('超时')) {
       return ERROR_RECOVERY_STRATEGIES.operationTimeout;
     }
-    
+
     return ERROR_RECOVERY_STRATEGIES.unexpectedState;
   }
 
@@ -254,15 +265,15 @@ export class StrategySelector {
    */
   static getPerformanceOptimization(context: OperationContext) {
     const optimizations = [];
-    
+
     if (context.errorCount && context.errorCount > 2) {
       optimizations.push(PERFORMANCE_STRATEGIES.intelligentWaiting);
     }
-    
+
     if (context.operationHistory && context.operationHistory.length > 5) {
       optimizations.push(PERFORMANCE_STRATEGIES.contextCaching);
     }
-    
+
     return optimizations;
   }
 }

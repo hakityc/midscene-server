@@ -9,10 +9,11 @@ import {
 // AI 请求处理器
 export function executeScriptHandler(): MessageHandler {
   return async ({ connectionId, send }, message) => {
+    const { meta, payload } = message;
     wsLogger.info(
       {
         connectionId,
-        messageId: message.message_id,
+        messageId: meta.messageId,
         action: 'ai_request',
       },
       '处理 AI 请求',
@@ -20,18 +21,15 @@ export function executeScriptHandler(): MessageHandler {
 
     try {
       const operateService = OperateService.getInstance();
-      await operateService.executeScript(message.content.body);
-      const response = createSuccessResponse(
-        message,
-        `AI 处理完成: ${message.content.body}`,
-      );
+      await operateService.executeScript(payload?.params);
+      const response = createSuccessResponse(message, `AI 处理完成`);
       send(response);
     } catch (error) {
       wsLogger.error(
         {
           connectionId,
           error,
-          messageId: message.message_id,
+          messageId: meta.messageId,
         },
         'AI 处理失败',
       );

@@ -1,7 +1,7 @@
 import { Agent } from '@mastra/core';
 import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
 import { MCPClient } from '@mastra/mcp';
+import { z } from 'zod';
 import { createModel } from '../index';
 
 // 视频下载智能体指令 - 使用实际可用的工具
@@ -87,18 +87,18 @@ export const videoDownloadTools = async () => {
   const mcpClient = new MCPClient({
     servers: {
       'mcp-midscene': {
-         command: 'npx',
-         args: ['-y', '@midscene/mcp'],
-         env: {
-           OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-           MIDSCENE_MODEL_NAME: process.env.MIDSCENE_MODEL_NAME || '',
-           OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
-           MIDSCENE_USE_QWEN_VL: process.env.MIDSCENE_USE_QWEN_VL || '',
-           MIDSCENE_CACHE: process.env.MIDSCENE_CACHE || '',
-           DEBUG: 'midscene:ai:call',
-           MCP_SERVER_REQUEST_TIMEOUT: '800000',
-         },
-       },
+        command: 'npx',
+        args: ['-y', '@midscene/mcp'],
+        env: {
+          OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+          MIDSCENE_MODEL_NAME: process.env.MIDSCENE_MODEL_NAME || '',
+          OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
+          MIDSCENE_USE_QWEN_VL: process.env.MIDSCENE_USE_QWEN_VL || '',
+          MIDSCENE_CACHE: process.env.MIDSCENE_CACHE || '',
+          DEBUG: 'midscene:ai:call',
+          MCP_SERVER_REQUEST_TIMEOUT: '800000',
+        },
+      },
       //  "smartrui-douyin-mcp-server": {
       //    "type": "sse",
       //    "url": "https://mcp.api-inference.modelscope.net/10f2a49665cf45/sse"
@@ -110,14 +110,14 @@ export const videoDownloadTools = async () => {
     const tools = await mcpClient.getTools();
     console.log('✅ 视频下载智能体工具加载成功', {
       totalTools: Object.keys(tools || {}).length,
-      toolNames: Object.keys(tools || {}).slice(0, 10)
+      toolNames: Object.keys(tools || {}).slice(0, 10),
     });
     return tools;
   } catch (error) {
     console.error('❌ 视频下载智能体工具加载失败', error);
     return {};
   }
-}
+};
 
 // 创建视频下载智能体
 export const createVideoDownloadAgent = () => {

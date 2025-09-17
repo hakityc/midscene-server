@@ -3,15 +3,23 @@
  * 融合 Midscene 智能化能力与 Mastra 框架优势
  */
 
-import { browserAgent, contextManager, enhancedWrapper, toolManager } from './modules/browser-agent';
-import { globalConfig, configUtils } from './config/enhanced-config';
+import { configUtils, globalConfig } from './config/enhanced-config';
 import { errorHandler } from './error/error-handler';
+import {
+  browserAgent,
+  contextManager,
+  enhancedWrapper,
+  toolManager,
+} from './modules/browser-agent';
 
 // 简化的日志记录
 const logger = {
-  info: (message: string, data?: any) => console.log(`[INFO] ${message}`, data || ''),
-  error: (message: string, data?: any) => console.error(`[ERROR] ${message}`, data || ''),
-  warn: (message: string, data?: any) => console.warn(`[WARN] ${message}`, data || '')
+  info: (message: string, data?: any) =>
+    console.log(`[INFO] ${message}`, data || ''),
+  error: (message: string, data?: any) =>
+    console.error(`[ERROR] ${message}`, data || ''),
+  warn: (message: string, data?: any) =>
+    console.warn(`[WARN] ${message}`, data || ''),
 };
 
 /**
@@ -52,9 +60,8 @@ export class EnhancedBrowserAgent {
         上下文感知操作: '✓',
         自适应错误恢复: '✓',
         操作历史学习: '✓',
-        性能优化: '✓'
+        性能优化: '✓',
       });
-
     } catch (error) {
       logger.error('❌ 增强浏览器自动化助手初始化失败', error);
       throw error;
@@ -112,7 +119,7 @@ export class EnhancedBrowserAgent {
   async executeOperation(
     operation: string,
     target?: string,
-    options?: any
+    options?: any,
   ): Promise<any> {
     try {
       logger.info(`🎯 执行操作: ${operation}`, { target, options });
@@ -120,12 +127,12 @@ export class EnhancedBrowserAgent {
       // 通过工具管理器调用相应工具
       const result = await toolManager.callTool(operation, {
         target,
-        ...options
+        ...options,
       });
 
       logger.info(`✅ 操作完成: ${operation}`, {
         success: result.success,
-        duration: result.duration
+        duration: result.duration,
       });
 
       return result;
@@ -138,20 +145,22 @@ export class EnhancedBrowserAgent {
         operation,
         target || '',
         options || {},
-        0
+        0,
       );
 
       if (recoveryResult.shouldRetry) {
         logger.info(`🔄 尝试恢复操作: ${operation}`, recoveryResult);
 
         if (recoveryResult.waitTime) {
-          await new Promise(resolve => setTimeout(resolve, recoveryResult.waitTime));
+          await new Promise((resolve) =>
+            setTimeout(resolve, recoveryResult.waitTime),
+          );
         }
 
         // 重试操作
         return this.executeOperation(operation, target, {
           ...options,
-          strategy: recoveryResult.newStrategy
+          strategy: recoveryResult.newStrategy,
         });
       }
 
@@ -162,21 +171,27 @@ export class EnhancedBrowserAgent {
   /**
    * 批量执行操作
    */
-  async executeBatchOperations(operations: Array<{
-    operation: string;
-    target?: string;
-    options?: any;
-  }>): Promise<any[]> {
+  async executeBatchOperations(
+    operations: Array<{
+      operation: string;
+      target?: string;
+      options?: any;
+    }>,
+  ): Promise<any[]> {
     const results = [];
 
     for (const op of operations) {
       try {
-        const result = await this.executeOperation(op.operation, op.target, op.options);
+        const result = await this.executeOperation(
+          op.operation,
+          op.target,
+          op.options,
+        );
         results.push({ success: true, result });
       } catch (error) {
         results.push({
           success: false,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
@@ -198,7 +213,7 @@ export class EnhancedBrowserAgent {
         description: analysis,
         context: context,
         timestamp: Date.now(),
-        capabilities: await this.getPageCapabilities()
+        capabilities: await this.getPageCapabilities(),
       };
 
       logger.info('✅ 页面分析完成');
@@ -220,25 +235,51 @@ export class EnhancedBrowserAgent {
       const tools = await toolManager.getAvailableTools();
       const toolNames = Object.keys(tools);
 
-      if (toolNames.some(name => name.includes('locate') || name.includes('Locate'))) {
+      if (
+        toolNames.some(
+          (name) => name.includes('locate') || name.includes('Locate'),
+        )
+      ) {
         capabilities.push('智能元素定位');
       }
-      if (toolNames.some(name => name.includes('input') || name.includes('Input'))) {
+      if (
+        toolNames.some(
+          (name) => name.includes('input') || name.includes('Input'),
+        )
+      ) {
         capabilities.push('文本输入');
       }
-      if (toolNames.some(name => name.includes('tap') || name.includes('Tap') || name.includes('click'))) {
+      if (
+        toolNames.some(
+          (name) =>
+            name.includes('tap') ||
+            name.includes('Tap') ||
+            name.includes('click'),
+        )
+      ) {
         capabilities.push('点击操作');
       }
-      if (toolNames.some(name => name.includes('scroll') || name.includes('Scroll'))) {
+      if (
+        toolNames.some(
+          (name) => name.includes('scroll') || name.includes('Scroll'),
+        )
+      ) {
         capabilities.push('滚动操作');
       }
-      if (toolNames.some(name => name.includes('query') || name.includes('Query'))) {
+      if (
+        toolNames.some(
+          (name) => name.includes('query') || name.includes('Query'),
+        )
+      ) {
         capabilities.push('内容查询');
       }
-      if (toolNames.some(name => name.includes('assert') || name.includes('Assert'))) {
+      if (
+        toolNames.some(
+          (name) => name.includes('assert') || name.includes('Assert'),
+        )
+      ) {
         capabilities.push('状态验证');
       }
-
     } catch (error) {
       logger.warn('获取页面能力检测失败', error);
     }
@@ -256,7 +297,7 @@ export class EnhancedBrowserAgent {
       performance: {
         toolCalls: toolManager.getToolCallStats(),
         operations: enhancedWrapper.getOperationStats(),
-        errors: errorHandler.getErrorStats()
+        errors: errorHandler.getErrorStats(),
       },
       memory: {
         contextSize: contextManager.getCurrentPageContext() ? 1 : 0,
@@ -268,8 +309,8 @@ export class EnhancedBrowserAgent {
         '🔄 自适应执行',
         '📊 上下文感知',
         '🛡️ 错误恢复',
-        '📈 学习优化'
-      ]
+        '📈 学习优化',
+      ],
     };
   }
 
@@ -310,11 +351,11 @@ export {
   enhancedWrapper,
   toolManager,
   errorHandler,
-  globalConfig
+  globalConfig,
 };
 
+export type * from './config/enhanced-config';
 // 导出类型定义
 export type * from './context/context-manager';
-export type * from './strategies/intelligent-strategies';
 export type * from './error/error-handler';
-export type * from './config/enhanced-config';
+export type * from './strategies/intelligent-strategies';

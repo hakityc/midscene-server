@@ -1,13 +1,13 @@
+import type { WebSocketMessage } from '../../types/websocket';
 import { wsLogger } from '../../utils/logger';
 import { MessageBuilder } from '../builders/messageBuilder';
-import type { WebSocketMessage } from '../../types/websocket';
 
 type WebSocketClient = any;
 
 /**
  * 安全发送消息
  */
-function sendMessage(ws: WebSocketClient, message: WebSocketMessage): boolean {
+function sendMessage(ws: WebSocketClient, message: any): boolean {
   try {
     if (ws && typeof ws.send === 'function') {
       ws.send(JSON.stringify(message));
@@ -38,7 +38,7 @@ export async function handleMessageProcessingError(
     {
       connectionId,
       error,
-      messageId: message.message_id,
+      messageId: message.meta.messageId,
       action,
     },
     '消息处理失败',
@@ -87,7 +87,7 @@ export function handleUnknownAction(
   wsLogger.warn(
     {
       action,
-      messageId: message.message_id,
+      messageId: message.meta.messageId,
     },
     '未知的 action 类型',
   );

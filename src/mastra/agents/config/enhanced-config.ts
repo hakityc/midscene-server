@@ -58,7 +58,7 @@ export const DEFAULT_CONFIG: EnhancedBrowserAgentConfig = {
   modelConfig: {
     name: process.env.TASK_MIDSCENE_MODEL_NAME || 'gpt-4',
     apiKey: process.env.TASK_OPENAI_API_KEY || '',
-    baseUrl: process.env.TASK_OPENAI_BASE_URL || ''
+    baseUrl: process.env.TASK_OPENAI_BASE_URL || '',
   },
 
   performance: {
@@ -66,36 +66,36 @@ export const DEFAULT_CONFIG: EnhancedBrowserAgentConfig = {
     defaultTimeout: 30000,
     batchOperationSize: 5,
     cacheEnabled: true,
-    cacheTTL: 300000 // 5分钟
+    cacheTTL: 300000, // 5分钟
   },
 
   strategies: {
     elementLocationStrategy: 'adaptive',
     errorRecoveryEnabled: true,
     adaptiveRetryEnabled: true,
-    contextCachingEnabled: true
+    contextCachingEnabled: true,
   },
 
   memory: {
     enabled: true,
     maxHistorySize: 1000,
     learningEnabled: true,
-    sessionPersistence: true
+    sessionPersistence: true,
   },
 
   safety: {
     rateLimitEnabled: true,
     maxOperationsPerMinute: 60,
     sensitiveDataProtection: true,
-    operationLogging: true
+    operationLogging: true,
   },
 
   monitoring: {
     detailedLogging: process.env.NODE_ENV === 'development',
     performanceMetrics: true,
     errorReporting: true,
-    toolCallTracking: true
-  }
+    toolCallTracking: true,
+  },
 };
 
 /**
@@ -127,7 +127,9 @@ export class ConfigManager {
   /**
    * 获取特定配置项
    */
-  get<K extends keyof EnhancedBrowserAgentConfig>(key: K): EnhancedBrowserAgentConfig[K] {
+  get<K extends keyof EnhancedBrowserAgentConfig>(
+    key: K,
+  ): EnhancedBrowserAgentConfig[K] {
     return this.config[key];
   }
 
@@ -135,8 +137,8 @@ export class ConfigManager {
    * 设置特定配置项
    */
   set<K extends keyof EnhancedBrowserAgentConfig>(
-    key: K, 
-    value: EnhancedBrowserAgentConfig[K]
+    key: K,
+    value: EnhancedBrowserAgentConfig[K],
   ): void {
     this.config[key] = value;
     this.validateConfig();
@@ -147,7 +149,7 @@ export class ConfigManager {
    */
   private mergeConfig(
     base: EnhancedBrowserAgentConfig,
-    override?: Partial<EnhancedBrowserAgentConfig>
+    override?: Partial<EnhancedBrowserAgentConfig>,
   ): EnhancedBrowserAgentConfig {
     if (!override) return base;
 
@@ -157,7 +159,7 @@ export class ConfigManager {
       strategies: { ...base.strategies, ...override.strategies },
       memory: { ...base.memory, ...override.memory },
       safety: { ...base.safety, ...override.safety },
-      monitoring: { ...base.monitoring, ...override.monitoring }
+      monitoring: { ...base.monitoring, ...override.monitoring },
     };
   }
 
@@ -182,12 +184,18 @@ export class ConfigManager {
     if (performance.maxRetries < 0 || performance.maxRetries > 10) {
       throw new Error('最大重试次数应在 0-10 之间');
     }
-    if (performance.defaultTimeout < 1000 || performance.defaultTimeout > 120000) {
+    if (
+      performance.defaultTimeout < 1000 ||
+      performance.defaultTimeout > 120000
+    ) {
       throw new Error('默认超时时间应在 1-120 秒之间');
     }
 
     // 验证安全配置
-    if (safety.maxOperationsPerMinute < 1 || safety.maxOperationsPerMinute > 300) {
+    if (
+      safety.maxOperationsPerMinute < 1 ||
+      safety.maxOperationsPerMinute > 300
+    ) {
       throw new Error('每分钟最大操作数应在 1-300 之间');
     }
   }
@@ -208,7 +216,9 @@ export class ConfigManager {
       this.config = this.mergeConfig(DEFAULT_CONFIG, importedConfig);
       this.validateConfig();
     } catch (error) {
-      throw new Error(`配置导入失败: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `配置导入失败: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -229,7 +239,7 @@ export class ConfigManager {
       intelligentStrategies: this.config.strategies.adaptiveRetryEnabled,
       memoryEnabled: this.config.memory.enabled,
       safetyEnabled: this.config.safety.rateLimitEnabled,
-      monitoringEnabled: this.config.monitoring.detailedLogging
+      monitoringEnabled: this.config.monitoring.detailedLogging,
     };
   }
 }
@@ -247,15 +257,15 @@ export const configUtils = {
       detailedLogging: true,
       performanceMetrics: true,
       errorReporting: true,
-      toolCallTracking: true
+      toolCallTracking: true,
     },
     performance: {
       maxRetries: 5,
       defaultTimeout: 60000,
       batchOperationSize: 3,
       cacheEnabled: true,
-      cacheTTL: 60000 // 1分钟，便于测试
-    }
+      cacheTTL: 60000, // 1分钟，便于测试
+    },
   }),
 
   /**
@@ -266,21 +276,21 @@ export const configUtils = {
       detailedLogging: false,
       performanceMetrics: true,
       errorReporting: true,
-      toolCallTracking: false
+      toolCallTracking: false,
     },
     performance: {
       maxRetries: 3,
       defaultTimeout: 30000,
       batchOperationSize: 10,
       cacheEnabled: true,
-      cacheTTL: 300000 // 5分钟
+      cacheTTL: 300000, // 5分钟
     },
     safety: {
       rateLimitEnabled: true,
       maxOperationsPerMinute: 30,
       sensitiveDataProtection: true,
-      operationLogging: false
-    }
+      operationLogging: false,
+    },
   }),
 
   /**
@@ -292,13 +302,13 @@ export const configUtils = {
       defaultTimeout: 15000,
       batchOperationSize: 15,
       cacheEnabled: true,
-      cacheTTL: 600000 // 10分钟
+      cacheTTL: 600000, // 10分钟
     },
     strategies: {
       elementLocationStrategy: 'visual_first',
       errorRecoveryEnabled: true,
       adaptiveRetryEnabled: false,
-      contextCachingEnabled: true
-    }
-  })
+      contextCachingEnabled: true,
+    },
+  }),
 };

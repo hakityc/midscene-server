@@ -7,9 +7,12 @@ import { mcpClient } from '../../mcp/client';
 
 // 简化的日志记录
 const logger = {
-  info: (message: string, data?: any) => console.log(`[INFO] ${message}`, data || ''),
-  error: (message: string, data?: any) => console.error(`[ERROR] ${message}`, data || ''),
-  warn: (message: string, data?: any) => console.warn(`[WARN] ${message}`, data || '')
+  info: (message: string, data?: any) =>
+    console.log(`[INFO] ${message}`, data || ''),
+  error: (message: string, data?: any) =>
+    console.error(`[ERROR] ${message}`, data || ''),
+  warn: (message: string, data?: any) =>
+    console.warn(`[WARN] ${message}`, data || ''),
 };
 
 export interface LocateOptions {
@@ -38,9 +41,9 @@ export class MidsceneWrapper {
           success: true,
           element: {
             center: [100, 100],
-            rect: { x: 50, y: 50, width: 100, height: 50 }
+            rect: { x: 50, y: 50, width: 100, height: 50 },
           },
-          message: `成功定位元素: ${prompt}`
+          message: `成功定位元素: ${prompt}`,
         };
       }
 
@@ -86,7 +89,7 @@ export class MidsceneWrapper {
         return {
           query: prompt,
           result: `根据查询"${prompt}"找到的相关内容`,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
 
@@ -121,7 +124,10 @@ export class MidsceneWrapper {
   /**
    * 等待条件满足
    */
-  async waitForCondition(condition: string, timeout: number = 30000): Promise<void> {
+  async waitForCondition(
+    condition: string,
+    timeout: number = 30000,
+  ): Promise<void> {
     try {
       logger.info(`⏳ 等待条件: ${condition}, 超时: ${timeout}ms`);
 
@@ -129,7 +135,7 @@ export class MidsceneWrapper {
       const tools = await mcpClient.getTools();
       if (tools && tools['midscene_aiWaitFor']) {
         // 模拟等待逻辑
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         return;
       }
 
@@ -155,7 +161,7 @@ export class MidsceneWrapper {
           url: 'https://example.com',
           title: '示例页面',
           elements: [],
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
 
@@ -183,7 +189,7 @@ export class MidsceneWrapper {
           success: true,
           element: element,
           action: 'tap',
-          message: `成功点击元素: ${prompt}`
+          message: `成功点击元素: ${prompt}`,
         };
       }
 
@@ -197,7 +203,11 @@ export class MidsceneWrapper {
   /**
    * 输入文本
    */
-  async inputText(prompt: string, value: string, options?: LocateOptions): Promise<any> {
+  async inputText(
+    prompt: string,
+    value: string,
+    options?: LocateOptions,
+  ): Promise<any> {
     try {
       logger.info(`⌨️ 输入文本到: ${prompt}, 值: ${value}`);
 
@@ -212,7 +222,7 @@ export class MidsceneWrapper {
           element: element,
           action: 'input',
           value: value,
-          message: `成功输入文本到: ${prompt}`
+          message: `成功输入文本到: ${prompt}`,
         };
       }
 
@@ -226,7 +236,10 @@ export class MidsceneWrapper {
   /**
    * 滚动页面
    */
-  async scrollPage(direction: string = 'down', distance?: number): Promise<any> {
+  async scrollPage(
+    direction: string = 'down',
+    distance?: number,
+  ): Promise<any> {
     try {
       logger.info(`📜 滚动页面: ${direction}`, { distance });
 
@@ -238,7 +251,7 @@ export class MidsceneWrapper {
           action: 'scroll',
           direction: direction,
           distance: distance,
-          message: `成功滚动页面: ${direction}`
+          message: `成功滚动页面: ${direction}`,
         };
       }
 
@@ -264,7 +277,7 @@ export class MidsceneWrapper {
           action: 'screenshot',
           name: name || `screenshot_${Date.now()}`,
           timestamp: Date.now(),
-          message: '截图成功'
+          message: '截图成功',
         };
       }
 

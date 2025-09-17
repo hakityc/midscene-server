@@ -1,8 +1,8 @@
 import type { MessageHandler } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
 import { createConnectTabHandler } from '../actions/connect';
-import { createAiHandler } from '../actions/execute';
 import { createDownloadVideoHandler } from '../actions/downloadVideo';
+import { createAiHandler } from '../actions/execute';
 import { executeScriptHandler } from '../actions/executeScript';
 
 // 创建所有消息处理器

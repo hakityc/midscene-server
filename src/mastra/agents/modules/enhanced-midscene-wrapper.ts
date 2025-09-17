@@ -5,11 +5,15 @@
 
 import { mcpClient } from '../../mcp/client';
 import type { ContextManager } from '../context/context-manager';
+
 // 简化的日志记录
 const logger = {
-  info: (message: string, data?: any) => console.log(`[INFO] ${message}`, data || ''),
-  error: (message: string, data?: any) => console.error(`[ERROR] ${message}`, data || ''),
-  warn: (message: string, data?: any) => console.warn(`[WARN] ${message}`, data || '')
+  info: (message: string, data?: any) =>
+    console.log(`[INFO] ${message}`, data || ''),
+  error: (message: string, data?: any) =>
+    console.error(`[ERROR] ${message}`, data || ''),
+  warn: (message: string, data?: any) =>
+    console.warn(`[WARN] ${message}`, data || ''),
 };
 
 export interface OperationOptions {
@@ -35,7 +39,11 @@ export interface OperationResult {
  */
 export class EnhancedMidsceneWrapper {
   private contextManager?: ContextManager;
-  private operationHistory: Array<{ type: string; result: OperationResult; timestamp: number }> = [];
+  private operationHistory: Array<{
+    type: string;
+    result: OperationResult;
+    timestamp: number;
+  }> = [];
 
   constructor(contextManager?: ContextManager) {
     this.contextManager = contextManager;
@@ -71,7 +79,10 @@ export class EnhancedMidsceneWrapper {
       logger.info('🔍 开始智能页面分析...');
 
       // 调用 midscene 页面描述
-      const describeResult = await this.callMcpTool('midscene_describe_page', {});
+      const describeResult = await this.callMcpTool(
+        'midscene_describe_page',
+        {},
+      );
 
       const result = {
         success: true,
@@ -79,14 +90,14 @@ export class EnhancedMidsceneWrapper {
         message: '页面智能分析完成',
         duration: Date.now() - startTime,
         retryCount,
-        strategy: 'visual_analysis'
+        strategy: 'visual_analysis',
       };
 
       // 更新上下文
       if (this.contextManager) {
         await this.contextManager.updatePageContext({
           description: result.result,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         await this.contextManager.recordOperation({
@@ -95,7 +106,7 @@ export class EnhancedMidsceneWrapper {
           parameters: {},
           result: 'success',
           duration: result.duration,
-          retryCount
+          retryCount,
         });
       }
 
@@ -110,11 +121,14 @@ export class EnhancedMidsceneWrapper {
         message: `页面分析失败: ${error instanceof Error ? error.message : String(error)}`,
         duration: Date.now() - startTime,
         retryCount,
-        strategy: 'visual_analysis'
+        strategy: 'visual_analysis',
       };
 
       this.recordOperation('describe_page', errorResult);
-      logger.error('❌ 页面智能分析失败', { error, duration: errorResult.duration });
+      logger.error('❌ 页面智能分析失败', {
+        error,
+        duration: errorResult.duration,
+      });
 
       throw new Error(errorResult.message);
     }
@@ -123,7 +137,10 @@ export class EnhancedMidsceneWrapper {
   /**
    * 智能元素定位 - 多维度定位策略
    */
-  async locateElement(prompt: string, options: OperationOptions = {}): Promise<any> {
+  async locateElement(
+    prompt: string,
+    options: OperationOptions = {},
+  ): Promise<any> {
     const startTime = Date.now();
     let retryCount = 0;
     const maxRetries = options.retries || 3;
@@ -146,17 +163,19 @@ export class EnhancedMidsceneWrapper {
           prompt: this.enhanceLocationPrompt(prompt, strategy),
           options: {
             deepThink: options.deepThink || retryCount > 1,
-            ...options
-          }
+            ...options,
+          },
         });
 
         const result = {
           success: true,
-          result: locateResult.content?.[0]?.text ? JSON.parse(locateResult.content[0].text) : null,
+          result: locateResult.content?.[0]?.text
+            ? JSON.parse(locateResult.content[0].text)
+            : null,
           message: `元素定位成功: ${prompt}`,
           duration: Date.now() - startTime,
           retryCount,
-          strategy
+          strategy,
         };
 
         // 记录成功操作
@@ -167,19 +186,24 @@ export class EnhancedMidsceneWrapper {
             parameters: options,
             result: 'success',
             duration: result.duration,
-            retryCount
+            retryCount,
           });
         }
 
         this.recordOperation('locate_element', result);
-        logger.info('✅ 元素定位成功', { prompt, strategy, retryCount, duration: result.duration });
+        logger.info('✅ 元素定位成功', {
+          prompt,
+          strategy,
+          retryCount,
+          duration: result.duration,
+        });
 
         return result.result;
       } catch (error) {
         retryCount++;
-        logger.warn(`⚠️ 元素定位失败，重试 ${retryCount}/${maxRetries}`, { 
-          prompt, 
-          error: error instanceof Error ? error.message : String(error) 
+        logger.warn(`⚠️ 元素定位失败，重试 ${retryCount}/${maxRetries}`, {
+          prompt,
+          error: error instanceof Error ? error.message : String(error),
         });
 
         if (retryCount > maxRetries) {
@@ -189,7 +213,7 @@ export class EnhancedMidsceneWrapper {
             message: `元素定位失败: ${prompt} - ${error instanceof Error ? error.message : String(error)}`,
             duration: Date.now() - startTime,
             retryCount,
-            strategy: 'failed'
+            strategy: 'failed',
           };
 
           // 记录失败操作
@@ -201,12 +225,16 @@ export class EnhancedMidsceneWrapper {
               result: 'failure',
               duration: errorResult.duration,
               retryCount,
-              errorMessage: errorResult.message
+              errorMessage: errorResult.message,
             });
           }
 
           this.recordOperation('locate_element', errorResult);
-          logger.error('❌ 元素定位最终失败', { prompt, retryCount, duration: errorResult.duration });
+          logger.error('❌ 元素定位最终失败', {
+            prompt,
+            retryCount,
+            duration: errorResult.duration,
+          });
 
           throw new Error(errorResult.message);
         }
@@ -229,16 +257,18 @@ export class EnhancedMidsceneWrapper {
       logger.info('📊 开始智能内容查询...', { prompt });
 
       const queryResult = await this.callMcpTool('midscene_aiQuery', {
-        prompt: this.enhanceQueryPrompt(prompt)
+        prompt: this.enhanceQueryPrompt(prompt),
       });
 
       const result = {
         success: true,
-        result: queryResult.content?.[0]?.text ? JSON.parse(queryResult.content[0].text) : null,
+        result: queryResult.content?.[0]?.text
+          ? JSON.parse(queryResult.content[0].text)
+          : null,
         message: `内容查询成功: ${prompt}`,
         duration: Date.now() - startTime,
         retryCount: 0,
-        strategy: 'semantic_query'
+        strategy: 'semantic_query',
       };
 
       // 记录操作
@@ -249,7 +279,7 @@ export class EnhancedMidsceneWrapper {
           parameters: {},
           result: 'success',
           duration: result.duration,
-          retryCount: 0
+          retryCount: 0,
         });
       }
 
@@ -264,11 +294,14 @@ export class EnhancedMidsceneWrapper {
         message: `内容查询失败: ${prompt} - ${error instanceof Error ? error.message : String(error)}`,
         duration: Date.now() - startTime,
         retryCount: 0,
-        strategy: 'semantic_query'
+        strategy: 'semantic_query',
       };
 
       this.recordOperation('query_content', errorResult);
-      logger.error('❌ 内容查询失败', { error, duration: errorResult.duration });
+      logger.error('❌ 内容查询失败', {
+        error,
+        duration: errorResult.duration,
+      });
 
       throw new Error(errorResult.message);
     }
@@ -285,18 +318,22 @@ export class EnhancedMidsceneWrapper {
 
       const assertResult = await this.callMcpTool('midscene_aiAssert', {
         assertion,
-        message
+        message,
       });
 
-      const success = assertResult.content?.[0]?.text === 'true' || assertResult.isError === false;
+      const success =
+        assertResult.content?.[0]?.text === 'true' ||
+        assertResult.isError === false;
 
       const result = {
         success,
         result: success,
-        message: success ? `状态验证成功: ${assertion}` : `状态验证失败: ${assertion}`,
+        message: success
+          ? `状态验证成功: ${assertion}`
+          : `状态验证失败: ${assertion}`,
         duration: Date.now() - startTime,
         retryCount: 0,
-        strategy: 'state_assertion'
+        strategy: 'state_assertion',
       };
 
       // 记录操作
@@ -308,14 +345,17 @@ export class EnhancedMidsceneWrapper {
           result: success ? 'success' : 'failure',
           duration: result.duration,
           retryCount: 0,
-          errorMessage: success ? undefined : result.message
+          errorMessage: success ? undefined : result.message,
         });
       }
 
       this.recordOperation('assert_state', result);
-      
+
       if (success) {
-        logger.info('✅ 状态验证成功', { assertion, duration: result.duration });
+        logger.info('✅ 状态验证成功', {
+          assertion,
+          duration: result.duration,
+        });
       } else {
         logger.warn('⚠️ 状态验证失败', { assertion, duration: result.duration });
       }
@@ -328,11 +368,14 @@ export class EnhancedMidsceneWrapper {
         message: `状态验证异常: ${assertion} - ${error instanceof Error ? error.message : String(error)}`,
         duration: Date.now() - startTime,
         retryCount: 0,
-        strategy: 'state_assertion'
+        strategy: 'state_assertion',
       };
 
       this.recordOperation('assert_state', errorResult);
-      logger.error('❌ 状态验证异常', { error, duration: errorResult.duration });
+      logger.error('❌ 状态验证异常', {
+        error,
+        duration: errorResult.duration,
+      });
 
       throw new Error(errorResult.message);
     }
@@ -341,7 +384,10 @@ export class EnhancedMidsceneWrapper {
   /**
    * 智能等待条件
    */
-  async waitForCondition(condition: string, timeout: number = 30000): Promise<void> {
+  async waitForCondition(
+    condition: string,
+    timeout: number = 30000,
+  ): Promise<void> {
     const startTime = Date.now();
 
     try {
@@ -349,7 +395,7 @@ export class EnhancedMidsceneWrapper {
 
       await this.callMcpTool('midscene_aiWaitFor', {
         condition,
-        timeout
+        timeout,
       });
 
       const result = {
@@ -358,7 +404,7 @@ export class EnhancedMidsceneWrapper {
         message: `等待条件满足: ${condition}`,
         duration: Date.now() - startTime,
         retryCount: 0,
-        strategy: 'intelligent_wait'
+        strategy: 'intelligent_wait',
       };
 
       // 记录操作
@@ -369,7 +415,7 @@ export class EnhancedMidsceneWrapper {
           parameters: { timeout },
           result: 'success',
           duration: result.duration,
-          retryCount: 0
+          retryCount: 0,
         });
       }
 
@@ -382,11 +428,14 @@ export class EnhancedMidsceneWrapper {
         message: `等待条件超时: ${condition} - ${error instanceof Error ? error.message : String(error)}`,
         duration: Date.now() - startTime,
         retryCount: 0,
-        strategy: 'intelligent_wait'
+        strategy: 'intelligent_wait',
       };
 
       this.recordOperation('wait_for', errorResult);
-      logger.error('❌ 等待条件超时', { error, duration: errorResult.duration });
+      logger.error('❌ 等待条件超时', {
+        error,
+        duration: errorResult.duration,
+      });
 
       throw new Error(errorResult.message);
     }
@@ -405,11 +454,13 @@ export class EnhancedMidsceneWrapper {
 
       const result = {
         success: true,
-        result: contextResult.content?.[0]?.text ? JSON.parse(contextResult.content[0].text) : null,
+        result: contextResult.content?.[0]?.text
+          ? JSON.parse(contextResult.content[0].text)
+          : null,
         message: '页面上下文获取成功',
         duration: Date.now() - startTime,
         retryCount: 0,
-        strategy: 'context_retrieval'
+        strategy: 'context_retrieval',
       };
 
       this.recordOperation('get_context', result);
@@ -423,11 +474,14 @@ export class EnhancedMidsceneWrapper {
         message: `页面上下文获取失败 - ${error instanceof Error ? error.message : String(error)}`,
         duration: Date.now() - startTime,
         retryCount: 0,
-        strategy: 'context_retrieval'
+        strategy: 'context_retrieval',
       };
 
       this.recordOperation('get_context', errorResult);
-      logger.error('❌ 页面上下文获取失败', { error, duration: errorResult.duration });
+      logger.error('❌ 页面上下文获取失败', {
+        error,
+        duration: errorResult.duration,
+      });
 
       throw new Error(errorResult.message);
     }
@@ -436,7 +490,10 @@ export class EnhancedMidsceneWrapper {
   /**
    * 选择定位策略
    */
-  private selectLocationStrategy(retryCount: number, options: OperationOptions): string {
+  private selectLocationStrategy(
+    retryCount: number,
+    options: OperationOptions,
+  ): string {
     if (options.strategy) return options.strategy;
 
     // 根据重试次数选择不同策略
@@ -460,7 +517,7 @@ export class EnhancedMidsceneWrapper {
       visual_first: `基于视觉布局定位: ${prompt}`,
       semantic_based: `基于语义功能定位: ${prompt}`,
       adaptive_retry: `多维度分析定位: ${prompt}（包含位置、文本、属性信息）`,
-      deep_analysis: `深度智能分析定位: ${prompt}（使用所有可用信息和上下文）`
+      deep_analysis: `深度智能分析定位: ${prompt}（使用所有可用信息和上下文）`,
     };
 
     return enhancements[strategy as keyof typeof enhancements] || prompt;
@@ -478,7 +535,7 @@ export class EnhancedMidsceneWrapper {
    */
   private async waitForPageStable(): Promise<void> {
     logger.info('⏸️ 等待页面稳定...');
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
   }
 
   /**
@@ -486,9 +543,9 @@ export class EnhancedMidsceneWrapper {
    */
   private async waitBeforeRetry(retryCount: number): Promise<void> {
     const baseDelay = 1000;
-    const delay = baseDelay * Math.pow(1.5, retryCount - 1); // 指数退避
+    const delay = baseDelay * 1.5 ** (retryCount - 1); // 指数退避
     logger.info(`⏳ 等待 ${delay}ms 后重试...`);
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
   /**
@@ -498,7 +555,7 @@ export class EnhancedMidsceneWrapper {
     this.operationHistory.push({
       type,
       result,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // 保留最近50条记录
@@ -512,17 +569,23 @@ export class EnhancedMidsceneWrapper {
    */
   getOperationStats(): any {
     const total = this.operationHistory.length;
-    const successful = this.operationHistory.filter(op => op.result.success).length;
-    const avgDuration = total > 0 
-      ? this.operationHistory.reduce((sum, op) => sum + op.result.duration, 0) / total 
-      : 0;
+    const successful = this.operationHistory.filter(
+      (op) => op.result.success,
+    ).length;
+    const avgDuration =
+      total > 0
+        ? this.operationHistory.reduce(
+            (sum, op) => sum + op.result.duration,
+            0,
+          ) / total
+        : 0;
 
     return {
       total,
       successful,
       successRate: total > 0 ? (successful / total) * 100 : 0,
       averageDuration: avgDuration,
-      recentOperations: this.operationHistory.slice(-10)
+      recentOperations: this.operationHistory.slice(-10),
     };
   }
 }

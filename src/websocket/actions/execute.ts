@@ -1,5 +1,5 @@
 import { OperateService } from '../../services/operateService';
-import type { MessageHandler } from '../../types/websocket';
+import type { MessageHandler, WebSocketMessage } from '../../types/websocket';
 import { wsLogger } from '../../utils/logger';
 import {
   createErrorResponse,
@@ -9,10 +9,11 @@ import {
 // AI 请求处理器
 export function createAiHandler(): MessageHandler {
   return async ({ connectionId, send }, message) => {
+    const { meta, payload } = message;
     wsLogger.info(
       {
         connectionId,
-        messageId: message.message_id,
+        messageId: meta.messageId,
         action: 'ai_request',
       },
       '处理 AI 请求',
@@ -20,10 +21,11 @@ export function createAiHandler(): MessageHandler {
 
     try {
       const operateService = OperateService.getInstance();
-      await operateService.execute(message.content.body);
+      const params = payload.params;
+      await operateService.execute(params);
       const response = createSuccessResponse(
-        message,
-        `AI 处理完成: ${message.content.body}`,
+        message as WebSocketMessage,
+        `AI 处理完成`,
       );
       send(response);
     } catch (error) {
@@ -31,11 +33,15 @@ export function createAiHandler(): MessageHandler {
         {
           connectionId,
           error,
-          messageId: message.message_id,
+          messageId: meta.messageId,
         },
         'AI 处理失败',
       );
-      const response = createErrorResponse(message, error, 'AI 处理失败');
+      const response = createErrorResponse(
+        message as WebSocketMessage,
+        error,
+        'AI 处理失败',
+      );
       send(response);
     }
   };

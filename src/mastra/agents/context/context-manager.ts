@@ -4,12 +4,19 @@
  */
 
 import type { Memory } from '@mastra/memory';
-import { StrategySelector, type OperationContext } from '../strategies/intelligent-strategies';
+import {
+  type OperationContext,
+  StrategySelector,
+} from '../strategies/intelligent-strategies';
+
 // 简化的日志记录
 const logger = {
-  info: (message: string, data?: any) => console.log(`[INFO] ${message}`, data || ''),
-  error: (message: string, data?: any) => console.error(`[ERROR] ${message}`, data || ''),
-  warn: (message: string, data?: any) => console.warn(`[WARN] ${message}`, data || '')
+  info: (message: string, data?: any) =>
+    console.log(`[INFO] ${message}`, data || ''),
+  error: (message: string, data?: any) =>
+    console.error(`[ERROR] ${message}`, data || ''),
+  warn: (message: string, data?: any) =>
+    console.warn(`[WARN] ${message}`, data || ''),
 };
 
 export interface PageContext {
@@ -60,7 +67,7 @@ export class ContextManager {
       startTime: Date.now(),
       pageHistory: [],
       operationHistory: [],
-      globalState: {}
+      globalState: {},
     };
   }
 
@@ -83,15 +90,15 @@ export class ContextManager {
         structure: context.structure,
         timestamp: Date.now(),
         screenshot: context.screenshot,
-        elementMap: context.elementMap || new Map()
+        elementMap: context.elementMap || new Map(),
       };
 
       // 更新当前页面上下文
       this.currentSession.currentPage = newContext;
-      
+
       // 添加到历史记录
       this.currentSession.pageHistory.push(newContext);
-      
+
       // 缓存页面上下文（基于 URL）
       if (newContext.url) {
         this.contextCache.set(newContext.url, newContext);
@@ -99,10 +106,10 @@ export class ContextManager {
 
       // 持久化到记忆系统
       await this.saveContextToMemory(newContext);
-      
-      logger.info('页面上下文已更新', { 
-        url: newContext.url, 
-        title: newContext.title 
+
+      logger.info('页面上下文已更新', {
+        url: newContext.url,
+        title: newContext.title,
       });
     } catch (error) {
       logger.error('更新页面上下文失败', { error });
@@ -113,12 +120,14 @@ export class ContextManager {
   /**
    * 记录操作历史
    */
-  async recordOperation(operation: Omit<OperationRecord, 'id' | 'timestamp'>): Promise<void> {
+  async recordOperation(
+    operation: Omit<OperationRecord, 'id' | 'timestamp'>,
+  ): Promise<void> {
     try {
       const operationRecord: OperationRecord = {
         id: this.generateOperationId(),
         timestamp: Date.now(),
-        ...operation
+        ...operation,
       };
 
       // 添加到操作历史
@@ -130,10 +139,10 @@ export class ContextManager {
       // 更新全局状态
       this.updateGlobalState(operationRecord);
 
-      logger.info('操作记录已保存', { 
-        type: operation.type, 
+      logger.info('操作记录已保存', {
+        type: operation.type,
         target: operation.target,
-        result: operation.result 
+        result: operation.result,
       });
     } catch (error) {
       logger.error('记录操作失败', { error });
@@ -145,7 +154,7 @@ export class ContextManager {
    */
   getOperationContext(): OperationContext {
     const recent = this.currentSession.operationHistory.slice(-10);
-    const errorCount = recent.filter(op => op.result === 'failure').length;
+    const errorCount = recent.filter((op) => op.result === 'failure').length;
     const lastOperation = recent[recent.length - 1];
 
     return {
@@ -153,27 +162,30 @@ export class ContextManager {
       pageTitle: this.currentSession.currentPage?.title,
       pageDescription: this.currentSession.currentPage?.description,
       lastOperation: lastOperation?.type,
-      operationHistory: recent.map(op => `${op.type}:${op.result}`),
+      operationHistory: recent.map((op) => `${op.type}:${op.result}`),
       errorCount,
-      retryCount: lastOperation?.retryCount || 0
+      retryCount: lastOperation?.retryCount || 0,
     };
   }
 
   /**
    * 获取相似操作的历史记录
    */
-  async getSimilarOperations(operationType: string, target: string): Promise<OperationRecord[]> {
+  async getSimilarOperations(
+    operationType: string,
+    target: string,
+  ): Promise<OperationRecord[]> {
     try {
       // 从内存中搜索相似操作
       // 注意：这里需要根据实际的 Memory API 进行调整
       // const query = `operation_type:${operationType} target:${target}`;
       // const memories = await this.memory.search(query);
-      
+
       // 临时实现：从操作历史中查找相似操作
-      const similarOps = this.currentSession.operationHistory.filter(op => 
-        op.type === operationType || op.target.includes(target)
+      const similarOps = this.currentSession.operationHistory.filter(
+        (op) => op.type === operationType || op.target.includes(target),
       );
-      
+
       return similarOps;
     } catch (error) {
       logger.error('搜索相似操作失败', { error });
@@ -223,13 +235,13 @@ export class ContextManager {
 
     // 获取历史成功操作
     const similarOps = await this.getSimilarOperations(taskType, '');
-    const successfulOps = similarOps.filter(op => op.result === 'success');
+    const successfulOps = similarOps.filter((op) => op.result === 'success');
 
     return {
       recommendedStrategy: strategy,
       performanceOptimizations: optimizations,
       historicalSuccess: successfulOps.length,
-      learningInsights: this.generateLearningInsights(successfulOps)
+      learningInsights: this.generateLearningInsights(successfulOps),
     };
   }
 
@@ -249,11 +261,11 @@ export class ContextManager {
       //     timestamp: context.timestamp
       //   }
       // });
-      
+
       // 临时实现：记录到内存中
-      logger.info('上下文已保存到记忆', { 
-        url: context.url, 
-        title: context.title 
+      logger.info('上下文已保存到记忆', {
+        url: context.url,
+        title: context.title,
       });
     } catch (error) {
       logger.error('保存上下文到记忆失败', { error });
@@ -263,7 +275,9 @@ export class ContextManager {
   /**
    * 保存操作到记忆系统
    */
-  private async saveOperationToMemory(operation: OperationRecord): Promise<void> {
+  private async saveOperationToMemory(
+    operation: OperationRecord,
+  ): Promise<void> {
     try {
       // 注意：需要根据实际的 Memory API 进行调整
       // await this.memory.add({
@@ -277,12 +291,12 @@ export class ContextManager {
       //     timestamp: operation.timestamp
       //   }
       // });
-      
+
       // 临时实现：记录到日志
-      logger.info('操作已保存到记忆', { 
-        type: operation.type, 
+      logger.info('操作已保存到记忆', {
+        type: operation.type,
         target: operation.target,
-        result: operation.result 
+        result: operation.result,
       });
     } catch (error) {
       logger.error('保存操作到记忆失败', { error });
@@ -295,13 +309,13 @@ export class ContextManager {
   private updateGlobalState(operation: OperationRecord): void {
     // 更新错误统计
     if (operation.result === 'failure') {
-      this.currentSession.globalState.errorCount = 
+      this.currentSession.globalState.errorCount =
         (this.currentSession.globalState.errorCount || 0) + 1;
     }
 
     // 更新成功统计
     if (operation.result === 'success') {
-      this.currentSession.globalState.successCount = 
+      this.currentSession.globalState.successCount =
         (this.currentSession.globalState.successCount || 0) + 1;
     }
 
@@ -323,15 +337,21 @@ export class ContextManager {
     if (successfulOps.length === 0) return {};
 
     // 分析成功操作的模式
-    const avgDuration = successfulOps.reduce((sum, op) => sum + op.duration, 0) / successfulOps.length;
-    const commonTargets = successfulOps.map(op => op.target);
-    const retryPatterns = successfulOps.map(op => op.retryCount);
+    const avgDuration =
+      successfulOps.reduce((sum, op) => sum + op.duration, 0) /
+      successfulOps.length;
+    const commonTargets = successfulOps.map((op) => op.target);
+    const retryPatterns = successfulOps.map((op) => op.retryCount);
 
     return {
       averageDuration: avgDuration,
       commonTargets: [...new Set(commonTargets)],
-      averageRetries: retryPatterns.reduce((sum, r) => sum + r, 0) / retryPatterns.length,
-      successRate: successfulOps.length / (successfulOps.length + this.currentSession.globalState.errorCount || 1)
+      averageRetries:
+        retryPatterns.reduce((sum, r) => sum + r, 0) / retryPatterns.length,
+      successRate:
+        successfulOps.length /
+        (successfulOps.length + this.currentSession.globalState.errorCount ||
+          1),
     };
   }
 

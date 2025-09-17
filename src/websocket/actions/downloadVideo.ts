@@ -1,11 +1,11 @@
-import type { MessageHandler } from '../../types/websocket';
+import type { MessageHandler, WebSocketMessage } from '../../types/websocket';
+// import { mastra } from '../../mastra';
+import { WebSocketAction } from '../../utils/enums';
 import { wsLogger } from '../../utils/logger';
 import {
   createErrorResponse,
   createSuccessResponse,
 } from '../builders/messageBuilder';
-// import { mastra } from '../../mastra';
-import { WebSocketAction } from '../../utils/enums';
 
 // 处理抖音链接，提取域名和 modal_id 参数
 function normalizeDouyinUrl(url: string): string {
@@ -44,7 +44,7 @@ export function createDownloadVideoHandler(): MessageHandler {
     wsLogger.info(
       {
         connectionId,
-        messageId: message.message_id,
+        messageId: (message as any).meta?.messageId,
         action: 'ai_request',
       },
       '处理 视频下载 请求',
@@ -52,7 +52,8 @@ export function createDownloadVideoHandler(): MessageHandler {
 
     try {
       // const videoDownloadAgent = mastra.getAgent('videoDownloadAgent');
-      const originalUrl = message.content.body;
+      const originalUrl =
+        (message as any).payload?.params ?? (message as any).content?.body;
 
       // 标准化抖音链接
       const normalizedUrl = normalizeDouyinUrl(originalUrl);
@@ -76,7 +77,7 @@ export function createDownloadVideoHandler(): MessageHandler {
           body: JSON.stringify({
             url: normalizedUrl,
           }),
-        }
+        },
       )
         .then((res) => res.json())
         .then((res) => {
@@ -87,7 +88,7 @@ export function createDownloadVideoHandler(): MessageHandler {
           if (videoUrl) {
             send(
               createSuccessResponse(
-                message,
+                message as WebSocketMessage,
                 videoUrl,
                 WebSocketAction.DOWNLOAD_VIDEO_CALLBACK,
               ),
@@ -187,12 +188,16 @@ export function createDownloadVideoHandler(): MessageHandler {
         {
           connectionId,
           error: errorInfo,
-          messageId: message.message_id,
+          messageId: (message as any).meta?.messageId,
         },
         'AI 处理失败',
       );
 
-      const response = createErrorResponse(message, error, 'AI 处理失败');
+      const response = createErrorResponse(
+        message as WebSocketMessage,
+        error,
+        'AI 处理失败',
+      );
       send(response);
     }
   };

@@ -89,7 +89,7 @@ export const taskAgent = new Agent({
   name: 'Browser Agent',
   description: '专业的任务自动化助手，帮助拆解完成各种任务',
   instructions,
-  model: createModel()
+  model: createModel(),
   // tools: await mcpClient.getTools(),
   // memory: memory,
 });
