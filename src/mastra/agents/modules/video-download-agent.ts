@@ -27,7 +27,6 @@ export const VIDEO_DOWNLOAD_INSTRUCTIONS = `
    - mcp-midscene_midscene_get_screenshot(): 获取页面截图确认页面状态
    - mcp-midscene_midscene_aiHover(): 悬停在分享按钮上
    - mcp-midscene_midscene_aiTap(): 点击分享按钮
-   - mcp-midscene_midscene_navigate(): 获取分享链接
 
 2. 下载获取工具：
    - 使用 douyin-mcp 相关工具获取视频下载链接
@@ -49,7 +48,6 @@ export const VIDEO_DOWNLOAD_INSTRUCTIONS = `
 📱 链接获取失败：
 1. 确认点击了正确的分享按钮
 2. 等待分享页面加载：mcp-midscene_midscene_aiWaitFor("分享页面加载")
-3. 重新获取页面URL：mcp-midscene_midscene_navigate()
 
 🎬 下载链接获取失败：
 1. 验证分享链接格式是否正确
@@ -82,49 +80,49 @@ export const VIDEO_DOWNLOAD_INSTRUCTIONS = `
 </execution_reminder>
 `;
 
-export const videoDownloadTools = async () => {
-  // 使用统一的 MCP 客户端配置
-  const mcpClient = new MCPClient({
-    servers: {
-      'mcp-midscene': {
-        command: 'npx',
-        args: ['-y', '@midscene/mcp'],
-        env: {
-          OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-          MIDSCENE_MODEL_NAME: process.env.MIDSCENE_MODEL_NAME || '',
-          OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
-          MIDSCENE_USE_QWEN_VL: process.env.MIDSCENE_USE_QWEN_VL || '',
-          MIDSCENE_CACHE: process.env.MIDSCENE_CACHE || '',
-          DEBUG: 'midscene:ai:call',
-          MCP_SERVER_REQUEST_TIMEOUT: '800000',
-        },
-      },
-      //  "smartrui-douyin-mcp-server": {
-      //    "type": "sse",
-      //    "url": "https://mcp.api-inference.modelscope.net/10f2a49665cf45/sse"
-      //  }
-    },
-  });
+// export const videoDownloadTools = async () => {
+//   // 使用统一的 MCP 客户端配置
+//   const mcpClient = new MCPClient({
+//     servers: {
+//       'mcp-midscene': {
+//         command: 'npx',
+//         args: ['-y', '@midscene/mcp'],
+//         env: {
+//           OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+//           MIDSCENE_MODEL_NAME: process.env.MIDSCENE_MODEL_NAME || '',
+//           OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
+//           MIDSCENE_USE_QWEN_VL: process.env.MIDSCENE_USE_QWEN_VL || '',
+//           MIDSCENE_CACHE: process.env.MIDSCENE_CACHE || '',
+//           DEBUG: 'midscene:ai:call',
+//           MCP_SERVER_REQUEST_TIMEOUT: '800000',
+//         },
+//       },
+//       //  "smartrui-douyin-mcp-server": {
+//       //    "type": "sse",
+//       //    "url": "https://mcp.api-inference.modelscope.net/10f2a49665cf45/sse"
+//       //  }
+//     },
+//   });
 
-  try {
-    const tools = await mcpClient.getTools();
-    console.log('✅ 视频下载智能体工具加载成功', {
-      totalTools: Object.keys(tools || {}).length,
-      toolNames: Object.keys(tools || {}).slice(0, 10),
-    });
-    return tools;
-  } catch (error) {
-    console.error('❌ 视频下载智能体工具加载失败', error);
-    return {};
-  }
-};
+//   try {
+//     const tools = await mcpClient.getTools();
+//     console.log('✅ 视频下载智能体工具加载成功', {
+//       totalTools: Object.keys(tools || {}).length,
+//       toolNames: Object.keys(tools || {}).slice(0, 10),
+//     });
+//     return tools;
+//   } catch (error) {
+//     console.error('❌ 视频下载智能体工具加载失败', error);
+//     return {};
+//   }
+// };
 
 // 创建视频下载智能体
 export const createVideoDownloadAgent = () => {
   return new Agent({
     name: 'video-download-agent',
     instructions: VIDEO_DOWNLOAD_INSTRUCTIONS,
-    tools: videoDownloadTools,
+    // tools: videoDownloadTools,
     model: createModel(),
   });
 };

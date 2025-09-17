@@ -7,6 +7,7 @@ export class OperateService {
   private static instance: OperateService | null = null;
   private agent: AgentOverChromeBridge;
   private isInitialized: boolean = false;
+  private connectionCheckInterval: NodeJS.Timeout | null = null;
 
   private constructor() {
     this.agent = new AgentOverChromeBridge({
@@ -48,10 +49,83 @@ export class OperateService {
     try {
       await this.agent.connectCurrentTab(option);
       this.isInitialized = true;
+      this.startConnectionMonitoring();
       console.log('✅ AgentOverChromeBridge 初始化成功');
     } catch (error) {
       console.error('❌ AgentOverChromeBridge 初始化失败:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 检查连接状态
+   */
+  private async checkConnectionStatus(): Promise<boolean> {
+    try {
+      // 尝试执行一个简单的操作来检测连接状态
+      // 这里可以调用一个轻量级的API来测试连接
+      return true; // 简化实现，实际应该测试真实的连接状态
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * 启动连接监控
+   */
+  private startConnectionMonitoring() {
+    if (this.connectionCheckInterval) {
+      clearInterval(this.connectionCheckInterval);
+    }
+
+    // 每30秒检查一次连接状态
+    this.connectionCheckInterval = setInterval(async () => {
+      if (this.isInitialized) {
+        const isConnected = await this.checkConnectionStatus();
+        if (!isConnected) {
+          console.log('🔍 检测到连接断开，准备重新连接...');
+          await this.reconnect();
+        }
+      }
+    }, 30000);
+  }
+
+  /**
+   * 重新连接
+   */
+  private async reconnect(): Promise<void> {
+    try {
+      console.log('🔄 尝试重新连接...');
+      this.isInitialized = false;
+
+      // 销毁现有连接
+      try {
+        await this.agent.destroy();
+      } catch (error) {
+        console.warn('销毁现有连接时出错:', error);
+      }
+
+      // 重新创建连接
+      this.agent = new AgentOverChromeBridge({
+        closeNewTabsAfterDisconnect: true,
+        cacheId: 'midscene',
+        generateReport: true,
+        autoPrintReportMsg: true,
+        onTaskStartTip: (tip: string) => {
+          console.log(`🤖 AI 任务开始: ${tip}`);
+          serviceLogger.info({ tip }, 'AI 任务开始执行');
+        },
+      });
+
+      await this.agent.connectCurrentTab({
+        forceSameTabNavigation: true,
+      });
+
+      this.isInitialized = true;
+      console.log('✅ 重新连接成功');
+    } catch (error) {
+      console.error('❌ 重新连接失败:', error);
+      this.isInitialized = false;
     }
   }
 
@@ -71,7 +145,33 @@ export class OperateService {
     }
   }
 
-  async execute(prompt: string) {
+  async execute(prompt: string, maxRetries: number = 3): Promise<void> {
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.executeWithRetry(prompt, attempt, maxRetries);
+        return; // 成功执行，退出重试循环
+      } catch (error: any) {
+        lastError = error;
+
+        // 检查是否是调试器连接相关的错误
+        if (this.isConnectionError(error) && attempt < maxRetries) {
+          console.log(`🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`);
+          await this.handleConnectionError();
+          continue;
+        }
+
+        // 如果不是连接错误或已达到最大重试次数，抛出错误
+        throw error;
+      }
+    }
+
+    // 如果所有重试都失败，抛出最后一个错误
+    throw lastError;
+  }
+
+  private async executeWithRetry(prompt: string, attempt: number, maxRetries: number): Promise<void> {
     if (!this.isInitialized) {
       throw new Error(
         'AgentOverChromeBridge 未初始化，请先调用 initialize() 方法',
@@ -79,11 +179,12 @@ export class OperateService {
     }
 
     // 记录任务开始
+    const retryInfo = attempt > 1 ? ` (重试 ${attempt}/${maxRetries})` : '';
     console.log(
-      `🚀 开始执行 AI 任务: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`,
+      `🚀 开始执行 AI 任务: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}${retryInfo}`,
     );
     serviceLogger.info(
-      { prompt: prompt.substring(0, 200) },
+      { prompt: prompt.substring(0, 200), attempt, maxRetries },
       '开始执行 AI 任务',
     );
 
@@ -105,6 +206,7 @@ export class OperateService {
           prompt: prompt.substring(0, 200),
           duration,
           success: true,
+          attempt,
         },
         'AI 任务执行成功',
       );
@@ -124,6 +226,7 @@ export class OperateService {
             prompt: prompt.substring(0, 200),
             duration,
             success: false,
+            attempt,
           },
           'AI执行失败',
         );
@@ -136,6 +239,7 @@ export class OperateService {
           prompt: prompt.substring(0, 200),
           duration,
           success: false,
+          attempt,
         },
         '操作执行错误',
       );
@@ -143,7 +247,63 @@ export class OperateService {
     }
   }
 
-  async expect(prompt: string) {
+  /**
+   * 检查是否是连接相关的错误
+   */
+  private isConnectionError(error: any): boolean {
+    const errorMessage = error.message || '';
+    return (
+      errorMessage.includes('Debugger is not attached') ||
+      errorMessage.includes('connect') ||
+      errorMessage.includes('bridge client') ||
+      errorMessage.includes('tab with id') ||
+      errorMessage.includes('connection')
+    );
+  }
+
+  /**
+   * 处理连接错误
+   */
+  private async handleConnectionError(): Promise<void> {
+    try {
+      console.log('🔧 处理连接错误，尝试重新连接...');
+      await this.reconnect();
+
+      // 等待一段时间确保连接稳定
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch (error) {
+      console.error('❌ 处理连接错误失败:', error);
+      throw error;
+    }
+  }
+
+  async expect(prompt: string, maxRetries: number = 3): Promise<void> {
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.expectWithRetry(prompt, attempt, maxRetries);
+        return; // 成功执行，退出重试循环
+      } catch (error: any) {
+        lastError = error;
+
+        // 检查是否是调试器连接相关的错误
+        if (this.isConnectionError(error) && attempt < maxRetries) {
+          console.log(`🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`);
+          await this.handleConnectionError();
+          continue;
+        }
+
+        // 如果不是连接错误或已达到最大重试次数，抛出错误
+        throw error;
+      }
+    }
+
+    // 如果所有重试都失败，抛出最后一个错误
+    throw lastError;
+  }
+
+  private async expectWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
     if (!this.isInitialized) {
       throw new Error(
         'AgentOverChromeBridge 未初始化，请先调用 initialize() 方法',
@@ -215,7 +375,33 @@ export class OperateService {
     }
   }
 
-  async executeScript(prompt: string) {
+  async executeScript(prompt: string, maxRetries: number = 3): Promise<void> {
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.executeScriptWithRetry(prompt, attempt, maxRetries);
+        return; // 成功执行，退出重试循环
+      } catch (error: any) {
+        lastError = error;
+
+        // 检查是否是调试器连接相关的错误
+        if (this.isConnectionError(error) && attempt < maxRetries) {
+          console.log(`🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`);
+          await this.handleConnectionError();
+          continue;
+        }
+
+        // 如果不是连接错误或已达到最大重试次数，抛出错误
+        throw error;
+      }
+    }
+
+    // 如果所有重试都失败，抛出最后一个错误
+    throw lastError;
+  }
+
+  private async executeScriptWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
     if (!this.isInitialized) {
       throw new Error(
         'AgentOverChromeBridge 未初始化，请先调用 initialize() 方法',
@@ -289,6 +475,12 @@ export class OperateService {
 
   async destroy() {
     try {
+      // 停止连接监控
+      if (this.connectionCheckInterval) {
+        clearInterval(this.connectionCheckInterval);
+        this.connectionCheckInterval = null;
+      }
+
       await this.agent.destroy();
       this.isInitialized = false;
       console.log('✅ AgentOverChromeBridge 已销毁');

@@ -14,6 +14,7 @@ export const mcpClient = new MCPClient({
         MIDSCENE_MODEL_NAME: process.env.MIDSCENE_MODEL_NAME || '',
         OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
         MIDSCENE_USE_QWEN_VL: process.env.MIDSCENE_USE_QWEN_VL || '',
+        // MIDSCENE_USE_VLM_UI_TARS: process.env.MIDSCENE_USE_VLM_UI_TARS || '',
         MIDSCENE_CACHE: process.env.MIDSCENE_CACHE || '',
         DEBUG: 'midscene:ai:call',
         MCP_SERVER_REQUEST_TIMEOUT: '800000',

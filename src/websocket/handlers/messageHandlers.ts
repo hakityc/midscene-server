@@ -1,22 +1,21 @@
-import type { MessageHandler } from '../../types/websocket';
-import { WebSocketAction } from '../../utils/enums';
-import { createConnectTabHandler } from '../actions/connect';
-import { createDownloadVideoHandler } from '../actions/downloadVideo';
-import { createAiHandler } from '../actions/execute';
-import { executeScriptHandler } from '../actions/executeScript';
+import type { MessageHandler } from "../../types/websocket"
+import { WebSocketAction } from "../../utils/enums"
+import { createConnectTabHandler } from "../actions/connect"
+import { createDownloadVideoHandler } from "../actions/downloadVideo"
+import { createAiHandler } from "../actions/execute"
+import { createAgentExecuteHandler } from "../actions/agentExecute"
+import { executeScriptHandler } from "../actions/executeScript"
 
 // 创建所有消息处理器
-export function createMessageHandlers(): Record<
-  WebSocketAction,
-  MessageHandler
-> {
+export function createMessageHandlers(): Record<WebSocketAction, MessageHandler> {
   return {
     [WebSocketAction.CONNECT_TAB]: createConnectTabHandler(),
     [WebSocketAction.AI]: createAiHandler(),
+    [WebSocketAction.AGENT]: createAgentExecuteHandler(),
     [WebSocketAction.AI_SCRIPT]: executeScriptHandler(),
     [WebSocketAction.CALLBACK]: async () => {},
     [WebSocketAction.ERROR]: async () => {},
     [WebSocketAction.DOWNLOAD_VIDEO]: createDownloadVideoHandler(),
     [WebSocketAction.DOWNLOAD_VIDEO_CALLBACK]: async () => {},
-  } as Record<WebSocketAction, MessageHandler>;
+  } as Record<WebSocketAction, MessageHandler>
 }
