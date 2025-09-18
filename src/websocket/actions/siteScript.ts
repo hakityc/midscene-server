@@ -10,10 +10,10 @@ export function handleSiteScriptHandler(): MessageHandler {
     try {
       wsLogger.info(message, "处理站点脚本请求")
       const operateService = OperateService.getInstance()
-
       const data = await operateService.evaluateJavaScript(payload.params)
+      console.log('脚本执行结果:', data)
+      wsLogger.info(data, "处理站点脚本请求完成")
       if (data.result.subtype === "error") {
-        console.log(data, "处理站点脚本请求完成")
         throw new Error(data.result.description)
       }
       const response = createSuccessResponse(message, `处理完成`)

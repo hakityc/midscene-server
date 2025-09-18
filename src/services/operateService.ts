@@ -333,8 +333,12 @@ export class OperateService {
    * 评估页面 JavaScript（带主动连接保证）
    */
   public async evaluateJavaScript(script: string): Promise<any> {
-    // 执行前确保连接当前标签页
-    await this.ensureCurrentTabConnection()
-    return await this.agent.evaluateJavaScript(script)
+    try {
+      // 执行前确保连接当前标签页
+      await this.ensureCurrentTabConnection()
+      return await this.agent.evaluateJavaScript(script)
+    } catch (error) {
+      throw new AppError(`JavaScript evaluation failed: ${error}`, 500)
+    }
   }
 }
