@@ -5,7 +5,7 @@ import { serviceLogger } from '../utils/logger';
 
 export class OperateService {
   private static instance: OperateService | null = null;
-  private agent: AgentOverChromeBridge;
+  public agent: AgentOverChromeBridge;
   private isInitialized: boolean = false;
   private connectionCheckInterval: NodeJS.Timeout | null = null;
 
@@ -145,104 +145,55 @@ export class OperateService {
     }
   }
 
-  async execute(prompt: string, maxRetries: number = 3): Promise<void> {
+  /**
+   * 通用重试执行器：抽取公共 withRetry 重试逻辑
+   */
+  private async runWithRetry<T>(
+    _prompt: string,
+    maxRetries: number,
+    singleAttemptRunner: (attempt: number, maxRetries: number) => Promise<T>,
+  ): Promise<T> {
     let lastError: any = null;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        await this.executeWithRetry(prompt, attempt, maxRetries);
-        return; // 成功执行，退出重试循环
+        const result = await singleAttemptRunner(attempt, maxRetries);
+        return result;
       } catch (error: any) {
         lastError = error;
 
-        // 检查是否是调试器连接相关的错误
         if (this.isConnectionError(error) && attempt < maxRetries) {
           console.log(`🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`);
           await this.handleConnectionError();
           continue;
         }
 
-        // 如果不是连接错误或已达到最大重试次数，抛出错误
         throw error;
       }
     }
 
-    // 如果所有重试都失败，抛出最后一个错误
     throw lastError;
   }
 
-  private async executeWithRetry(prompt: string, attempt: number, maxRetries: number): Promise<void> {
+  async execute(prompt: string, maxRetries: number = 3): Promise<void> {
+    await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
+      this.executeWithRetry(prompt, attempt, max),
+    );
+  }
+
+  private async executeWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
     if (!this.isInitialized) {
       throw new Error(
         'AgentOverChromeBridge 未初始化，请先调用 initialize() 方法',
       );
     }
 
-    // 记录任务开始
-    const retryInfo = attempt > 1 ? ` (重试 ${attempt}/${maxRetries})` : '';
-    console.log(
-      `🚀 开始执行 AI 任务: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}${retryInfo}`,
-    );
-    serviceLogger.info(
-      { prompt: prompt.substring(0, 200), attempt, maxRetries },
-      '开始执行 AI 任务',
-    );
-
-    const startTime = Date.now();
-
     try {
-      // 记录 AI 调用开始
-      console.log('🤖 正在调用 AI 执行任务...');
-      serviceLogger.debug('AI 调用开始');
-
       await this.agent.ai(prompt);
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // 记录成功结果
-      console.log(`✅ AI 任务执行成功，耗时: ${duration}ms`);
-      serviceLogger.info(
-        {
-          prompt: prompt.substring(0, 200),
-          duration,
-          success: true,
-          attempt,
-        },
-        'AI 任务执行成功',
-      );
     } catch (error: any) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // 记录错误信息
-      console.log(`❌ AI 任务执行失败，耗时: ${duration}ms`);
-      console.error('错误详情:', error.message);
-
-      // 处理AI执行错误
       if (error.message?.includes('ai')) {
-        serviceLogger.error(
-          {
-            error: error.message,
-            prompt: prompt.substring(0, 200),
-            duration,
-            success: false,
-            attempt,
-          },
-          'AI执行失败',
-        );
         throw new AppError(`AI execution failed: ${error.message}`, 500);
       }
-      // 处理其他执行错误
-      serviceLogger.error(
-        {
-          error: error.message,
-          prompt: prompt.substring(0, 200),
-          duration,
-          success: false,
-          attempt,
-        },
-        '操作执行错误',
-      );
       throw new AppError(`Operation execution error: ${error.message}`, 500);
     }
   }
@@ -278,29 +229,9 @@ export class OperateService {
   }
 
   async expect(prompt: string, maxRetries: number = 3): Promise<void> {
-    let lastError: any = null;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await this.expectWithRetry(prompt, attempt, maxRetries);
-        return; // 成功执行，退出重试循环
-      } catch (error: any) {
-        lastError = error;
-
-        // 检查是否是调试器连接相关的错误
-        if (this.isConnectionError(error) && attempt < maxRetries) {
-          console.log(`🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`);
-          await this.handleConnectionError();
-          continue;
-        }
-
-        // 如果不是连接错误或已达到最大重试次数，抛出错误
-        throw error;
-      }
-    }
-
-    // 如果所有重试都失败，抛出最后一个错误
-    throw lastError;
+    await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
+      this.expectWithRetry(prompt, attempt, max),
+    );
   }
 
   private async expectWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
@@ -310,95 +241,20 @@ export class OperateService {
       );
     }
 
-    // 记录断言开始
-    console.log(
-      `🔍 开始执行 AI 断言: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`,
-    );
-    serviceLogger.info(
-      { prompt: prompt.substring(0, 200) },
-      '开始执行 AI 断言',
-    );
-
-    const startTime = Date.now();
-
     try {
-      // 记录 AI 断言调用开始
-      console.log('🤖 正在调用 AI 执行断言...');
-      serviceLogger.debug('AI 断言调用开始');
-
       await this.agent.aiAssert(prompt);
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // 记录成功结果
-      console.log(`✅ AI 断言执行成功，耗时: ${duration}ms`);
-      serviceLogger.info(
-        {
-          prompt: prompt.substring(0, 200),
-          duration,
-          success: true,
-        },
-        'AI 断言执行成功',
-      );
     } catch (error: any) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // 记录错误信息
-      console.log(`❌ AI 断言执行失败，耗时: ${duration}ms`);
-      console.error('断言错误详情:', error.message);
-
-      // 处理AI断言错误
       if (error.message?.includes('ai')) {
-        serviceLogger.error(
-          {
-            error: error.message,
-            prompt: prompt.substring(0, 200),
-            duration,
-            success: false,
-          },
-          'AI断言失败',
-        );
         throw new AppError(`AI assertion failed: ${error.message}`, 500);
       }
-      // 处理其他断言错误
-      serviceLogger.error(
-        {
-          error: error.message,
-          prompt: prompt.substring(0, 200),
-          duration,
-          success: false,
-        },
-        '断言执行错误',
-      );
       throw new AppError(`Assertion execution error: ${error.message}`, 500);
     }
   }
 
   async executeScript(prompt: string, maxRetries: number = 3): Promise<void> {
-    let lastError: any = null;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        await this.executeScriptWithRetry(prompt, attempt, maxRetries);
-        return; // 成功执行，退出重试循环
-      } catch (error: any) {
-        lastError = error;
-
-        // 检查是否是调试器连接相关的错误
-        if (this.isConnectionError(error) && attempt < maxRetries) {
-          console.log(`🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`);
-          await this.handleConnectionError();
-          continue;
-        }
-
-        // 如果不是连接错误或已达到最大重试次数，抛出错误
-        throw error;
-      }
-    }
-
-    // 如果所有重试都失败，抛出最后一个错误
-    throw lastError;
+    await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
+      this.executeScriptWithRetry(prompt, attempt, max),
+    );
   }
 
   private async executeScriptWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
@@ -408,67 +264,12 @@ export class OperateService {
       );
     }
 
-    // 记录任务开始
-    console.log(
-      `🚀 开始执行 AI 脚本任务: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`,
-    );
-    serviceLogger.info(
-      { prompt: prompt.substring(0, 200) },
-      '开始执行 AI 脚本任务',
-    );
-
-    const startTime = Date.now();
-
     try {
-      // 记录 AI 调用开始
-      console.log('🤖 正在调用 AI 执行脚本任务...');
-      serviceLogger.debug('AI 调用开始');
-
       await this.agent.runYaml(prompt);
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // 记录成功结果
-      console.log(`✅ AI 任务执行成功，耗时: ${duration}ms`);
-      serviceLogger.info(
-        {
-          prompt: prompt.substring(0, 200),
-          duration,
-          success: true,
-        },
-        'AI 任务执行成功',
-      );
     } catch (error: any) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // 记录错误信息
-      console.log(`❌ AI 任务执行失败，耗时: ${duration}ms`);
-      console.error('错误详情:', error.message);
-
-      // 处理AI执行错误
       if (error.message?.includes('ai')) {
-        serviceLogger.error(
-          {
-            error: error.message,
-            prompt: prompt.substring(0, 200),
-            duration,
-            success: false,
-          },
-          'AI执行失败',
-        );
         throw new AppError(`AI execution failed: ${error.message}`, 500);
       }
-      // 处理其他执行错误
-      serviceLogger.error(
-        {
-          error: error.message,
-          prompt: prompt.substring(0, 200),
-          duration,
-          success: false,
-        },
-        '操作执行错误',
-      );
       throw new AppError(`Operation execution error: ${error.message}`, 500);
     }
   }

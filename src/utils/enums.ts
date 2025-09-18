@@ -7,4 +7,5 @@ export enum WebSocketAction {
   ERROR = 'error',
   DOWNLOAD_VIDEO = 'downloadVideo',
   DOWNLOAD_VIDEO_CALLBACK = 'downloadVideoCallback',
+  SITE_SCRIPT = 'siteScript',
 }

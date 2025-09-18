@@ -5,6 +5,7 @@ import { createDownloadVideoHandler } from "../actions/downloadVideo"
 import { createAiHandler } from "../actions/execute"
 import { createAgentExecuteHandler } from "../actions/agentExecute"
 import { executeScriptHandler } from "../actions/executeScript"
+import { handleSiteScriptHandler } from "../actions/siteScript"
 
 // 创建所有消息处理器
 export function createMessageHandlers(): Record<WebSocketAction, MessageHandler> {
@@ -17,5 +18,6 @@ export function createMessageHandlers(): Record<WebSocketAction, MessageHandler>
     [WebSocketAction.ERROR]: async () => {},
     [WebSocketAction.DOWNLOAD_VIDEO]: createDownloadVideoHandler(),
     [WebSocketAction.DOWNLOAD_VIDEO_CALLBACK]: async () => {},
+    [WebSocketAction.SITE_SCRIPT]: handleSiteScriptHandler(),
   } as Record<WebSocketAction, MessageHandler>
 }

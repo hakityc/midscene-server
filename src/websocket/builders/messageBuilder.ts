@@ -58,7 +58,8 @@ export function createErrorResponse(
   return buildOutbound<string>(
     messageId,
     conversationId,
-    WebSocketAction.ERROR,
+    // 使用原始消息的 action
+    originalMessage.payload.action as any,
     'failed',
     {
       error: `${prefix}: ${errorMessage}`,
@@ -128,7 +129,8 @@ export function createUnknownActionResponse(
   return buildOutbound<string>(
     messageId,
     conversationId,
-    WebSocketAction.CALLBACK,
+    // 沿用传入的未知 action 字符串
+    action as any,
     'failed',
     { error: `未知的 action 类型: ${action}` },
   );
@@ -164,7 +166,8 @@ export function createProcessingErrorResponse(
   return buildOutbound<string>(
     messageId,
     conversationId,
-    WebSocketAction.ERROR,
+    // 使用原始消息的 action
+    originalMessage.payload.action as any,
     'failed',
     { error: `消息处理失败: ${errorMessage}` },
   );
