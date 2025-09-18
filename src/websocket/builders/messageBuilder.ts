@@ -1,5 +1,6 @@
 import type {
   WebSocketMessage,
+  WsInboundMessage,
   WsOutboundMessage,
 } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
@@ -33,7 +34,7 @@ function buildOutbound<R = unknown>(
  * 构建成功响应消息
  */
 export function createSuccessResponse<R = string>(
-  originalMessage: WebSocketMessage,
+  originalMessage: WsInboundMessage,
   result: R,
   action: WebSocketAction = WebSocketAction.CALLBACK,
 ): WsOutboundMessage<R> {
@@ -48,7 +49,7 @@ export function createSuccessResponse<R = string>(
  * 构建错误响应消息
  */
 export function createErrorResponse(
-  originalMessage: WebSocketMessage,
+  originalMessage: WsInboundMessage,
   error: unknown,
   prefix: string = '操作失败',
 ): WsOutboundMessage<string> {

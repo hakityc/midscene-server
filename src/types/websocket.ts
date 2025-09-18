@@ -48,7 +48,7 @@ export interface MessageHandlerContext {
 }
 
 // 消息处理器类型
-export type MessageHandler = (
+export type MessageHandler<P = string> = (
   ctx: MessageHandlerContext,
-  message: WebSocketMessage,
+  message: WsInboundMessage<P>,
 ) => Promise<void>;
