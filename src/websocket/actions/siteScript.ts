@@ -16,6 +16,9 @@ export function handleSiteScriptHandler(): MessageHandler {
       if (data.result.subtype === "error") {
         throw new Error(data.result.description)
       }
+      if(data.result.type === 'undefined'){
+        throw new Error('脚本执行结果为undefined')
+      }
       const response = createSuccessResponse(message, `处理完成`)
       send(response)
     } catch (error) {
