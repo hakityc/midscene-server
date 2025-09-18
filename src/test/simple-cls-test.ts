@@ -1,13 +1,10 @@
 // 简单测试CLS功能
-import { config } from 'dotenv';
+import "dotenv/config"
 import {
   controllerLogger,
   serverLogger,
   serviceLogger,
 } from '../utils/logger.js';
-
-// 加载环境变量
-config();
 
 console.log('=== 简单CLS功能测试 ===\n');
 

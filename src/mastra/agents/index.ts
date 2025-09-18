@@ -1,9 +1,8 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import dotenv from 'dotenv';
+import "dotenv/config"
 
 // 根据环境变量动态创建模型实例
 export const createModel = () => {
-  dotenv.config();
   const name = process.env.TASK_MIDSCENE_MODEL_NAME || '';
   const apiKey = process.env.TASK_OPENAI_API_KEY || '';
   const baseUrl = process.env.TASK_OPENAI_BASE_URL || '';

@@ -1,5 +1,5 @@
 import { serve } from '@hono/node-server';
-import { config } from 'dotenv';
+import "dotenv/config"
 import { Hono } from 'hono';
 import { setupRouter } from './routes/index';
 import { setupError } from './utils/error';
@@ -17,9 +17,6 @@ const initApp = () => {
 const startServer = () => {
   // 设置全局错误处理
   setupGlobalErrorHandlers();
-
-  // 加载环境变量
-  config();
 
   const port = Number(process.env.PORT || '3000');
   // 创建应用

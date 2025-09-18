@@ -1,9 +1,8 @@
 import { hostname } from 'node:os';
-import dotenv from 'dotenv';
+import "dotenv/config"
 import pino from 'pino';
 import { TencentCLSTransport } from './tencentCLSTransport.js';
 
-dotenv.config();
 
 // 日志级别配置
 const logLevel =
