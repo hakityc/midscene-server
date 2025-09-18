@@ -39,14 +39,13 @@ export function handleSiteScriptHandler(): MessageHandler {
     try {
       wsLogger.info(message, "处理站点脚本请求")
       const operateService = OperateService.getInstance()
-      const agent = operateService.agent
       const site = payload.site as Site
       let script = siteScriptMap[site][payload.params as Command] as string
       if (script.includes("{x}")) {
         const x = (payload as any).value ?? (payload as any).x
         script = script.replace("{x}", String(x))
       }
-      const data = await agent.evaluateJavaScript(script)
+      const data = await operateService.evaluateJavaScript(script)
       if(data.result.subtype === 'error'){
         throw new Error(data.result.description)
       }

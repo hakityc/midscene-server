@@ -58,27 +58,37 @@ export class OperateService {
   }
 
   /**
-   * 检查连接状态
+   * 检查连接状态 - 真实检测
    */
   private async checkConnectionStatus(): Promise<boolean> {
     try {
-      // 尝试执行一个简单的操作来检测连接状态
-      // 这里可以调用一个轻量级的API来测试连接
-      return true; // 简化实现，实际应该测试真实的连接状态
-    } catch {
-      return false;
+      // 执行轻量级检测：检查页面是否可访问
+      await this.agent.evaluateJavaScript('document.readyState');
+      return true;
+    } catch (error: any) {
+      const message = error?.message || '';
+      // 检测到连接断开的关键词
+      if (message.includes('no tab is connected') ||
+          message.includes('bridge client') ||
+          message.includes('Debugger is not attached') ||
+          message.includes('tab with id')) {
+        console.log('🔍 检测到连接断开:', message);
+        return false;
+      }
+      // 其他错误可能是页面问题，不算连接断开
+      return true;
     }
   }
 
   /**
-   * 启动连接监控
+   * 启动连接监控 - 更频繁的检测
    */
   private startConnectionMonitoring() {
     if (this.connectionCheckInterval) {
       clearInterval(this.connectionCheckInterval);
     }
 
-    // 每30秒检查一次连接状态
+    // 每10秒检查一次连接状态，提高响应速度
     this.connectionCheckInterval = setInterval(async () => {
       if (this.isInitialized) {
         const isConnected = await this.checkConnectionStatus();
@@ -87,7 +97,7 @@ export class OperateService {
           await this.reconnect();
         }
       }
-    }, 30000);
+    }, 10000);
   }
 
   /**
@@ -176,6 +186,9 @@ export class OperateService {
   }
 
   async execute(prompt: string, maxRetries: number = 3): Promise<void> {
+    // 执行前确保连接有效
+    await this.ensureConnection();
+
     await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
       this.executeWithRetry(prompt, attempt, max),
     );
@@ -229,6 +242,9 @@ export class OperateService {
   }
 
   async expect(prompt: string, maxRetries: number = 3): Promise<void> {
+    // 执行前确保连接有效
+    await this.ensureConnection();
+
     await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
       this.expectWithRetry(prompt, attempt, max),
     );
@@ -252,6 +268,9 @@ export class OperateService {
   }
 
   async executeScript(prompt: string, maxRetries: number = 3): Promise<void> {
+    // 执行前确保连接有效
+    await this.ensureConnection();
+
     await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
       this.executeScriptWithRetry(prompt, attempt, max),
     );
@@ -306,5 +325,51 @@ export class OperateService {
    */
   public isReady(): boolean {
     return this.isInitialized;
+  }
+
+  /**
+   * 确保连接有效 - 主动连接管理
+   */
+  private async ensureConnection(): Promise<void> {
+    if (!this.isInitialized) {
+      console.log('🔄 服务未初始化，开始初始化...');
+      await this.initialize({ forceSameTabNavigation: true });
+      return;
+    }
+
+    // 检查连接是否真的有效
+    const isConnected = await this.checkConnectionStatus();
+    if (!isConnected) {
+      console.log('🔄 连接已断开，尝试重新连接...');
+      await this.reconnect();
+    }
+  }
+
+  /**
+   * 评估页面 JavaScript（带主动连接保证）
+   */
+  public async evaluateJavaScript(script: string, maxRetries: number = 3): Promise<any> {
+    // 执行前确保连接有效
+    await this.ensureConnection();
+
+    return this.runWithRetry(script, maxRetries, (attempt, max) =>
+      this.evaluateJavaScriptWithRetry(script, attempt, max),
+    );
+  }
+
+  private async evaluateJavaScriptWithRetry(_script: string, _attempt: number, _maxRetries: number): Promise<any> {
+    if (!this.isInitialized) {
+      throw new Error('AgentOverChromeBridge 未初始化，请先调用 initialize() 方法');
+    }
+
+    try {
+      return await this.agent.evaluateJavaScript(_script as any);
+    } catch (error: any) {
+      const message = error?.message || '';
+      if (message.includes('evaluateJavaScript')) {
+        throw new AppError(`JavaScript evaluation failed: ${message}`, 500);
+      }
+      throw new AppError(`Operation execution error: ${message}`, 500);
+    }
   }
 }
