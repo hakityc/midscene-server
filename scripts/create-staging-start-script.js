@@ -64,7 +64,8 @@ echo "📍 服务将在 http://localhost:3000 启动"
 echo "🔍 健康检查: http://localhost:3000/health"
 echo ""
 
-npm start
+# 直接启动，环境变量从 .env 文件读取
+node index.js
 `;
 
 // 确保 dist/server 目录存在
@@ -160,7 +161,8 @@ echo 📍 服务将在 http://localhost:3000 启动
 echo 🔍 健康检查: http://localhost:3000/health
 echo.
 
-call npm start
+REM 直接启动，环境变量从 .env 文件读取
+node index.js
 `;
 
 // 写入 Linux/Mac 启动脚本到 dist/server 目录

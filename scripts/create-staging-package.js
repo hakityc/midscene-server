@@ -11,7 +11,7 @@ const stagingPackage = {
   name: 'midscene-server',
   type: 'module',
   scripts: {
-    start: 'NODE_ENV=staging node index.js',
+    start: 'node index.js',
   },
   dependencies: originalPackage.dependencies,
 };
