@@ -1,25 +1,35 @@
 import { AgentOverChromeBridge } from "@midscene/web/bridge-mode"
+import { EventEmitter } from "node:events"
 import type { ConnectCurrentTabOption } from "../types/operate"
 import { AppError } from "../utils/error"
 import { serviceLogger } from "../utils/logger"
 
-export class OperateService {
+export class OperateService extends EventEmitter {
   private static instance: OperateService | null = null
   public agent: AgentOverChromeBridge
   private isInitialized: boolean = false
 
   private constructor() {
+    super()
     this.agent = new AgentOverChromeBridge({
       closeNewTabsAfterDisconnect: true,
       cacheId: "midscene",
       // 启用实时日志配置
       generateReport: true,
       autoPrintReportMsg: true,
-      onTaskStartTip: (tip: string) => {
-        console.log(`🤖 AI 任务开始: ${tip}`)
-        serviceLogger.info({ tip }, "AI 任务开始执行")
-      },
+      onTaskStartTip: this.handleTaskStartTip.bind(this),
     })
+  }
+
+  /**
+   * 处理任务开始提示的统一方法
+   */
+  private handleTaskStartTip(tip: string): void {
+    console.log(`🤖 AI 任务开始: ${tip}`)
+    serviceLogger.info({ tip }, "AI 任务开始执行")
+
+    // 发射事件，让其他地方可以监听到
+    this.emit('taskStartTip', tip)
   }
 
   /**
@@ -102,10 +112,7 @@ export class OperateService {
         cacheId: "midscene",
         generateReport: true,
         autoPrintReportMsg: true,
-        onTaskStartTip: (tip: string) => {
-          console.log(`🤖 AI 任务开始: ${tip}`)
-          serviceLogger.info({ tip }, "AI 任务开始执行")
-        },
+        onTaskStartTip: this.handleTaskStartTip.bind(this),
       })
 
       await this.agent.connectCurrentTab({

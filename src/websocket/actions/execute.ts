@@ -6,6 +6,13 @@ import {
   createSuccessResponse,
 } from '../builders/messageBuilder';
 
+
+const operateService = OperateService.getInstance();
+operateService.on('taskStartTip', (tip: string) => {
+  console.log(`监听到任务提示: ${tip}`)
+  // 在这里可以添加自定义的处理逻辑
+})
+
 // AI 请求处理器
 export function createAiHandler(): MessageHandler {
   return async ({ connectionId, send }, message) => {
@@ -20,7 +27,6 @@ export function createAiHandler(): MessageHandler {
     );
 
     try {
-      const operateService = OperateService.getInstance();
       const params = payload.params;
       await operateService.execute(params);
       const response = createSuccessResponse(

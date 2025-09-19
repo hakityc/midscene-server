@@ -22,7 +22,7 @@ export function handleSiteScriptHandler(): MessageHandler {
       const response = createSuccessResponse(message, `处理完成`)
       send(response)
     } catch (error) {
-      wsLogger.error(message, "处理站点脚本请求失败")
+      wsLogger.error(error, "处理站点脚本请求失败")
       const response = createErrorResponse(message, error, "处理失败")
       send(response)
     }

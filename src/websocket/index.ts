@@ -176,9 +176,7 @@ export const setupWebSocket = (app: Hono) => {
             wsLogger.debug(
               {
                 connectionId,
-                rawData:
-                  rawData.substring(0, 200) +
-                  (rawData.length > 200 ? '...' : ''),
+                rawData
               },
               '收到原始消息',
             );
