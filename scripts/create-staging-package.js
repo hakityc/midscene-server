@@ -1,21 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// 获取环境参数，默认为 prod
-const environment = process.argv[2] || 'prod';
-const isProd = environment === 'prod';
-
-console.log(`📦 创建${isProd ? '生产' : '预发布'}环境 package.json...`);
+console.log('📦 创建预发布环境 package.json...');
 
 // 读取原始 package.json
 const packageJsonPath = path.join(process.cwd(), 'package.json');
 const originalPackage = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
-const packageConfig = {
+const stagingPackage = {
   name: 'midscene-server',
   type: 'module',
   scripts: {
-    start: `NODE_ENV=${environment} node index.js`,
+    start: 'NODE_ENV=staging node index.js',
   },
   dependencies: originalPackage.dependencies,
 };
@@ -26,10 +22,10 @@ if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
 }
 
-// 写入环境的 package.json
+// 写入预发布环境的 package.json
 fs.writeFileSync(
   path.join(distDir, 'package.json'),
-  JSON.stringify(packageConfig, null, 2),
+  JSON.stringify(stagingPackage, null, 2),
 );
 
-console.log(`✅ ${isProd ? '生产' : '预发布'}环境 package.json 已创建`);
+console.log('✅ 预发布环境 package.json 已创建');

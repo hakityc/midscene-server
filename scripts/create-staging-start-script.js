@@ -1,16 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// 获取环境参数，默认为 prod
-const environment = process.argv[2] || 'prod';
-const isProd = environment === 'prod';
-
-console.log(`🚀 创建${isProd ? '生产' : '预发布'}环境启动脚本...`);
+console.log('🚀 创建预发布环境启动脚本...');
 
 const startScript = `#!/bin/bash
 
-# MidScene Server 启动脚本 (${isProd ? '生产' : '预发布'}环境)
-echo "🚀 启动 MidScene Server (${isProd ? '生产' : '预发布'}环境)..."
+# MidScene Server 启动脚本 (预发布环境)
+echo "🚀 启动 MidScene Server (预发布环境)..."
 
 # 检查 Node.js 版本
 node_version=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
@@ -81,8 +77,8 @@ if (!fs.existsSync(distDir)) {
 const startScriptWindows = `@echo off
 chcp 65001 >nul
 
-REM MidScene Server 启动脚本 (Windows) - ${isProd ? '生产' : '预发布'}环境
-echo 🚀 启动 MidScene Server (${isProd ? '生产' : '预发布'}环境)...
+REM MidScene Server 启动脚本 (Windows) - 预发布环境
+echo 🚀 启动 MidScene Server (预发布环境)...
 
 REM 检查 Node.js 版本
 for /f "tokens=1 delims=." %%i in ('node -v') do set node_version=%%i
@@ -176,6 +172,6 @@ fs.writeFileSync(path.join(distDir, 'start.bat'), startScriptWindows);
 // 设置执行权限
 fs.chmodSync(path.join(distDir, 'start.sh'), '755');
 
-console.log(`✅ ${isProd ? '生产' : '预发布'}环境启动脚本已创建`);
+console.log('✅ 预发布环境启动脚本已创建');
 console.log('   - Linux/Mac: dist/server/start.sh');
 console.log('   - Windows: dist/server/start.bat');
