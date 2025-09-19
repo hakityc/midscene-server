@@ -11,14 +11,28 @@ export class OperateService extends EventEmitter {
 
   private constructor() {
     super()
+    console.log("🔧 正在创建 AgentOverChromeBridge，绑定 onTaskStartTip 回调...")
     this.agent = new AgentOverChromeBridge({
       closeNewTabsAfterDisconnect: true,
       cacheId: "midscene",
       // 启用实时日志配置
       generateReport: true,
       autoPrintReportMsg: true,
-      onTaskStartTip: this.handleTaskStartTip.bind(this),
+      // 注意：AgentOverChromeBridge 会覆盖 onTaskStartTip，所以我们需要在创建后重新设置
     })
+
+    // 创建后重新设置我们的回调，同时保留原有的 showStatusMessage 功能
+    const originalCallback = this.agent.onTaskStartTip
+    this.agent.onTaskStartTip = async (tip: string) => {
+      // 先调用原始的回调（showStatusMessage）
+      if (originalCallback) {
+        await originalCallback(tip)
+      }
+      // 再调用我们的回调
+      this.handleTaskStartTip(tip)
+    }
+
+    console.log("✅ AgentOverChromeBridge 创建完成，onTaskStartTip 已重新绑定")
   }
 
   /**
@@ -107,13 +121,26 @@ export class OperateService extends EventEmitter {
       }
 
       // 重新创建连接
+      console.log("🔧 重连时重新创建 AgentOverChromeBridge，重新绑定 onTaskStartTip...")
       this.agent = new AgentOverChromeBridge({
         closeNewTabsAfterDisconnect: true,
         cacheId: "midscene",
         generateReport: true,
         autoPrintReportMsg: true,
-        onTaskStartTip: this.handleTaskStartTip.bind(this),
       })
+
+      // 重连后重新设置我们的回调，同时保留原有的 showStatusMessage 功能
+      const originalCallback = this.agent.onTaskStartTip
+      this.agent.onTaskStartTip = async (tip: string) => {
+        // 先调用原始的回调（showStatusMessage）
+        if (originalCallback) {
+          await originalCallback(tip)
+        }
+        // 再调用我们的回调
+        this.handleTaskStartTip(tip)
+      }
+
+      console.log("✅ 重连时 AgentOverChromeBridge 重新创建完成，onTaskStartTip 已重新绑定")
 
       await this.agent.connectCurrentTab({
         forceSameTabNavigation: true,
@@ -186,8 +213,14 @@ export class OperateService extends EventEmitter {
     }
 
     try {
+      console.log(`🚀 开始执行 AI 任务: ${prompt}`)
+      console.log(`🔍 当前 agent.onTaskStartTip 是否已设置: ${typeof this.agent.onTaskStartTip}`)
+
+
       await this.agent.ai(prompt)
+      console.log(`✅ AI 任务执行完成: ${prompt}`)
     } catch (error: any) {
+      console.log(`❌ AI 任务执行失败: ${error.message}`)
       if (error.message?.includes("ai")) {
         throw new AppError(`AI execution failed: ${error.message}`, 500)
       }
