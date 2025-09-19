@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events"
 import type { ConnectCurrentTabOption } from "../types/operate"
 import { AppError } from "../utils/error"
 import { serviceLogger } from "../utils/logger"
+import { formatTaskTip, getTaskStageDescription } from "../utils/taskTipFormatter"
 
 export class OperateService extends EventEmitter {
   private static instance: OperateService | null = null
@@ -39,8 +40,19 @@ export class OperateService extends EventEmitter {
    * 处理任务开始提示的统一方法
    */
   private handleTaskStartTip(tip: string): void {
+    const { formatted, category, icon } = formatTaskTip(tip)
+    const stageDescription = getTaskStageDescription(category)
+
     console.log(`🤖 AI 任务开始: ${tip}`)
-    serviceLogger.info({ tip }, "AI 任务开始执行")
+    console.log(`${icon} ${formatted} (${stageDescription})`)
+
+    serviceLogger.info({
+      tip,
+      formatted,
+      category,
+      icon,
+      stage: stageDescription
+    }, "AI 任务开始执行")
 
     // 发射事件，让其他地方可以监听到
     this.emit('taskStartTip', tip)

@@ -1,7 +1,8 @@
 import { OperateService } from "../../services/operateService"
 import type { MessageHandler, WebSocketMessage } from "../../types/websocket"
 import { wsLogger } from "../../utils/logger"
-import { createErrorResponse, createSuccessResponse } from "../builders/messageBuilder"
+import { createErrorResponse, createSuccessResponse, createSuccessResponseWithMeta } from "../builders/messageBuilder"
+import { formatTaskTip, getTaskStageDescription } from "../../utils/taskTipFormatter"
 
 // AI 请求处理器
 export function createAiHandler(): MessageHandler {
@@ -20,8 +21,30 @@ export function createAiHandler(): MessageHandler {
       const params = payload.params
       const operateService = OperateService.getInstance()
       operateService.on("taskStartTip", (tip: string) => {
+        // 格式化任务提示
+        const { formatted, icon, category } = formatTaskTip(tip)
+        const timestamp = new Date().toLocaleTimeString('zh-CN', {
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        })
+        
         console.log(`🎯 WebSocket 监听到任务提示: ${tip}`)
-        const response = createSuccessResponse(message as WebSocketMessage, `AI 分步骤处理: ${tip}`)
+        console.log(`📝 格式化后的用户友好提示: ${formatted}`)
+        
+        // 发送格式化后的用户友好消息
+        const response = createSuccessResponseWithMeta(
+          message as WebSocketMessage, 
+          formatted,
+          {
+            originalTip: tip,
+            category,
+            icon,
+            timestamp,
+            stage: getTaskStageDescription(category)
+          }
+        )
         send(response)
       })
       await operateService.execute(params)
