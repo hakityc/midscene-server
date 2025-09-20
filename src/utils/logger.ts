@@ -2,7 +2,17 @@ import { hostname } from 'node:os';
 import "dotenv/config"
 import pino from 'pino';
 import { TencentCLSTransport } from './tencentCLSTransport.js';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
+// 日志上下文接口
+interface LogContext {
+  messageId?: string;
+  conversationId?: string;
+  connectionId?: string;
+}
+
+// 创建异步本地存储来管理日志上下文
+const logContextStorage = new AsyncLocalStorage<LogContext>();
 
 // 日志级别配置
 const logLevel =
@@ -79,17 +89,47 @@ export const createLogger = (name: string) => {
     methods.forEach((method) => {
       const originalMethod = childLogger[method].bind(childLogger);
       childLogger[method] = (obj: any, msg?: string) => {
+        // 获取当前上下文
+        const context = logContextStorage.getStore();
+
+        // 合并上下文信息到日志对象
+        const logObj = typeof obj === 'object' && obj !== null
+          ? { ...obj, ...context }
+          : { ...context, message: typeof obj === 'string' ? obj : '' };
+
         // 调用原始方法
-        originalMethod(obj, msg);
+        originalMethod(logObj, msg);
 
         // 写入CLS
         clsTransport!.write({
           timestamp: Date.now(),
           level: method,
           message: msg || (typeof obj === 'string' ? obj : ''),
-          data: typeof obj === 'object' ? obj : {},
+          data: typeof obj === 'object' ? { ...obj, ...context } : context,
           module: name,
+          messageId: context?.messageId,
+          conversationId: context?.conversationId,
+          connectionId: context?.connectionId,
         });
+      };
+    });
+  } else {
+    // 即使没有CLS传输器，也要添加上下文信息
+    const methods = ['debug', 'info', 'warn', 'error', 'fatal'] as const;
+
+    methods.forEach((method) => {
+      const originalMethod = childLogger[method].bind(childLogger);
+      childLogger[method] = (obj: any, msg?: string) => {
+        // 获取当前上下文
+        const context = logContextStorage.getStore();
+
+        // 合并上下文信息到日志对象
+        const logObj = typeof obj === 'object' && obj !== null
+          ? { ...obj, ...context }
+          : { ...context, message: typeof obj === 'string' ? obj : '' };
+
+        // 调用原始方法
+        originalMethod(logObj, msg);
       };
     });
   }
@@ -123,6 +163,29 @@ export const controllerLogger = createLogger('controller');
 
 // 服务专用 logger
 export const serviceLogger = createLogger('service');
+
+// 上下文管理函数
+export const setLogContext = (context: LogContext) => {
+  logContextStorage.enterWith(context);
+};
+
+export const getLogContext = (): LogContext | undefined => {
+  return logContextStorage.getStore();
+};
+
+export const withLogContext = <T>(context: LogContext, fn: () => T): T => {
+  return logContextStorage.run(context, fn);
+};
+
+// 从 WebSocket 消息设置日志上下文
+export const setLogContextFromMessage = (message: any, connectionId?: string) => {
+  const context: LogContext = {
+    messageId: message?.meta?.messageId,
+    conversationId: message?.meta?.conversationId,
+    connectionId,
+  };
+  setLogContext(context);
+};
 
 // 导出CLS传输器用于清理
 export { clsTransport };

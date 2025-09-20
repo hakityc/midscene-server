@@ -20,6 +20,9 @@ export interface LogEntry {
   message: string;
   data?: Record<string, any>;
   module?: string;
+  messageId?: string;
+  conversationId?: string;
+  connectionId?: string;
 }
 
 // 批量日志组类型
