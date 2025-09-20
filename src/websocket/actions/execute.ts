@@ -21,6 +21,31 @@ export function createAiHandler(): MessageHandler {
     try {
       const params = payload.params
       const operateService = OperateService.getInstance()
+      
+      // 检查连接状态
+      const isConnected = await operateService.checkAndReconnect()
+      if (!isConnected) {
+        const response = createErrorResponse(
+          message as WebSocketMessage, 
+          new Error("Agent连接已断开，正在尝试重连中，请稍后重试"), 
+          "Agent连接断开"
+        )
+        send(response)
+        return
+      }
+
+      // 监听重连事件
+      const onReconnected = () => {
+        const response = createSuccessResponse(
+          message as WebSocketMessage, 
+          "Agent重连成功，可以继续操作", 
+          WebSocketAction.CALLBACK_AI_STEP
+        )
+        send(response)
+      }
+      
+      operateService.once('reconnected', onReconnected)
+
       operateService.on("taskStartTip", (tip: string) => {
         // 格式化任务提示
         const { formatted, icon, category } = formatTaskTip(tip)
@@ -61,8 +86,19 @@ export function createAiHandler(): MessageHandler {
         },
         "AI 处理失败"
       )
-      const response = createErrorResponse(message as WebSocketMessage, error, "AI 处理失败")
-      send(response)
+      // 检查是否是连接错误
+      const errorMessage = (error as Error).message || ""
+      if (errorMessage.includes("连接") || errorMessage.includes("timeout")) {
+        const response = createErrorResponse(
+          message as WebSocketMessage, 
+          error, 
+          "连接错误，正在尝试重连"
+        )
+        send(response)
+      } else {
+        const response = createErrorResponse(message as WebSocketMessage, error, "AI 处理失败")
+        send(response)
+      }
     }
   }
 }

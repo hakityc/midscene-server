@@ -40,4 +40,25 @@ export function setupHealthRoutes(app: Hono): void {
       checks,
     });
   });
+
+  // 强制重连端点
+  app.post('/health/reconnect', async (c) => {
+    try {
+      const { OperateService } = await import('../services/operateService');
+      const operateService = OperateService.getInstance();
+      await operateService.forceReconnect();
+
+      return c.json({
+        status: 'success',
+        message: '重连成功',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      return c.json({
+        status: 'error',
+        error: (error as Error).message,
+        timestamp: new Date().toISOString()
+      }, 500);
+    }
+  });
 }

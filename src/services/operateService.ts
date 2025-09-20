@@ -4,11 +4,17 @@ import type { ConnectCurrentTabOption } from "../types/operate"
 import { AppError } from "../utils/error"
 import { serviceLogger } from "../utils/logger"
 import { formatTaskTip, getTaskStageDescription } from "../utils/taskTipFormatter"
+import { setBrowserConnected } from "../routes/health"
 
 export class OperateService extends EventEmitter {
   private static instance: OperateService | null = null
   public agent: AgentOverChromeBridge
   private isInitialized: boolean = false
+  private reconnectAttempts: number = 0
+  private maxReconnectAttempts: number = 5
+  private reconnectInterval: number = 5000 // 5秒
+  private reconnectTimer: NodeJS.Timeout | null = null
+  private isReconnecting: boolean = false
 
   private constructor() {
     super()
@@ -70,6 +76,110 @@ export class OperateService extends EventEmitter {
   }
 
   /**
+   * 启动自动重连机制
+   */
+  private startAutoReconnect(): void {
+    if (this.reconnectTimer || this.isReconnecting) {
+      return
+    }
+
+    console.log("🔄 启动自动重连机制...")
+    this.reconnectTimer = setInterval(async () => {
+      if (this.isInitialized || this.isReconnecting) {
+        return
+      }
+
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.log("❌ 已达到最大重连次数，停止自动重连")
+        this.stopAutoReconnect()
+        setBrowserConnected(false)
+        return
+      }
+
+      this.isReconnecting = true
+      this.reconnectAttempts++
+
+      try {
+        console.log(`🔄 自动重连尝试 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`)
+        await this.initialize({ forceSameTabNavigation: true })
+
+        if (this.isInitialized) {
+          console.log("✅ 自动重连成功")
+          this.reconnectAttempts = 0
+          this.stopAutoReconnect()
+          setBrowserConnected(true)
+          this.emit('reconnected')
+        }
+      } catch (error) {
+        console.error(`❌ 自动重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts}):`, error)
+        setBrowserConnected(false)
+      } finally {
+        this.isReconnecting = false
+      }
+    }, this.reconnectInterval)
+  }
+
+  /**
+   * 停止自动重连
+   */
+  private stopAutoReconnect(): void {
+    if (this.reconnectTimer) {
+      clearInterval(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+  }
+
+  /**
+   * 重置重连状态
+   */
+  private resetReconnectState(): void {
+    this.reconnectAttempts = 0
+    this.isReconnecting = false
+    this.stopAutoReconnect()
+  }
+
+  /**
+   * 检查连接状态并启动重连
+   */
+  public async checkAndReconnect(): Promise<boolean> {
+    if (this.isInitialized) {
+      // 先使用超轻量级检测
+      const isConnected = await this.quickConnectionCheck()
+      if (isConnected) {
+        return true
+      }
+    }
+
+    console.log("🔄 检测到连接断开，启动重连机制")
+    this.isInitialized = false
+    setBrowserConnected(false)
+    this.startAutoReconnect()
+    return false
+  }
+
+  /**
+   * 强制重连
+   */
+  public async forceReconnect(): Promise<void> {
+    console.log("🔄 强制重连...")
+    this.resetReconnectState()
+    this.isInitialized = false
+    setBrowserConnected(false)
+
+    try {
+      await this.initialize({ forceSameTabNavigation: true })
+      console.log("✅ 强制重连成功")
+      setBrowserConnected(true)
+      this.emit('reconnected')
+    } catch (error) {
+      console.error("❌ 强制重连失败:", error)
+      setBrowserConnected(false)
+      this.startAutoReconnect()
+      throw error
+    }
+  }
+
+  /**
    * 初始化连接（确保只初始化一次）
    */
   async initialize(
@@ -90,11 +200,13 @@ export class OperateService extends EventEmitter {
         console.log(`🔄 尝试初始化连接 (${attempt}/${maxRetries})...`)
         await this.agent.connectCurrentTab(option)
         this.isInitialized = true
+        setBrowserConnected(true)
         console.log("✅ AgentOverChromeBridge 初始化成功")
         return
       } catch (error) {
         lastError = error as Error
         console.error(`❌ AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries}):`, error)
+        setBrowserConnected(false)
 
         if (attempt < maxRetries) {
           const delay = attempt * 2000 // 递增延迟：2s, 4s
@@ -106,16 +218,19 @@ export class OperateService extends EventEmitter {
 
     // 所有重试都失败了
     console.error("❌ AgentOverChromeBridge 初始化最终失败，所有重试已用尽")
+    setBrowserConnected(false)
     throw new Error(`初始化失败，已重试${maxRetries}次。最后错误: ${lastError?.message}`)
   }
 
   /**
-   * 检查连接状态 - 真实检测
+   * 检查连接状态 - 轻量级检测
    */
   private async checkConnectionStatus(): Promise<boolean> {
     try {
-      // 执行轻量级检测：检查页面是否可访问
-      await this.agent.evaluateJavaScript("document.readyState")
+      // 使用更轻量级的方法：获取浏览器标签页列表
+      // 这比evaluateJavaScript更快，不会执行页面脚本
+      await this.agent.getBrowserTabList()
+      setBrowserConnected(true)
       return true
     } catch (error: any) {
       const message = error?.message || ""
@@ -124,13 +239,42 @@ export class OperateService extends EventEmitter {
         message.includes("no tab is connected") ||
         message.includes("bridge client") ||
         message.includes("Debugger is not attached") ||
-        message.includes("tab with id")
+        message.includes("tab with id") ||
+        message.includes("Connection lost") ||
+        message.includes("timeout")
       ) {
         console.log("🔍 检测到连接断开:", message)
+        setBrowserConnected(false)
         return false
       }
       // 其他错误可能是页面问题，不算连接断开
+      setBrowserConnected(true)
       return true
+    }
+  }
+
+  /**
+   * 超轻量级连接检测 - 仅用于快速检查
+   */
+  private async quickConnectionCheck(): Promise<boolean> {
+    try {
+      // 使用最轻量级的方法：发送状态消息
+      // 这几乎不会增加任何延迟
+      await this.agent.page.showStatusMessage("ping")
+      setBrowserConnected(true)
+      return true
+    } catch (error: any) {
+      const message = error?.message || ""
+      if (
+        message.includes("Connection lost") ||
+        message.includes("timeout") ||
+        message.includes("bridge client")
+      ) {
+        setBrowserConnected(false)
+        return false
+      }
+      // 如果showStatusMessage失败，回退到getBrowserTabList
+      return await this.checkConnectionStatus()
     }
   }
 
@@ -142,6 +286,7 @@ export class OperateService extends EventEmitter {
     try {
       console.log("🔄 尝试重新连接...")
       this.isInitialized = false
+      setBrowserConnected(false)
 
       // 销毁现有连接
       try {
@@ -178,10 +323,12 @@ export class OperateService extends EventEmitter {
       })
 
       this.isInitialized = true
+      setBrowserConnected(true)
       console.log("✅ 重新连接成功")
     } catch (error) {
       console.error("❌ 重新连接失败:", error)
       this.isInitialized = false
+      setBrowserConnected(false)
     }
   }
 
@@ -232,6 +379,12 @@ export class OperateService extends EventEmitter {
   }
 
   async execute(prompt: string, maxRetries: number = 3): Promise<void> {
+    // 检查连接状态，如果断开则启动重连
+    const isConnected = await this.checkAndReconnect()
+    if (!isConnected) {
+      throw new AppError("Agent连接已断开，正在尝试重连中，请稍后重试", 503)
+    }
+
     // 执行前确保连接当前标签页
     await this.ensureCurrentTabConnection()
 
@@ -334,6 +487,8 @@ export class OperateService extends EventEmitter {
   }
 
   async destroy() {
+    this.stopAutoReconnect()
+    setBrowserConnected(false)
     try {
       await this.agent.destroy()
       this.isInitialized = false
@@ -371,8 +526,8 @@ export class OperateService extends EventEmitter {
       return
     }
 
-    // 检查连接是否真的有效
-    const isConnected = await this.checkConnectionStatus()
+    // 使用轻量级检测检查连接是否真的有效
+    const isConnected = await this.quickConnectionCheck()
     if (!isConnected) {
       console.log("🔄 连接已断开，尝试重新连接...")
       await this.reconnect()

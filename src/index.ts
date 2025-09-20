@@ -7,11 +7,13 @@ import { setupGlobalErrorHandlers } from "./utils/globalErrorHandler"
 import { serverLogger } from "./utils/logger"
 import { setupWebSocket } from "./websocket"
 import { OperateService } from "./services/operateService"
+import { setupHealthRoutes } from './routes/health';
 
 const initApp = () => {
   const app = new Hono()
   setupRouter(app)
   setupError(app)
+  setupHealthRoutes(app) // 添加健康检查路由
   return app
 }
 
