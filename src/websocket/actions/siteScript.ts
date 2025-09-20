@@ -2,6 +2,7 @@ import { OperateService } from "../../services/operateService"
 import type { MessageHandler } from "../../types/websocket"
 import { createErrorResponse, createSuccessResponse } from "../builders/messageBuilder"
 import { wsLogger } from "../../utils/logger"
+import { WebSocketAction } from "../../utils/enums"
 
 // 请求处理器
 export function handleSiteScriptHandler(): MessageHandler {
@@ -19,7 +20,7 @@ export function handleSiteScriptHandler(): MessageHandler {
       if(data.result.type === 'undefined'){
         throw new Error('脚本执行结果为undefined')
       }
-      const response = createSuccessResponse(message, `处理完成`)
+      const response = createSuccessResponse(message, `处理完成`, WebSocketAction.SITE_SCRIPT)
       send(response)
     } catch (error) {
       wsLogger.error(error, "处理站点脚本请求失败")

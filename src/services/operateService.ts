@@ -392,6 +392,7 @@ export class OperateService extends EventEmitter {
       console.log("✅ 确保当前标签页连接成功")
     } catch (error: any) {
       console.warn("⚠️ 连接当前标签页时出现警告:", error.message)
+      this.reconnect()
       // 如果是"Another debugger is already attached"错误，我们忽略它
       // 因为这意味着连接已经存在
       if (!error.message?.includes("Another debugger is already attached")) {

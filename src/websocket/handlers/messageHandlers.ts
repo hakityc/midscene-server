@@ -12,10 +12,10 @@ export function createMessageHandlers(): Partial<Record<WebSocketAction, Message
   return {
     [WebSocketAction.CONNECT_TAB]: createConnectTabHandler(),
     [WebSocketAction.AI]: createAiHandler(),
-    [WebSocketAction.AGENT]: createAgentExecuteHandler(),
+    // [WebSocketAction.AGENT]: createAgentExecuteHandler(),
     [WebSocketAction.AI_SCRIPT]: executeScriptHandler(),
-    [WebSocketAction.CALLBACK]: async () => {},
-    [WebSocketAction.ERROR]: async () => {},
+    // [WebSocketAction.CALLBACK]: async () => {},
+    // [WebSocketAction.ERROR]: async () => {},
     [WebSocketAction.DOWNLOAD_VIDEO]: createDownloadVideoHandler(),
     [WebSocketAction.DOWNLOAD_VIDEO_CALLBACK]: async () => {},
     [WebSocketAction.SITE_SCRIPT]: handleSiteScriptHandler(),

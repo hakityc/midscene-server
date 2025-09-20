@@ -22,7 +22,6 @@ export function createAiHandler(): MessageHandler {
       const params = payload.params
       const operateService = OperateService.getInstance()
       operateService.on("taskStartTip", (tip: string) => {
-        message.payload.action = WebSocketAction.CALLBACK_AI_STEP
         // 格式化任务提示
         const { formatted, icon, category } = formatTaskTip(tip)
         const timestamp = new Date().toLocaleTimeString('zh-CN', {
@@ -45,12 +44,13 @@ export function createAiHandler(): MessageHandler {
             icon,
             timestamp,
             stage: getTaskStageDescription(category)
-          }
+          },
+          WebSocketAction.CALLBACK_AI_STEP
         )
         send(response)
       })
       await operateService.execute(params)
-      const response = createSuccessResponse(message as WebSocketMessage, `AI 处理完成`)
+      const response = createSuccessResponse(message as WebSocketMessage, `AI 处理完成`, WebSocketAction.AI)
       send(response)
     } catch (error) {
       wsLogger.error(
