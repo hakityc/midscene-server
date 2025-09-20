@@ -1,6 +1,7 @@
 export enum WebSocketAction {
   CONNECT_TAB = 'connectTab',
   AI = 'ai',
+  CALLBACK_AI_STEP = 'aiCallbackStep',
   AGENT = 'agent',
   AI_SCRIPT = 'aiScript',
   CALLBACK = 'callback',

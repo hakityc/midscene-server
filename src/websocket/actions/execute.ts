@@ -3,6 +3,7 @@ import type { MessageHandler, WebSocketMessage } from "../../types/websocket"
 import { wsLogger } from "../../utils/logger"
 import { createErrorResponse, createSuccessResponse, createSuccessResponseWithMeta } from "../builders/messageBuilder"
 import { formatTaskTip, getTaskStageDescription } from "../../utils/taskTipFormatter"
+import { WebSocketAction } from "../../utils/enums"
 
 // AI 请求处理器
 export function createAiHandler(): MessageHandler {
@@ -21,6 +22,7 @@ export function createAiHandler(): MessageHandler {
       const params = payload.params
       const operateService = OperateService.getInstance()
       operateService.on("taskStartTip", (tip: string) => {
+        message.payload.action = WebSocketAction.CALLBACK_AI_STEP
         // 格式化任务提示
         const { formatted, icon, category } = formatTaskTip(tip)
         const timestamp = new Date().toLocaleTimeString('zh-CN', {
@@ -29,13 +31,13 @@ export function createAiHandler(): MessageHandler {
           minute: '2-digit',
           second: '2-digit'
         })
-        
+
         console.log(`🎯 WebSocket 监听到任务提示: ${tip}`)
-        console.log(`📝 格式化后的用户友好提示: ${formatted}`)
-        
+        // console.log(`📝 格式化后的用户友好提示: ${formatted}`)
+
         // 发送格式化后的用户友好消息
         const response = createSuccessResponseWithMeta(
-          message as WebSocketMessage, 
+          message as WebSocketMessage,
           formatted,
           {
             originalTip: tip,
