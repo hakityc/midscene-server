@@ -132,7 +132,7 @@ export const setupWebSocket = (app: Hono) => {
   ) => {
     // 设置日志上下文，包含 messageId 等信息
     setLogContextFromMessage(message, connectionId);
-    
+
     const action =
       (message as any).payload?.action ?? (message as any).content?.action;
     const isKnownAction = (Object.values(WebSocketAction) as string[]).includes(

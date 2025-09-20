@@ -15,6 +15,7 @@ export class OperateService extends EventEmitter {
     console.log("🔧 正在创建 AgentOverChromeBridge，绑定 onTaskStartTip 回调...")
     this.agent = new AgentOverChromeBridge({
       closeNewTabsAfterDisconnect: true,
+      closeConflictServer: true, // 自动关闭冲突的服务器
       cacheId: "midscene",
       // 启用实时日志配置
       generateReport: true,
@@ -81,14 +82,31 @@ export class OperateService extends EventEmitter {
       return
     }
 
-    try {
-      await this.agent.connectCurrentTab(option)
-      this.isInitialized = true
-      console.log("✅ AgentOverChromeBridge 初始化成功")
-    } catch (error) {
-      console.error("❌ AgentOverChromeBridge 初始化失败:", error)
-      throw error
+    const maxRetries = 3
+    let lastError: Error | null = null
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 尝试初始化连接 (${attempt}/${maxRetries})...`)
+        await this.agent.connectCurrentTab(option)
+        this.isInitialized = true
+        console.log("✅ AgentOverChromeBridge 初始化成功")
+        return
+      } catch (error) {
+        lastError = error as Error
+        console.error(`❌ AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries}):`, error)
+
+        if (attempt < maxRetries) {
+          const delay = attempt * 2000 // 递增延迟：2s, 4s
+          console.log(`⏳ ${delay/1000}秒后重试...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
     }
+
+    // 所有重试都失败了
+    console.error("❌ AgentOverChromeBridge 初始化最终失败，所有重试已用尽")
+    throw new Error(`初始化失败，已重试${maxRetries}次。最后错误: ${lastError?.message}`)
   }
 
   /**
@@ -136,6 +154,7 @@ export class OperateService extends EventEmitter {
       console.log("🔧 重连时重新创建 AgentOverChromeBridge，重新绑定 onTaskStartTip...")
       this.agent = new AgentOverChromeBridge({
         closeNewTabsAfterDisconnect: true,
+        closeConflictServer: true, // 自动关闭冲突的服务器
         cacheId: "midscene",
         generateReport: true,
         autoPrintReportMsg: true,
