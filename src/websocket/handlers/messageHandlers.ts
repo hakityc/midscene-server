@@ -6,6 +6,7 @@ import { createAiHandler } from "../actions/execute"
 import { createAgentExecuteHandler } from "../actions/agentExecute"
 import { executeScriptHandler } from "../actions/executeScript"
 import { handleSiteScriptHandler } from "../actions/siteScript"
+import { createCommandHandler } from "../actions/command"
 
 // 创建所有消息处理器 - 支持部分WebSocketAction
 export function createMessageHandlers(): Partial<Record<WebSocketAction, MessageHandler>> {
@@ -19,5 +20,6 @@ export function createMessageHandlers(): Partial<Record<WebSocketAction, Message
     [WebSocketAction.DOWNLOAD_VIDEO]: createDownloadVideoHandler(),
     [WebSocketAction.DOWNLOAD_VIDEO_CALLBACK]: async () => {},
     [WebSocketAction.SITE_SCRIPT]: handleSiteScriptHandler(),
+    [WebSocketAction.COMMAND]: createCommandHandler(),
   }
 }

@@ -9,4 +9,5 @@ export enum WebSocketAction {
   DOWNLOAD_VIDEO = 'downloadVideo',
   DOWNLOAD_VIDEO_CALLBACK = 'downloadVideoCallback',
   SITE_SCRIPT = 'siteScript',
+  COMMAND = 'command',
 }

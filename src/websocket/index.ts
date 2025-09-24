@@ -161,7 +161,7 @@ export const setupWebSocket = (app: Hono) => {
 
       // TODO: 使用 MCP 就不需要这里初始化了
       const operateService = OperateService.getInstance();
-      operateService.initialize();
+      operateService.start();
 
       return {
         onOpen(ws: WebSocketClient) {

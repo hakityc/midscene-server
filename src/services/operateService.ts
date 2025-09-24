@@ -7,30 +7,174 @@ import { formatTaskTip, getTaskStageDescription } from "../utils/taskTipFormatte
 import { setBrowserConnected } from "../routes/health"
 
 export class OperateService extends EventEmitter {
+  // ==================== 单例模式相关 ====================
   private static instance: OperateService | null = null
-  public agent: AgentOverChromeBridge
+
+  // ==================== 核心属性 ====================
+  public agent: AgentOverChromeBridge | null = null
   private isInitialized: boolean = false
+
+  // ==================== 重连机制属性 ====================
   private reconnectAttempts: number = 0
   private maxReconnectAttempts: number = 5
   private reconnectInterval: number = 5000 // 5秒
   private reconnectTimer: NodeJS.Timeout | null = null
   private isReconnecting: boolean = false
 
+  // ==================== AgentOverChromeBridge 默认配置 ====================
+  private readonly defaultAgentConfig = {
+    closeNewTabsAfterDisconnect: true,
+    closeConflictServer: true,
+    cacheId: "midscene",
+    generateReport: true,
+    autoPrintReportMsg: true,
+  }
+
   private constructor() {
     super()
-    console.log("🔧 正在创建 AgentOverChromeBridge，绑定 onTaskStartTip 回调...")
-    this.agent = new AgentOverChromeBridge({
-      closeNewTabsAfterDisconnect: true,
-      closeConflictServer: true, // 自动关闭冲突的服务器
-      cacheId: "midscene",
-      // 启用实时日志配置
-      generateReport: true,
-      autoPrintReportMsg: true,
-      // 注意：AgentOverChromeBridge 会覆盖 onTaskStartTip，所以我们需要在创建后重新设置
-    })
+    // 注意：不在构造函数中初始化 agent，改为延迟初始化
+  }
 
-    // 创建后重新设置我们的回调，同时保留原有的 showStatusMessage 功能
+  // ==================== 单例模式方法 ====================
+
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): OperateService {
+    if (!OperateService.instance) {
+      OperateService.instance = new OperateService()
+    }
+    return OperateService.instance
+  }
+
+  /**
+   * 重置单例实例（用于测试或强制重新初始化）
+   */
+  public static resetInstance(): void {
+    if (OperateService.instance) {
+      OperateService.instance.stop().catch(console.error)
+      OperateService.instance = null
+    }
+  }
+
+  // ==================== 生命周期方法 ====================
+
+  /**
+   * 启动服务 - 初始化 AgentOverChromeBridge
+   * @param option 连接选项
+   */
+  public async start(
+    option: { forceSameTabNavigation: boolean } = {
+      forceSameTabNavigation: true,
+    }
+  ): Promise<void> {
+    if (this.isInitialized && this.agent) {
+      console.log("🔄 OperateService 已启动，跳过重复启动")
+      return
+    }
+
+    console.log("🚀 启动 OperateService...")
+
+    try {
+      // 创建 AgentOverChromeBridge 实例
+      await this.createAgent()
+
+      // 初始化连接
+      await this.initialize(option)
+
+      console.log("✅ OperateService 启动成功")
+    } catch (error) {
+      console.error("❌ OperateService 启动失败:", error)
+      throw error
+    }
+  }
+
+  /**
+   * 停止服务 - 销毁 AgentOverChromeBridge
+   */
+  public async stop(): Promise<void> {
+    console.log("🛑 停止 OperateService...")
+
+    try {
+      // 停止自动重连
+      this.stopAutoReconnect()
+
+      // 销毁 agent
+      if (this.agent) {
+        await this.agent.destroy()
+        this.agent = null
+      }
+
+      // 重置状态
+      this.isInitialized = false
+      this.resetReconnectState()
+      setBrowserConnected(false)
+
+      console.log("✅ OperateService 已停止")
+    } catch (error) {
+      console.error("❌ 停止 OperateService 时出错:", error)
+      throw error
+    }
+  }
+
+  /**
+   * 检查服务是否已启动
+   */
+  public isStarted(): boolean {
+    return this.isInitialized && this.agent !== null
+  }
+
+  /**
+   * 检查是否已初始化（向后兼容）
+   */
+  public isReady(): boolean {
+    return this.isInitialized && this.agent !== null
+  }
+
+  /**
+   * 销毁服务（向后兼容）
+   */
+  async destroy(): Promise<void> {
+    return this.stop()
+  }
+
+  // ==================== AgentOverChromeBridge 管理 ====================
+
+  /**
+   * 创建 AgentOverChromeBridge 实例
+   */
+  private async createAgent(): Promise<void> {
+    if (this.agent) {
+      console.log("🔄 AgentOverChromeBridge 已存在，先销毁旧实例")
+      try {
+        await this.agent.destroy()
+      } catch (error) {
+        console.warn("销毁旧 AgentOverChromeBridge 时出错:", error)
+      }
+    }
+
+    console.log("🔧 正在创建 AgentOverChromeBridge，绑定 onTaskStartTip 回调...")
+
+    this.agent = new AgentOverChromeBridge(this.defaultAgentConfig)
+
+    // 设置任务开始提示回调
+    this.setupTaskStartTipCallback()
+
+    console.log("✅ AgentOverChromeBridge 创建完成，onTaskStartTip 已绑定")
+  }
+
+  /**
+   * 设置任务开始提示回调
+   */
+  private setupTaskStartTipCallback(): void {
+    if (!this.agent) {
+      throw new Error("Agent 未创建，无法设置回调")
+    }
+
+    // 保存原始回调
     const originalCallback = this.agent.onTaskStartTip
+
+    // 设置新的回调，同时保留原有功能
     this.agent.onTaskStartTip = async (tip: string) => {
       // 先调用原始的回调（showStatusMessage）
       if (originalCallback) {
@@ -39,8 +183,6 @@ export class OperateService extends EventEmitter {
       // 再调用我们的回调
       this.handleTaskStartTip(tip)
     }
-
-    console.log("✅ AgentOverChromeBridge 创建完成，onTaskStartTip 已重新绑定")
   }
 
   /**
@@ -65,15 +207,78 @@ export class OperateService extends EventEmitter {
     this.emit('taskStartTip', tip)
   }
 
+  // ==================== 连接管理相关方法 ====================
+
   /**
-   * 获取单例实例
+   * 初始化连接（确保只初始化一次）
    */
-  public static getInstance(): OperateService {
-    if (!OperateService.instance) {
-      OperateService.instance = new OperateService()
+  private async initialize(
+    option: { forceSameTabNavigation: boolean } = {
+      forceSameTabNavigation: true,
     }
-    return OperateService.instance
+  ): Promise<void> {
+    if (this.isInitialized) {
+      console.log("🔄 AgentOverChromeBridge 已经初始化，跳过重复初始化")
+      return
+    }
+
+    if (!this.agent) {
+      throw new Error("Agent 未创建，请先调用 createAgent()")
+    }
+
+    const maxRetries = 3
+    let lastError: Error | null = null
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 尝试初始化连接 (${attempt}/${maxRetries})...`)
+        await this.agent.connectCurrentTab(option)
+        this.isInitialized = true
+        setBrowserConnected(true)
+        console.log("✅ AgentOverChromeBridge 初始化成功")
+        return
+      } catch (error) {
+        lastError = error as Error
+        console.error(`❌ AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries}):`, error)
+        setBrowserConnected(false)
+
+        if (attempt < maxRetries) {
+          const delay = attempt * 2000 // 递增延迟：2s, 4s
+          console.log(`⏳ ${delay/1000}秒后重试...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
+    }
+
+    // 所有重试都失败了
+    console.error("❌ AgentOverChromeBridge 初始化最终失败，所有重试已用尽")
+    setBrowserConnected(false)
+    throw new Error(`初始化失败，已重试${maxRetries}次。最后错误: ${lastError?.message}`)
   }
+
+  /**
+   * 连接当前标签页
+   */
+  async connectCurrentTab(option: ConnectCurrentTabOption): Promise<void> {
+    try {
+      if (!this.agent) {
+        throw new Error("Agent 未初始化")
+      }
+      await this.agent.connectCurrentTab(option)
+      serviceLogger.info({ option }, "浏览器标签页连接成功")
+    } catch (error: any) {
+      serviceLogger.error({ error }, "浏览器标签页连接失败")
+
+      // 处理浏览器连接错误
+      if (error.message?.includes("connect")) {
+        throw new AppError("Failed to connect to browser", 503)
+      }
+      // 处理其他连接错误
+      throw new AppError(`Browser connection error: ${error.message}`, 500)
+    }
+  }
+
+  // ==================== 重连机制相关方法 ====================
 
   /**
    * 启动自动重连机制
@@ -180,52 +385,40 @@ export class OperateService extends EventEmitter {
   }
 
   /**
-   * 初始化连接（确保只初始化一次）
+   * 重新连接（内部方法）
    */
-  async initialize(
-    option: { forceSameTabNavigation: boolean } = {
-      forceSameTabNavigation: true,
+  private async reconnect(): Promise<void> {
+    try {
+      console.log("🔄 尝试重新连接...")
+      this.isInitialized = false
+      setBrowserConnected(false)
+
+      // 重新创建连接
+      await this.createAgent()
+      await this.initialize({ forceSameTabNavigation: true })
+
+      this.isInitialized = true
+      setBrowserConnected(true)
+      console.log("✅ 重新连接成功")
+    } catch (error) {
+      console.error("❌ 重新连接失败:", error)
+      this.isInitialized = false
+      setBrowserConnected(false)
+      throw error
     }
-  ) {
-    if (this.isInitialized) {
-      console.log("🔄 AgentOverChromeBridge 已经初始化，跳过重复初始化")
-      return
-    }
-
-    const maxRetries = 3
-    let lastError: Error | null = null
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`🔄 尝试初始化连接 (${attempt}/${maxRetries})...`)
-        await this.agent.connectCurrentTab(option)
-        this.isInitialized = true
-        setBrowserConnected(true)
-        console.log("✅ AgentOverChromeBridge 初始化成功")
-        return
-      } catch (error) {
-        lastError = error as Error
-        console.error(`❌ AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries}):`, error)
-        setBrowserConnected(false)
-
-        if (attempt < maxRetries) {
-          const delay = attempt * 2000 // 递增延迟：2s, 4s
-          console.log(`⏳ ${delay/1000}秒后重试...`)
-          await new Promise(resolve => setTimeout(resolve, delay))
-        }
-      }
-    }
-
-    // 所有重试都失败了
-    console.error("❌ AgentOverChromeBridge 初始化最终失败，所有重试已用尽")
-    setBrowserConnected(false)
-    throw new Error(`初始化失败，已重试${maxRetries}次。最后错误: ${lastError?.message}`)
   }
+
+  // ==================== 连接状态检测方法 ====================
 
   /**
    * 检查连接状态 - 轻量级检测
    */
   private async checkConnectionStatus(): Promise<boolean> {
+    if (!this.agent) {
+      setBrowserConnected(false)
+      return false
+    }
+
     try {
       // 使用更轻量级的方法：获取浏览器标签页列表
       // 这比evaluateJavaScript更快，不会执行页面脚本
@@ -257,6 +450,11 @@ export class OperateService extends EventEmitter {
    * 超轻量级连接检测 - 仅用于快速检查
    */
   private async quickConnectionCheck(): Promise<boolean> {
+    if (!this.agent) {
+      setBrowserConnected(false)
+      return false
+    }
+
     try {
       // 使用最轻量级的方法：发送状态消息
       // 这几乎不会增加任何延迟
@@ -278,75 +476,52 @@ export class OperateService extends EventEmitter {
     }
   }
 
+  /**
+   * 确保连接有效 - 主动连接管理
+   */
+  private async ensureConnection(): Promise<void> {
+    // 如果服务未启动，先启动服务
+    if (!this.isStarted()) {
+      console.log("🔄 服务未启动，开始启动...")
+      await this.start({ forceSameTabNavigation: true })
+      return
+    }
+
+    // 使用轻量级检测检查连接是否真的有效
+    const isConnected = await this.quickConnectionCheck()
+    if (!isConnected) {
+      console.log("🔄 连接已断开，尝试重新连接...")
+      await this.reconnect()
+    }
+  }
 
   /**
-   * 重新连接
+   * 确保连接当前标签页 - 在所有操作前调用
    */
-  private async reconnect(): Promise<void> {
+  private async ensureCurrentTabConnection(): Promise<void> {
     try {
-      console.log("🔄 尝试重新连接...")
-      this.isInitialized = false
-      setBrowserConnected(false)
+      // 先确保服务已初始化
+      await this.ensureConnection()
 
-      // 销毁现有连接
-      try {
-        await this.agent.destroy()
-      } catch (error) {
-        console.warn("销毁现有连接时出错:", error)
+      if (!this.agent) {
+        throw new Error("Agent 未初始化")
       }
 
-      // 重新创建连接
-      console.log("🔧 重连时重新创建 AgentOverChromeBridge，重新绑定 onTaskStartTip...")
-      this.agent = new AgentOverChromeBridge({
-        closeNewTabsAfterDisconnect: true,
-        closeConflictServer: true, // 自动关闭冲突的服务器
-        cacheId: "midscene",
-        generateReport: true,
-        autoPrintReportMsg: true,
-      })
-
-      // 重连后重新设置我们的回调，同时保留原有的 showStatusMessage 功能
-      const originalCallback = this.agent.onTaskStartTip
-      this.agent.onTaskStartTip = async (tip: string) => {
-        // 先调用原始的回调（showStatusMessage）
-        if (originalCallback) {
-          await originalCallback(tip)
-        }
-        // 再调用我们的回调
-        this.handleTaskStartTip(tip)
-      }
-
-      console.log("✅ 重连时 AgentOverChromeBridge 重新创建完成，onTaskStartTip 已重新绑定")
-
-      await this.agent.connectCurrentTab({
-        forceSameTabNavigation: true,
-      })
-
-      this.isInitialized = true
-      setBrowserConnected(true)
-      console.log("✅ 重新连接成功")
-    } catch (error) {
-      console.error("❌ 重新连接失败:", error)
-      this.isInitialized = false
-      setBrowserConnected(false)
-    }
-  }
-
-  async connectCurrentTab(option: ConnectCurrentTabOption) {
-    try {
-      await this.agent.connectCurrentTab(option)
-      serviceLogger.info({ option }, "浏览器标签页连接成功")
+      // 尝试连接当前标签页，如果已经连接会忽略
+      await this.agent.connectCurrentTab({ forceSameTabNavigation: true })
+      console.log("✅ 确保当前标签页连接成功")
     } catch (error: any) {
-      serviceLogger.error({ error }, "浏览器标签页连接失败")
-
-      // 处理浏览器连接错误
-      if (error.message?.includes("connect")) {
-        throw new AppError("Failed to connect to browser", 503)
+      console.warn("⚠️ 连接当前标签页时出现警告:", error.message)
+      // 如果是"Another debugger is already attached"错误，我们忽略它
+      // 因为这意味着连接已经存在
+      if (!error.message?.includes("Another debugger is already attached")) {
+        this.reconnect().catch(console.error)
+        throw error
       }
-      // 处理其他连接错误
-      throw new AppError(`Browser connection error: ${error.message}`, 500)
     }
   }
+
+  // ==================== 执行相关方法 ====================
 
   /**
    * 通用重试执行器：抽取公共 withRetry 重试逻辑
@@ -376,40 +551,6 @@ export class OperateService extends EventEmitter {
     }
 
     throw lastError
-  }
-
-  async execute(prompt: string, maxRetries: number = 3): Promise<void> {
-    // 检查连接状态，如果断开则启动重连
-    const isConnected = await this.checkAndReconnect()
-    if (!isConnected) {
-      throw new AppError("Agent连接已断开，正在尝试重连中，请稍后重试", 503)
-    }
-
-    // 执行前确保连接当前标签页
-    await this.ensureCurrentTabConnection()
-
-    await this.runWithRetry(prompt, maxRetries, (attempt, max) => this.executeWithRetry(prompt, attempt, max))
-  }
-
-  private async executeWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
-    if (!this.isInitialized) {
-      throw new Error("AgentOverChromeBridge 未初始化，请先调用 initialize() 方法")
-    }
-
-    try {
-      console.log(`🚀 开始执行 AI 任务: ${prompt}`)
-      console.log(`🔍 当前 agent.onTaskStartTip 是否已设置: ${typeof this.agent.onTaskStartTip}`)
-
-
-      await this.agent.ai(prompt)
-      console.log(`✅ AI 任务执行完成: ${prompt}`)
-    } catch (error: any) {
-      console.log(`❌ AI 任务执行失败: ${error.message}`)
-      if (error.message?.includes("ai")) {
-        throw new AppError(`AI execution failed: ${error.message}`, 500)
-      }
-      throw new AppError(`Operation execution error: ${error.message}`, 500)
-    }
   }
 
   /**
@@ -442,7 +583,59 @@ export class OperateService extends EventEmitter {
     }
   }
 
+  /**
+   * 执行 AI 任务
+   */
+  async execute(prompt: string, maxRetries: number = 3): Promise<void> {
+    // 如果服务未启动，自动启动
+    if (!this.isStarted()) {
+      console.log("🔄 服务未启动，自动启动 OperateService...")
+      await this.start()
+    }
+
+    // 检查连接状态，如果断开则启动重连
+    const isConnected = await this.checkAndReconnect()
+    if (!isConnected) {
+      throw new AppError("Agent连接已断开，正在尝试重连中，请稍后重试", 503)
+    }
+
+    // 执行前确保连接当前标签页
+    await this.ensureCurrentTabConnection()
+
+    await this.runWithRetry(prompt, maxRetries, (attempt, max) => this.executeWithRetry(prompt, attempt, max))
+  }
+
+  private async executeWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
+    // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
+    if (!this.agent) {
+      throw new AppError("服务启动失败，无法执行 AI 任务", 503)
+    }
+
+    try {
+      console.log(`🚀 开始执行 AI 任务: ${prompt}`)
+      console.log(`🔍 当前 agent.onTaskStartTip 是否已设置: ${typeof this.agent.onTaskStartTip}`)
+
+      await this.agent.ai(prompt)
+      console.log(`✅ AI 任务执行完成: ${prompt}`)
+    } catch (error: any) {
+      console.log(`❌ AI 任务执行失败: ${error.message}`)
+      if (error.message?.includes("ai")) {
+        throw new AppError(`AI execution failed: ${error.message}`, 500)
+      }
+      throw new AppError(`Operation execution error: ${error.message}`, 500)
+    }
+  }
+
+  /**
+   * 执行 AI 断言
+   */
   async expect(prompt: string, maxRetries: number = 3): Promise<void> {
+    // 如果服务未启动，自动启动
+    if (!this.isStarted()) {
+      console.log("🔄 服务未启动，自动启动 OperateService...")
+      await this.start()
+    }
+
     // 执行前确保连接当前标签页
     await this.ensureCurrentTabConnection()
 
@@ -450,8 +643,9 @@ export class OperateService extends EventEmitter {
   }
 
   private async expectWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
-    if (!this.isInitialized) {
-      throw new Error("AgentOverChromeBridge 未初始化，请先调用 initialize() 方法")
+    // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
+    if (!this.agent) {
+      throw new AppError("服务启动失败，无法执行 AI 断言", 503)
     }
 
     try {
@@ -464,7 +658,16 @@ export class OperateService extends EventEmitter {
     }
   }
 
+  /**
+   * 执行 YAML 脚本
+   */
   async executeScript(prompt: string, maxRetries: number = 3): Promise<void> {
+    // 如果服务未启动，自动启动
+    if (!this.isStarted()) {
+      console.log("🔄 服务未启动，自动启动 OperateService...")
+      await this.start()
+    }
+
     // 执行前确保连接当前标签页
     await this.ensureCurrentTabConnection()
 
@@ -472,8 +675,9 @@ export class OperateService extends EventEmitter {
   }
 
   private async executeScriptWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
-    if (!this.isInitialized) {
-      throw new Error("AgentOverChromeBridge 未初始化，请先调用 initialize() 方法")
+    // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
+    if (!this.agent) {
+      throw new AppError("服务启动失败，无法执行 YAML 脚本", 503)
     }
 
     try {
@@ -486,83 +690,24 @@ export class OperateService extends EventEmitter {
     }
   }
 
-  async destroy() {
-    this.stopAutoReconnect()
-    setBrowserConnected(false)
-    try {
-      await this.agent.destroy()
-      this.isInitialized = false
-      console.log("✅ AgentOverChromeBridge 已销毁")
-    } catch (error) {
-      console.error("销毁失败:", error)
-      throw error
-    }
-  }
-
-  /**
-   * 重置单例实例（用于测试或强制重新初始化）
-   */
-  public static resetInstance() {
-    if (OperateService.instance) {
-      OperateService.instance.destroy().catch(console.error)
-      OperateService.instance = null
-    }
-  }
-
-  /**
-   * 检查是否已初始化
-   */
-  public isReady(): boolean {
-    return this.isInitialized
-  }
-
-  /**
-   * 确保连接有效 - 主动连接管理
-   */
-  private async ensureConnection(): Promise<void> {
-    if (!this.isInitialized) {
-      console.log("🔄 服务未初始化，开始初始化...")
-      await this.initialize({ forceSameTabNavigation: true })
-      return
-    }
-
-    // 使用轻量级检测检查连接是否真的有效
-    const isConnected = await this.quickConnectionCheck()
-    if (!isConnected) {
-      console.log("🔄 连接已断开，尝试重新连接...")
-      await this.reconnect()
-    }
-  }
-
-  /**
-   * 确保连接当前标签页 - 在所有操作前调用
-   */
-  private async ensureCurrentTabConnection(): Promise<void> {
-    try {
-      // 先确保服务已初始化
-      await this.ensureConnection()
-
-      // 尝试连接当前标签页，如果已经连接会忽略
-      await this.agent.connectCurrentTab({ forceSameTabNavigation: true })
-      console.log("✅ 确保当前标签页连接成功")
-    } catch (error: any) {
-      console.warn("⚠️ 连接当前标签页时出现警告:", error.message)
-      this.reconnect()
-      // 如果是"Another debugger is already attached"错误，我们忽略它
-      // 因为这意味着连接已经存在
-      if (!error.message?.includes("Another debugger is already attached")) {
-        throw error
-      }
-    }
-  }
-
   /**
    * 评估页面 JavaScript（带主动连接保证）
    */
   public async evaluateJavaScript(script: string): Promise<any> {
     try {
+      // 如果服务未启动，自动启动
+      if (!this.isStarted()) {
+        console.log("🔄 服务未启动，自动启动 OperateService...")
+        await this.start()
+      }
+
       // 执行前确保连接当前标签页
       await this.ensureCurrentTabConnection()
+
+      if (!this.agent) {
+        throw new AppError("服务启动失败，无法执行 JavaScript", 503)
+      }
+
       return await this.agent.evaluateJavaScript(script)
     } catch (error) {
       throw new AppError(`JavaScript evaluation failed: ${error}`, 500)
