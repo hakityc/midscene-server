@@ -15,6 +15,7 @@ export interface WsInboundMessage<P = unknown> {
     action: WebSocketAction | string;
     params: P;
     site:string;
+    originalCmd: string;
   };
 }
 

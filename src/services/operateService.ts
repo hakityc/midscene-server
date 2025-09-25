@@ -699,7 +699,7 @@ export class OperateService extends EventEmitter {
   /**
    * 执行 YAML 脚本
    */
-  async executeScript(prompt: string, maxRetries: number = 3): Promise<void> {
+  async executeScript(prompt: string, maxRetries: number = 3, originalCmd?: string): Promise<void> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
       console.log("🔄 服务未启动，自动启动 OperateService...")
@@ -709,10 +709,33 @@ export class OperateService extends EventEmitter {
     // 执行前确保连接当前标签页
     await this.ensureCurrentTabConnection()
 
-    await this.runWithRetry(prompt, maxRetries, (attempt, max) => this.executeScriptWithRetry(prompt, attempt, max))
+    try {
+      await this.runWithRetry(prompt, maxRetries, (attempt, max) => this.executeScriptWithRetry(prompt, originalCmd, attempt, max))
+    } catch (error: any) {
+      // 如果提供了 originalCmd，则先尝试兜底执行
+      if (originalCmd) {
+        try {
+          await this.execute(originalCmd)
+          // 兜底成功，不上报错误
+          serviceLogger.warn({ prompt, originalCmd, originalError: error?.message }, 'YAML 执行失败，但兜底执行成功，忽略原错误')
+          return
+        } catch (fallbackErr: any) {
+          // 兜底失败，同时上报两个错误
+          serviceLogger.error({
+            prompt,
+            originalCmd,
+            originalError: error,
+            fallbackError: fallbackErr,
+          }, 'YAML 执行失败，兜底执行也失败')
+          throw new AppError(`YAML 执行失败: ${error?.message} | 兜底失败: ${fallbackErr?.message}`, 500)
+        }
+      }
+      // 未提供 originalCmd，按原逻辑抛错
+      throw error
+    }
   }
 
-  private async executeScriptWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
+  private async executeScriptWithRetry(prompt: string, _originalCmd: string | undefined, _attempt: number, _maxRetries: number): Promise<void> {
     // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
     if (!this.agent) {
       throw new AppError("服务启动失败，无法执行 YAML 脚本", 503)
@@ -720,7 +743,11 @@ export class OperateService extends EventEmitter {
 
     try {
       await this.agent.runYaml(prompt)
+      serviceLogger.info({
+        prompt,
+      }, 'YAML 脚本执行完成')
     } catch (error: any) {
+      // 先不急着上报错误，由外层决定是否兜底和上报
       if (error.message?.includes("ai")) {
         throw new AppError(`AI execution failed: ${error.message}`, 500)
       }
@@ -731,7 +758,7 @@ export class OperateService extends EventEmitter {
   /**
    * 评估页面 JavaScript（带主动连接保证）
    */
-  public async evaluateJavaScript(script: string): Promise<any> {
+  public async evaluateJavaScript(script: string, originalCmd?: string): Promise<any> {
     try {
       // 如果服务未启动，自动启动
       if (!this.isStarted()) {
@@ -747,7 +774,25 @@ export class OperateService extends EventEmitter {
       }
 
       return await this.agent.evaluateJavaScript(script)
-    } catch (error) {
+    } catch (error: any) {
+      // 如果提供了 originalCmd，则先尝试兜底执行
+      if (originalCmd) {
+        try {
+          await this.execute(originalCmd)
+          // 兜底成功，不上报错误
+          serviceLogger.warn({ script, originalCmd, originalError: error?.message }, 'JS 执行失败，但兜底执行成功，忽略原错误')
+          return
+        } catch (fallbackErr: any) {
+          // 兜底失败，同时上报两个错误
+          serviceLogger.error({
+            script,
+            originalCmd,
+            originalError: error,
+            fallbackError: fallbackErr,
+          }, 'JS 执行失败，兜底执行也失败')
+          throw new AppError(`JavaScript 执行失败: ${error?.message} | 兜底失败: ${fallbackErr?.message}`, 500)
+        }
+      }
       throw new AppError(`JavaScript evaluation failed: ${error}`, 500)
     }
   }
