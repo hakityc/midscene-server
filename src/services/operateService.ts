@@ -278,10 +278,10 @@ export class OperateService extends EventEmitter {
 
       // 处理浏览器连接错误
       if (error.message?.includes("connect")) {
-        throw new AppError("Failed to connect to browser", 503)
+        throw new AppError("浏览器连接失败", 503)
       }
       // 处理其他连接错误
-      throw new AppError(`Browser connection error: ${error.message}`, 500)
+      throw new AppError(`浏览器连接错误: ${error.message}`, 500)
     }
   }
 
@@ -390,7 +390,7 @@ export class OperateService extends EventEmitter {
     // 如果服务正在停止，不允许强制重连
     if (this.isStopping) {
       console.log("🛑 服务正在停止，不允许强制重连")
-      throw new AppError("服务正在停止，无法执行重连", 503)
+      throw new AppError("服务正在停止，无法重连", 503)
     }
 
     console.log("🔄 强制重连...")
@@ -634,7 +634,7 @@ export class OperateService extends EventEmitter {
     // 检查连接状态，如果断开则启动重连
     const isConnected = await this.checkAndReconnect()
     if (!isConnected) {
-      throw new AppError("Agent连接已断开，正在尝试重连中，请稍后重试", 503)
+      throw new AppError("浏览器连接断开，正在重连中", 503)
     }
 
     // 执行前确保连接当前标签页
@@ -646,7 +646,7 @@ export class OperateService extends EventEmitter {
   private async executeWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
     // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
     if (!this.agent) {
-      throw new AppError("服务启动失败，无法执行 AI 任务", 503)
+      throw new AppError("服务启动失败，无法执行任务", 503)
     }
 
     try {
@@ -658,9 +658,9 @@ export class OperateService extends EventEmitter {
     } catch (error: any) {
       console.log(`❌ AI 任务执行失败: ${error.message}`)
       if (error.message?.includes("ai")) {
-        throw new AppError(`AI execution failed: ${error.message}`, 500)
+        throw new AppError(`AI 执行失败: ${error.message}`, 500)
       }
-      throw new AppError(`Operation execution error: ${error.message}`, 500)
+      throw new AppError(`任务执行失败: ${error.message}`, 500)
     }
   }
 
@@ -683,16 +683,16 @@ export class OperateService extends EventEmitter {
   private async expectWithRetry(prompt: string, _attempt: number, _maxRetries: number): Promise<void> {
     // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
     if (!this.agent) {
-      throw new AppError("服务启动失败，无法执行 AI 断言", 503)
+      throw new AppError("服务启动失败，无法执行断言", 503)
     }
 
     try {
       await this.agent.aiAssert(prompt)
     } catch (error: any) {
       if (error.message?.includes("ai")) {
-        throw new AppError(`AI assertion failed: ${error.message}`, 500)
+        throw new AppError(`AI 断言失败: ${error.message}`, 500)
       }
-      throw new AppError(`Assertion execution error: ${error.message}`, 500)
+      throw new AppError(`断言执行失败: ${error.message}`, 500)
     }
   }
 
@@ -727,7 +727,7 @@ export class OperateService extends EventEmitter {
             originalError: error,
             fallbackError: fallbackErr,
           }, 'YAML 执行失败，兜底执行也失败')
-          throw new AppError(`YAML 执行失败: ${error?.message} | 兜底失败: ${fallbackErr?.message}`, 500)
+          throw new AppError(`YAML 脚本执行失败: ${error?.message} | 兜底失败: ${fallbackErr?.message}`, 500)
         }
       }
       // 未提供 originalCmd，按原逻辑抛错
@@ -738,7 +738,7 @@ export class OperateService extends EventEmitter {
   private async executeScriptWithRetry(prompt: string, _originalCmd: string | undefined, _attempt: number, _maxRetries: number): Promise<void> {
     // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
     if (!this.agent) {
-      throw new AppError("服务启动失败，无法执行 YAML 脚本", 503)
+      throw new AppError("服务启动失败，无法执行脚本", 503)
     }
 
     try {
@@ -749,9 +749,9 @@ export class OperateService extends EventEmitter {
     } catch (error: any) {
       // 先不急着上报错误，由外层决定是否兜底和上报
       if (error.message?.includes("ai")) {
-        throw new AppError(`AI execution failed: ${error.message}`, 500)
+        throw new AppError(`AI 执行失败: ${error.message}`, 500)
       }
-      throw new AppError(`Operation execution error: ${error.message}`, 500)
+      throw new AppError(`脚本执行失败: ${error.message}`, 500)
     }
   }
 
@@ -770,10 +770,14 @@ export class OperateService extends EventEmitter {
       await this.ensureCurrentTabConnection()
 
       if (!this.agent) {
-        throw new AppError("服务启动失败，无法执行 JavaScript", 503)
+        throw new AppError("服务启动失败，无法执行脚本", 503)
       }
-
-      return await this.agent.evaluateJavaScript(script)
+      const evaluateResult = await this.agent.evaluateJavaScript(script)
+      const type = evaluateResult?.exceptionDetails?.exception?.subtype
+      if (type === "error") {
+        throw new AppError(`JavaScript 执行失败: ${evaluateResult}`, 500)
+      }
+      return evaluateResult
     } catch (error: any) {
       // 如果提供了 originalCmd，则先尝试兜底执行
       if (originalCmd) {
@@ -790,10 +794,10 @@ export class OperateService extends EventEmitter {
             originalError: error,
             fallbackError: fallbackErr,
           }, 'JS 执行失败，兜底执行也失败')
-          throw new AppError(`JavaScript 执行失败: ${error?.message} | 兜底失败: ${fallbackErr?.message}`, 500)
+          throw new AppError(`JavaScript 执行失败`, 500)
         }
       }
-      throw new AppError(`JavaScript evaluation failed: ${error}`, 500)
+      throw new AppError(`JavaScript 执行失败`, 500)
     }
   }
 }
