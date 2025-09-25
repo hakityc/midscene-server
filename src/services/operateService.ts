@@ -24,7 +24,7 @@ export class OperateService extends EventEmitter {
 
   // ==================== AgentOverChromeBridge 默认配置 ====================
   private readonly defaultAgentConfig = {
-    closeNewTabsAfterDisconnect: true,
+    closeNewTabsAfterDisconnect: false,
     closeConflictServer: true,
     cacheId: "midscene",
     generateReport: true,
@@ -202,16 +202,19 @@ export class OperateService extends EventEmitter {
     console.log(`🤖 AI 任务开始: ${tip}`)
     console.log(`${icon} ${formatted} (${stageDescription})`)
 
-    serviceLogger.info({
-      tip,
-      formatted,
-      category,
-      icon,
-      stage: stageDescription
-    }, "AI 任务开始执行")
+    serviceLogger.info(
+      {
+        tip,
+        formatted,
+        category,
+        icon,
+        stage: stageDescription,
+      },
+      "AI 任务开始执行"
+    )
 
     // 发射事件，让其他地方可以监听到
-    this.emit('taskStartTip', tip)
+    this.emit("taskStartTip", tip)
   }
 
   // ==================== 连接管理相关方法 ====================
@@ -251,8 +254,8 @@ export class OperateService extends EventEmitter {
 
         if (attempt < maxRetries) {
           const delay = attempt * 2000 // 递增延迟：2s, 4s
-          console.log(`⏳ ${delay/1000}秒后重试...`)
-          await new Promise(resolve => setTimeout(resolve, delay))
+          console.log(`⏳ ${delay / 1000}秒后重试...`)
+          await new Promise((resolve) => setTimeout(resolve, delay))
         }
       }
     }
@@ -267,22 +270,23 @@ export class OperateService extends EventEmitter {
    * 连接当前标签页
    */
   async connectCurrentTab(option: ConnectCurrentTabOption): Promise<void> {
-    try {
-      if (!this.agent) {
-        throw new Error("Agent 未初始化")
-      }
-      await this.agent.connectCurrentTab(option)
-      serviceLogger.info({ option }, "浏览器标签页连接成功")
-    } catch (error: any) {
-      serviceLogger.error({ error }, "浏览器标签页连接失败")
+    return
+    // try {
+    //   if (!this.agent) {
+    //     throw new Error("Agent 未初始化")
+    //   }
+    //   await this.agent.connectCurrentTab(option)
+    //   serviceLogger.info({ option }, "浏览器标签页连接成功")
+    // } catch (error: any) {
+    //   serviceLogger.error({ error }, "浏览器标签页连接失败")
 
-      // 处理浏览器连接错误
-      if (error.message?.includes("connect")) {
-        throw new AppError("浏览器连接失败", 503)
-      }
-      // 处理其他连接错误
-      throw new AppError(`浏览器连接错误: ${error.message}`, 500)
-    }
+    //   // 处理浏览器连接错误
+    //   if (error.message?.includes("connect")) {
+    //     throw new AppError("浏览器连接失败", 503)
+    //   }
+    //   // 处理其他连接错误
+    //   throw new AppError(`浏览器连接错误: ${error.message}`, 500)
+    // }
   }
 
   // ==================== 重连机制相关方法 ====================
@@ -327,7 +331,7 @@ export class OperateService extends EventEmitter {
           this.reconnectAttempts = 0
           this.stopAutoReconnect()
           setBrowserConnected(true)
-          this.emit('reconnected')
+          this.emit("reconnected")
         }
       } catch (error) {
         console.error(`❌ 自动重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts}):`, error)
@@ -402,7 +406,7 @@ export class OperateService extends EventEmitter {
       await this.initialize({ forceSameTabNavigation: true })
       console.log("✅ 强制重连成功")
       setBrowserConnected(true)
-      this.emit('reconnected')
+      this.emit("reconnected")
     } catch (error) {
       console.error("❌ 强制重连失败:", error)
       setBrowserConnected(false)
@@ -496,11 +500,7 @@ export class OperateService extends EventEmitter {
       return true
     } catch (error: any) {
       const message = error?.message || ""
-      if (
-        message.includes("Connection lost") ||
-        message.includes("timeout") ||
-        message.includes("bridge client")
-      ) {
+      if (message.includes("Connection lost") || message.includes("timeout") || message.includes("bridge client")) {
         setBrowserConnected(false)
         return false
       }
@@ -546,7 +546,7 @@ export class OperateService extends EventEmitter {
       }
 
       // 尝试连接当前标签页，如果已经连接会忽略
-      await this.agent.connectCurrentTab({ forceSameTabNavigation: true })
+      // await this.agent.connectCurrentTab({ forceSameTabNavigation: true })
       console.log("✅ 确保当前标签页连接成功")
     } catch (error: any) {
       console.warn("⚠️ 连接当前标签页时出现警告:", error.message)
@@ -710,23 +710,31 @@ export class OperateService extends EventEmitter {
     await this.ensureCurrentTabConnection()
 
     try {
-      await this.runWithRetry(prompt, maxRetries, (attempt, max) => this.executeScriptWithRetry(prompt, originalCmd, attempt, max))
+      await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
+        this.executeScriptWithRetry(prompt, originalCmd, attempt, max)
+      )
     } catch (error: any) {
       // 如果提供了 originalCmd，则先尝试兜底执行
       if (originalCmd) {
         try {
           await this.execute(originalCmd)
           // 兜底成功，不上报错误
-          serviceLogger.warn({ prompt, originalCmd, originalError: error?.message }, 'YAML 执行失败，但兜底执行成功，忽略原错误')
+          serviceLogger.warn(
+            { prompt, originalCmd, originalError: error?.message },
+            "YAML 执行失败，但兜底执行成功，忽略原错误"
+          )
           return
         } catch (fallbackErr: any) {
           // 兜底失败，同时上报两个错误
-          serviceLogger.error({
-            prompt,
-            originalCmd,
-            originalError: error,
-            fallbackError: fallbackErr,
-          }, 'YAML 执行失败，兜底执行也失败')
+          serviceLogger.error(
+            {
+              prompt,
+              originalCmd,
+              originalError: error,
+              fallbackError: fallbackErr,
+            },
+            "YAML 执行失败，兜底执行也失败"
+          )
           throw new AppError(`YAML 脚本执行失败: ${error?.message} | 兜底失败: ${fallbackErr?.message}`, 500)
         }
       }
@@ -735,7 +743,12 @@ export class OperateService extends EventEmitter {
     }
   }
 
-  private async executeScriptWithRetry(prompt: string, _originalCmd: string | undefined, _attempt: number, _maxRetries: number): Promise<void> {
+  private async executeScriptWithRetry(
+    prompt: string,
+    _originalCmd: string | undefined,
+    _attempt: number,
+    _maxRetries: number
+  ): Promise<void> {
     // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
     if (!this.agent) {
       throw new AppError("服务启动失败，无法执行脚本", 503)
@@ -743,9 +756,12 @@ export class OperateService extends EventEmitter {
 
     try {
       await this.agent.runYaml(prompt)
-      serviceLogger.info({
-        prompt,
-      }, 'YAML 脚本执行完成')
+      serviceLogger.info(
+        {
+          prompt,
+        },
+        "YAML 脚本执行完成"
+      )
     } catch (error: any) {
       // 先不急着上报错误，由外层决定是否兜底和上报
       if (error.message?.includes("ai")) {
@@ -772,7 +788,9 @@ export class OperateService extends EventEmitter {
       if (!this.agent) {
         throw new AppError("服务启动失败，无法执行脚本", 503)
       }
+      serviceLogger.info(`当前执行脚本：${script}`)
       const evaluateResult = await this.agent.evaluateJavaScript(script)
+      serviceLogger.info(evaluateResult, "evaluateJavaScript 执行完成")
       const type = evaluateResult?.exceptionDetails?.exception?.subtype
       if (type === "error") {
         throw new AppError(`JavaScript 执行失败: ${evaluateResult}`, 500)
@@ -784,16 +802,22 @@ export class OperateService extends EventEmitter {
         try {
           await this.execute(originalCmd)
           // 兜底成功，不上报错误
-          serviceLogger.warn({ script, originalCmd, originalError: error?.message }, 'JS 执行失败，但兜底执行成功，忽略原错误')
+          serviceLogger.warn(
+            { script, originalCmd, originalError: error?.message },
+            "JS 执行失败，但兜底执行成功，忽略原错误"
+          )
           return
         } catch (fallbackErr: any) {
           // 兜底失败，同时上报两个错误
-          serviceLogger.error({
-            script,
-            originalCmd,
-            originalError: error,
-            fallbackError: fallbackErr,
-          }, 'JS 执行失败，兜底执行也失败')
+          serviceLogger.error(
+            {
+              script,
+              originalCmd,
+              originalError: error,
+              fallbackError: fallbackErr,
+            },
+            "JS 执行失败，兜底执行也失败"
+          )
           throw new AppError(`JavaScript 执行失败`, 500)
         }
       }
