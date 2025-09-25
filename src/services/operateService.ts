@@ -20,6 +20,7 @@ export class OperateService extends EventEmitter {
   private reconnectInterval: number = 5000 // 5秒
   private reconnectTimer: NodeJS.Timeout | null = null
   private isReconnecting: boolean = false
+  private isStopping: boolean = false // 标志服务正在停止，防止重连
 
   // ==================== AgentOverChromeBridge 默认配置 ====================
   private readonly defaultAgentConfig = {
@@ -73,6 +74,9 @@ export class OperateService extends EventEmitter {
       return
     }
 
+    // 清除停止标志，允许重新启动
+    this.isStopping = false
+
     console.log("🚀 启动 OperateService...")
 
     try {
@@ -94,6 +98,9 @@ export class OperateService extends EventEmitter {
    */
   public async stop(): Promise<void> {
     console.log("🛑 停止 OperateService...")
+
+    // 设置停止标志，防止重连
+    this.isStopping = true
 
     try {
       // 停止自动重连
@@ -284,12 +291,19 @@ export class OperateService extends EventEmitter {
    * 启动自动重连机制
    */
   private startAutoReconnect(): void {
-    if (this.reconnectTimer || this.isReconnecting) {
+    if (this.reconnectTimer || this.isReconnecting || this.isStopping) {
       return
     }
 
     console.log("🔄 启动自动重连机制...")
     this.reconnectTimer = setInterval(async () => {
+      // 如果服务正在停止，不进行重连
+      if (this.isStopping) {
+        console.log("🛑 服务正在停止，取消自动重连")
+        this.stopAutoReconnect()
+        return
+      }
+
       if (this.isInitialized || this.isReconnecting) {
         return
       }
@@ -341,12 +355,19 @@ export class OperateService extends EventEmitter {
     this.reconnectAttempts = 0
     this.isReconnecting = false
     this.stopAutoReconnect()
+    // 注意：不在这里重置 isStopping，它由 start() 和 stop() 管理
   }
 
   /**
    * 检查连接状态并启动重连
    */
   public async checkAndReconnect(): Promise<boolean> {
+    // 如枟服务正在停止，不进行重连
+    if (this.isStopping) {
+      console.log("🛑 服务正在停止，不进行重连检查")
+      return false
+    }
+
     if (this.isInitialized) {
       // 先使用超轻量级检测
       const isConnected = await this.quickConnectionCheck()
@@ -366,6 +387,12 @@ export class OperateService extends EventEmitter {
    * 强制重连
    */
   public async forceReconnect(): Promise<void> {
+    // 如果服务正在停止，不允许强制重连
+    if (this.isStopping) {
+      console.log("🛑 服务正在停止，不允许强制重连")
+      throw new AppError("服务正在停止，无法执行重连", 503)
+    }
+
     console.log("🔄 强制重连...")
     this.resetReconnectState()
     this.isInitialized = false
@@ -388,6 +415,12 @@ export class OperateService extends EventEmitter {
    * 重新连接（内部方法）
    */
   private async reconnect(): Promise<void> {
+    // 如果服务正在停止，不进行重连
+    if (this.isStopping) {
+      console.log("🛑 服务正在停止，取消重新连接")
+      throw new Error("服务正在停止，无法重新连接")
+    }
+
     try {
       console.log("🔄 尝试重新连接...")
       this.isInitialized = false
@@ -480,6 +513,11 @@ export class OperateService extends EventEmitter {
    * 确保连接有效 - 主动连接管理
    */
   private async ensureConnection(): Promise<void> {
+    // 如果服务正在停止，不进行连接管理
+    if (this.isStopping) {
+      throw new Error("服务正在停止，无法确保连接")
+    }
+
     // 如果服务未启动，先启动服务
     if (!this.isStarted()) {
       console.log("🔄 服务未启动，开始启动...")
