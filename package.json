@@ -42,7 +42,7 @@
     "@mastra/mcp": "0.11.2",
     "@mastra/memory": "0.14.2",
     "@midscene/mcp": "0.28.4",
-    "@midscene/web": "^0.27.6",
+    "@midscene/web": "^0.29.4",
     "dotenv": "^17.2.1",
     "hono": "^4.9.5",
     "pino": "9.9.4",
