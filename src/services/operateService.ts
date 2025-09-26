@@ -1,5 +1,6 @@
-import { AgentOverChromeBridge } from "@midscene/web/bridge-mode"
+import { type AgentOpt } from "@midscene/web"
 import { EventEmitter } from "node:events"
+import { AgentOverChromeBridge } from "@midscene/web/bridge-mode"
 import type { ConnectCurrentTabOption } from "../types/operate"
 import { AppError } from "../utils/error"
 import { serviceLogger } from "../utils/logger"
@@ -23,7 +24,13 @@ export class OperateService extends EventEmitter {
   private isStopping: boolean = false // 标志服务正在停止，防止重连
 
   // ==================== AgentOverChromeBridge 默认配置 ====================
-  private readonly defaultAgentConfig = {
+  private readonly defaultAgentConfig: Partial<
+    AgentOpt & {
+      closeNewTabsAfterDisconnect?: boolean
+      serverListeningTimeout?: number | false
+      closeConflictServer?: boolean
+    }
+  > = {
     closeNewTabsAfterDisconnect: false,
     closeConflictServer: true,
     cacheId: "midscene",
