@@ -133,9 +133,7 @@ export class TaskService {
       try {
         if (!this.operateService.isReady()) {
           console.log('🔄 初始化浏览器连接...');
-          await this.operateService.start({
-            forceSameTabNavigation: true,
-          });
+          await this.operateService.start();
         } else {
           console.log('✅ 浏览器连接已就绪');
         }

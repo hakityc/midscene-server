@@ -70,11 +70,7 @@ export class OperateService extends EventEmitter {
    * 启动服务 - 初始化 AgentOverChromeBridge
    * @param option 连接选项
    */
-  public async start(
-    option: { forceSameTabNavigation: boolean } = {
-      forceSameTabNavigation: true,
-    }
-  ): Promise<void> {
+  public async start(): Promise<void> {
     if (this.isInitialized && this.agent) {
       console.log("🔄 OperateService 已启动，跳过重复启动")
       return
@@ -90,7 +86,7 @@ export class OperateService extends EventEmitter {
       await this.createAgent()
 
       // 初始化连接
-      await this.initialize(option)
+      await this.initialize()
 
       console.log("✅ OperateService 启动成功")
     } catch (error) {
@@ -329,7 +325,7 @@ export class OperateService extends EventEmitter {
 
       try {
         console.log(`🔄 自动重连尝试 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`)
-        await this.initialize({ forceSameTabNavigation: true })
+        await this.initialize()
 
         if (this.isInitialized) {
           console.log("✅ 自动重连成功")
@@ -408,7 +404,7 @@ export class OperateService extends EventEmitter {
     setBrowserConnected(false)
 
     try {
-      await this.initialize({ forceSameTabNavigation: true })
+      await this.initialize()
       console.log("✅ 强制重连成功")
       setBrowserConnected(true)
       this.emit("reconnected")
@@ -437,7 +433,7 @@ export class OperateService extends EventEmitter {
 
       // 重新创建连接
       await this.createAgent()
-      await this.initialize({ forceSameTabNavigation: true })
+      await this.initialize()
 
       this.isInitialized = true
       setBrowserConnected(true)
@@ -526,7 +522,7 @@ export class OperateService extends EventEmitter {
     // 如果服务未启动，先启动服务
     if (!this.isStarted()) {
       console.log("🔄 服务未启动，开始启动...")
-      await this.start({ forceSameTabNavigation: true })
+      await this.start()
       return
     }
 
