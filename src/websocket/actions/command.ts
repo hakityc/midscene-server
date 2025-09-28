@@ -1,5 +1,4 @@
 import { OperateService } from "../../services/operateService"
-import type { ConnectCurrentTabOption } from "../../types/operate"
 import type { MessageHandler, WebSocketMessage } from "../../types/websocket"
 import { wsLogger } from "../../utils/logger"
 import { createErrorResponse, createSuccessResponse } from "../builders/messageBuilder"

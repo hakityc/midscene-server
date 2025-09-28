@@ -1,5 +1,4 @@
 import { OperateService } from "../../services/operateService"
-import type { ConnectCurrentTabOption } from "../../types/operate"
 import type { MessageHandler, WebSocketMessage } from "../../types/websocket"
 import { wsLogger } from "../../utils/logger"
 import { createErrorResponse, createSuccessResponse } from "../builders/messageBuilder"
@@ -17,10 +16,9 @@ export function createConnectTabHandler(): MessageHandler {
     )
 
     try {
-      const option: ConnectCurrentTabOption = { forceSameTabNavigation: true }
 
       const operateService = OperateService.getInstance()
-      const result = await operateService.connectCurrentTab(option)
+      const result = await operateService.connectLastTab()
       console.log(result, "标签页连接成功")
 
       const response = createSuccessResponse(message, `标签页连接成功`)

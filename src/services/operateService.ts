@@ -1,7 +1,6 @@
 import { type AgentOpt } from "@midscene/web"
 import { EventEmitter } from "node:events"
 import { AgentOverChromeBridge } from "@midscene/web/bridge-mode"
-import type { ConnectCurrentTabOption } from "../types/operate"
 import { AppError } from "../utils/error"
 import { serviceLogger } from "../utils/logger"
 import { formatTaskTip, getTaskStageDescription } from "../utils/taskTipFormatter"
@@ -229,11 +228,7 @@ export class OperateService extends EventEmitter {
   /**
    * 初始化连接（确保只初始化一次）
    */
-  private async initialize(
-    option: { forceSameTabNavigation: boolean } = {
-      forceSameTabNavigation: true,
-    }
-  ): Promise<void> {
+  private async initialize(): Promise<void> {
     if (this.isInitialized) {
       console.log("🔄 AgentOverChromeBridge 已经初始化，跳过重复初始化")
       return
@@ -249,7 +244,7 @@ export class OperateService extends EventEmitter {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`🔄 尝试初始化连接 (${attempt}/${maxRetries})...`)
-        await this.agent.connectCurrentTab(option)
+        await this.connectLastTab()
         this.isInitialized = true
         setBrowserConnected(true)
         console.log("✅ AgentOverChromeBridge 初始化成功")
@@ -276,24 +271,27 @@ export class OperateService extends EventEmitter {
   /**
    * 连接当前标签页
    */
-  async connectCurrentTab(option: ConnectCurrentTabOption): Promise<void> {
-    return
-    // try {
-    //   if (!this.agent) {
-    //     throw new Error("Agent 未初始化")
-    //   }
-    //   await this.agent.connectCurrentTab(option)
-    //   serviceLogger.info({ option }, "浏览器标签页连接成功")
-    // } catch (error: any) {
-    //   serviceLogger.error({ error }, "浏览器标签页连接失败")
+  async connectLastTab(): Promise<void> {
+    try {
+      if (!this.agent) {
+        throw new Error("Agent 未初始化")
+      }
+      const tabs = await this.agent.getBrowserTabList()
+      if (tabs.length > 0) {
+        const tab = tabs[tabs.length - 1]
+        await this.agent.setActiveTabId(tab.id)
+        serviceLogger.info({ tab }, "浏览器标签页连接成功")
+      }
+    } catch (error: any) {
+      serviceLogger.error({ error }, "浏览器标签页连接失败")
 
-    //   // 处理浏览器连接错误
-    //   if (error.message?.includes("connect")) {
-    //     throw new AppError("浏览器连接失败", 503)
-    //   }
-    //   // 处理其他连接错误
-    //   throw new AppError(`浏览器连接错误: ${error.message}`, 500)
-    // }
+      // 处理浏览器连接错误
+      if (error.message?.includes("connect")) {
+        throw new AppError("浏览器连接失败", 503)
+      }
+      // 处理其他连接错误
+      throw new AppError(`浏览器连接错误: ${error.message}`, 500)
+    }
   }
 
   // ==================== 重连机制相关方法 ====================
@@ -551,9 +549,6 @@ export class OperateService extends EventEmitter {
       if (!this.agent) {
         throw new Error("Agent 未初始化")
       }
-
-      // 尝试连接当前标签页，如果已经连接会忽略
-      // await this.agent.connectCurrentTab({ forceSameTabNavigation: true })
       console.log("✅ 确保当前标签页连接成功")
     } catch (error: any) {
       console.warn("⚠️ 连接当前标签页时出现警告:", error.message)
