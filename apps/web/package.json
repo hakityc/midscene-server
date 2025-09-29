@@ -1,0 +1,10 @@
+{
+  "name": "@midscene/web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "echo \"请在此选择你的框架（如 Next.js/Vite）后再实现\" && exit 1",
+    "build": "echo \"未初始化前端框架\" && exit 1",
+    "start": "echo \"未初始化前端框架\" && exit 1"
+  }
+}

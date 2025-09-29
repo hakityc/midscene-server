@@ -1,0 +1,328 @@
+midsceneVersion: 0.29.4
+cacheId: midscene
+caches:
+  - type: plan
+    prompt: 搜索凡人修仙传 播放第六集
+    yamlWorkflow: |
+      tasks:
+        - name: 搜索凡人修仙传 播放第六集
+          flow:
+            - aiTap: ''
+              locate: 搜索按钮
+            - aiTap: ''
+              locate: 凡人修仙传 第6集
+  - type: plan
+    prompt: 搜索甄嬛传 播放第六集
+    yamlWorkflow: |
+      tasks:
+        - name: 搜索甄嬛传 播放第六集
+          flow:
+            - aiInput: ''
+              value: 甄嬛传
+              locate: 搜索框
+            - aiTap: ''
+              locate: 搜索按钮
+            - aiTap: ''
+              locate: 第六集视频缩略图
+            - aiTap: ''
+              locate: P06 四嬛初见：御花园一遇倾心，四...
+  - type: plan
+    prompt: 搜索凡人修仙传 播放第六集
+    yamlWorkflow: |
+      tasks:
+        - name: 搜索凡人修仙传 播放第六集
+          flow:
+            - aiTap: ''
+              locate: 搜索按钮
+            - aiTap: ''
+              locate: 第六集按钮
+  - type: plan
+    prompt: 播放第三集
+    yamlWorkflow: |
+      tasks:
+        - name: 播放第三集
+          flow:
+            - aiTap: ''
+              locate: Episode 3 button in the episode selection grid
+  - type: plan
+    prompt: 下一集
+    yamlWorkflow: |
+      tasks:
+        - name: 下一集
+          flow:
+            - aiTap: ''
+              locate: 播放器中央的播放按钮
+            - aiTap: ''
+              locate: 播放器中央的播放按钮
+            - aiTap: ''
+              locate: 右侧的向右箭头按钮
+  - type: plan
+    prompt: 第 10 集
+    yamlWorkflow: |
+      tasks:
+        - name: 第 10 集
+          flow:
+            - aiTap: ''
+              locate: Episode 10 button
+  - type: plan
+    prompt: 播放第 22 集
+    yamlWorkflow: |
+      tasks:
+        - name: 播放第 22 集
+          flow:
+            - aiTap: ''
+              locate: Episode 22 button marked as '预告'
+            - sleep: 1000
+  - type: plan
+    prompt: 打开全屏
+    yamlWorkflow: |
+      tasks:
+        - name: 打开全屏
+          flow:
+            - aiTap: ''
+              locate: 全屏按钮
+  - type: plan
+    prompt: 点击开始菜单
+    yamlWorkflow: |
+      tasks:
+        - name: 点击开始菜单
+          flow:
+            - aiTap: ''
+              locate: The '首页' (Home) button in the left sidebar
+  - type: plan
+    prompt: 搜索凡人修仙传
+    yamlWorkflow: |
+      tasks:
+        - name: 搜索凡人修仙传
+          flow:
+            - aiInput: ''
+              value: 凡人修仙传
+              locate: 搜索框
+            - aiTap: ''
+              locate: 搜索按钮
+  - type: locate
+    prompt: 登录框右上角的关闭按钮
+    xpaths:
+      - /html/body/div[1]/div[2]/div[1]/div[1]/a[1]
+  - type: locate
+    prompt: 右侧列表第 8 集
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[3]/div[3]/div[1]/div[1]/div[8]/div[1]/div[1]/div[1]
+  - type: locate
+    prompt: 右侧列表第 10 集
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[3]/div[3]/div[1]/div[1]/div[10]/div[1]/div[1]/div[1]
+  - type: locate
+    prompt: 右侧列表第 9 集
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[3]/div[3]/div[1]/div[1]/div[9]/div[1]/div[1]
+  - type: locate
+    prompt: 右侧列表第 1 集
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[3]/div[3]/div[1]/div[1]/div[1]/div[1]/div[1]/span[1]
+  - type: locate
+    prompt: 播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 下一集按钮
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 下一集按钮
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[9]/div[1]/div[1]/div[2]
+  - type: locate
+    prompt: 播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 下一集按钮
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 第 2 个按钮
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[3]/div[3]/div[1]/div[1]/div[2]/div[1]/div[1]/span[1]
+  - type: locate
+    prompt: 播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 第 2 个按钮
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[3]/div[3]/div[1]/div[1]/div[2]/div[1]/div[1]/span[1]
+  - type: locate
+    prompt: 倍速
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/header[1]/div[normalize-space()="首页VIP会员电视剧电影综艺动漫少儿短剧纪录片全部影视推荐：首页
+        VIP会员 电视剧 电影 综艺 动漫 少儿 短剧 纪录片就好这口：中视频 知识 学堂体育游戏：NBA 小游戏 游戏 体育 传奇游戏库 F1
+        NFL WWE WNBA 棋牌游戏库资讯前沿：科技 汽车乐享生活：音乐 艺术 生活 时尚 育儿矩形备份 5全网搜 热搜榜 会员专区 游戏
+        快捷访问添加快捷方式到桌面桌面快捷方式访问腾讯视频添加8s添加至浏览器收藏夹Command+D 添加至网页收藏夹 历史历史 预约/加追 关注
+        创作 上传优质视频获得流量扶持多种收益类型助力作者变现海量激励活动提升内容收益去创作 客户端 腾讯视频Mac客户端视频极速下载 本地视频播放
+        桌面便捷访问立即体验查看更多 应用QQ浏览器搜狗浏览器imaimaima腾讯新闻腾讯新闻腾讯新闻暗区突围：无限三角洲行动 登录 续费
+        开通电视特权 个人中心 我的加追 我的游戏礼包 VIP消息退出登录登录之后可以 同步多端观看记录 参与互动讨论 观看更个性化内容
+        领取专属游戏礼包立即登录
+        问题反馈个人中心我的关注我的加追退出账号登录之后可以同步多端观看记录参与互动讨论观看更多个性化内容领取专属游戏礼包享受专属会员特惠立即登录问题反馈"]
+  - type: locate
+    prompt: 1.25X
+    xpaths:
+      - >-
+        /html/body/div[2]/div[1]/div[4]/div[3]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[1]/div[7]/div[1]/xg-controls[1]/xg-inner-controls[1]/xg-right-grid[1]/xg-icon[7]/div[normalize-space()="倍速"]
+  - type: locate
+    prompt: 倍速
+    xpaths:
+      - >-
+        /html/body/div[2]/div[1]/div[4]/div[3]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[1]/div[7]/div[1]/xg-controls[1]/xg-inner-controls[1]/xg-right-grid[1]/xg-icon[7]/div[normalize-space()="倍速"]
+  - type: locate
+    prompt: 1.25X
+    xpaths:
+      - >-
+        /html/body/div[2]/div[1]/div[4]/div[3]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[1]/div[7]/div[1]/xg-controls[1]/xg-inner-controls[1]/xg-right-grid[1]/xg-icon[7]/div[normalize-space()="倍速"]
+  - type: locate
+    prompt: 倍速
+    xpaths:
+      - >-
+        /html/body/div[2]/div[1]/div[4]/div[3]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[1]/div[7]/div[1]/xg-controls[1]/xg-inner-controls[1]/xg-right-grid[1]/xg-icon[7]/div[normalize-space()="倍速"]
+  - type: locate
+    prompt: 1.25X
+    xpaths:
+      - >-
+        /html/body/div[2]/div[1]/div[4]/div[3]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[1]/div[7]/div[1]/xg-controls[1]/xg-inner-controls[1]/xg-right-grid[1]/xg-icon[7]/div[normalize-space()="倍速"]
+  - type: locate
+    prompt: 暂停按钮
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 暂停按钮
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 桌面截图
+    xpaths:
+      - /html/body/div[1]/div[1]/nav[1]/div[1]
+  - type: locate
+    prompt: The '首页' (Home) button in the left sidebar
+    xpaths:
+      - >-
+        /html/body/div[1]/div[1]/nav[1]/div[2]/div[1]/div[1]/a[1]/div[1]/div[normalize-space()="首页"]
+  - type: locate
+    prompt: 视频播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 下一集按钮，位于视频播放器控制栏中央，带有三角形图标和一条竖线
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[9]/div[1]/div[1]/div[2]
+  - type: locate
+    prompt: 视频播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 下一集按钮，位于视频播放器控制栏左下角，带有三角形图标和一条竖线
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 视频播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 下一集按钮，带有三角形图标和一条竖线
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 视频播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 下一集按钮，带有三角形图标和一条竖线
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[9]/div[1]/div[1]/div[2]
+  - type: locate
+    prompt: 视频播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 下一集按钮，位于播放器左下角，带有三角形图标和一条竖线
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[9]/div[1]/div[1]/div[2]
+  - type: locate
+    prompt: 视频播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 下一集按钮，位于播放器左下角，带有三角形图标和一条竖线
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/iframe[1]
+  - type: locate
+    prompt: 视频播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[10]
+  - type: locate
+    prompt: 下一集按钮，位于播放器左下角第二个图标
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[10]
+  - type: locate
+    prompt: 视频播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[10]
+  - type: locate
+    prompt: 下一集按钮，位于播放器左下角第二个图标
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[10]
+  - type: locate
+    prompt: 视频播放器
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[10]
+  - type: locate
+    prompt: 下一集按钮，位于播放器左下角第二个图标
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[3]/div[1]/div[2]/div[2]/div[10]
+  - type: locate
+    prompt: 第 6 集
+    xpaths:
+      - >-
+        /html/body/div[1]/div[2]/main[1]/div[1]/div[1]/div[1]/div[1]/div[4]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[2]/div[6]

@@ -1,0 +1,27 @@
+{
+  "name": "midscene-server",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "2.0.23",
+    "@ai-sdk/openai-compatible": "1.0.13",
+    "@hono/node-server": "^1.19.0",
+    "@hono/node-ws": "1.2.0",
+    "@mastra/core": "0.15.2",
+    "@mastra/libsql": "0.13.7",
+    "@mastra/loggers": "0.10.9",
+    "@mastra/mcp": "0.11.2",
+    "@mastra/memory": "0.14.2",
+    "@midscene/mcp": "0.28.4",
+    "@midscene/web": "^0.29.4",
+    "dotenv": "^17.2.1",
+    "hono": "^4.9.5",
+    "pino": "9.9.4",
+    "pino-pretty": "13.1.1",
+    "tencentcloud-cls-sdk-js-web": "1.0.13",
+    "yaml": "2.8.1",
+    "zod": "^3.25.76"
+  }
+}

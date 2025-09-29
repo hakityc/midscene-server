@@ -1,0 +1,31 @@
+import { MCPServer } from '@mastra/mcp';
+import { logger } from '../../logger/index.js';
+import { mcpClient } from '../client/index.js';
+let cachedServer = null;
+export async function getMcpServer() {
+    if (cachedServer)
+        return cachedServer;
+    try {
+        logger.info('🔧 正在初始化 MCP 服务器...');
+        // 拉取 midscene MCP 的全部工具并原样对外暴露
+        const tools = await mcpClient.getTools();
+        // 启动时打印工具概览，便于排查是否成功连接上 MCP 服务器
+        const toolNames = Object.keys(tools || {});
+        logger.info('✅ MCP 服务器初始化成功', {
+            toolCount: toolNames.length,
+            toolNames: toolNames,
+        });
+        cachedServer = new MCPServer({
+            name: 'midscene-bridge-server',
+            version: '1.0.0',
+            tools,
+        });
+        return cachedServer;
+    }
+    catch (error) {
+        logger.error('❌ MCP 服务器初始化失败', {
+            error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+    }
+}

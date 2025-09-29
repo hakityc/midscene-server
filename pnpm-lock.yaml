@@ -6,7 +6,9 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  apps/server:
     dependencies:
       '@ai-sdk/openai':
         specifier: 2.0.23
@@ -75,6 +77,8 @@ importers:
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
+
+  apps/web: {}
 
 packages:
 
@@ -4306,14 +4310,14 @@ snapshots:
 
   '@jsdevtools/ono@7.1.3': {}
 
-  '@langchain/core@0.3.26(openai@4.81.0(zod@3.25.76))':
+  '@langchain/core@0.3.26(openai@4.81.0(zod@3.24.3))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.2.15(openai@4.81.0(zod@3.25.76))
+      langsmith: 0.2.15(openai@4.81.0(zod@3.24.3))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -4505,7 +4509,7 @@ snapshots:
     dependencies:
       '@anthropic-ai/sdk': 0.33.1
       '@azure/identity': 4.5.0
-      '@langchain/core': 0.3.26(openai@4.81.0(zod@3.25.76))
+      '@langchain/core': 0.3.26(openai@4.81.0(zod@3.24.3))
       '@midscene/recorder': 0.29.4(date-fns@4.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@midscene/shared': 0.29.4
       '@ui-tars/action-parser': 1.2.3
@@ -4513,7 +4517,7 @@ snapshots:
       https-proxy-agent: 7.0.2
       js-yaml: 4.1.0
       jsonrepair: 3.12.0
-      langsmith: 0.3.7(openai@4.81.0(zod@3.25.76))
+      langsmith: 0.3.7(openai@4.81.0(zod@3.24.3))
       openai: 4.81.0(zod@3.24.3)
       semver: 7.5.2
       socks-proxy-agent: 8.0.4
@@ -6531,7 +6535,7 @@ snapshots:
       jwa: 2.0.1
       safe-buffer: 5.2.1
 
-  langsmith@0.2.15(openai@4.81.0(zod@3.25.76)):
+  langsmith@0.2.15(openai@4.81.0(zod@3.24.3)):
     dependencies:
       '@types/uuid': 10.0.0
       commander: 10.0.1
@@ -6540,9 +6544,9 @@ snapshots:
       semver: 7.7.2
       uuid: 10.0.0
     optionalDependencies:
-      openai: 4.81.0(zod@3.25.76)
+      openai: 4.81.0(zod@3.24.3)
 
-  langsmith@0.3.7(openai@4.81.0(zod@3.25.76)):
+  langsmith@0.3.7(openai@4.81.0(zod@3.24.3)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
@@ -6552,7 +6556,7 @@ snapshots:
       semver: 7.7.2
       uuid: 10.0.0
     optionalDependencies:
-      openai: 4.81.0(zod@3.25.76)
+      openai: 4.81.0(zod@3.24.3)
 
   libsql@0.5.22:
     dependencies:
@@ -6710,21 +6714,6 @@ snapshots:
       zod: 3.24.3
     transitivePeerDependencies:
       - encoding
-
-  openai@4.81.0(zod@3.25.76):
-    dependencies:
-      '@types/node': 18.19.123
-      '@types/node-fetch': 2.6.13
-      abort-controller: 3.0.0
-      agentkeepalive: 4.6.0
-      form-data-encoder: 1.7.2
-      formdata-node: 4.4.1
-      node-fetch: 2.7.0
-    optionalDependencies:
-      zod: 3.25.76
-    transitivePeerDependencies:
-      - encoding
-    optional: true
 
   openapi-types@12.1.3: {}
 
