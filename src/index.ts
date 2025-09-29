@@ -27,8 +27,8 @@ const startServer = async () => {
   try {
     console.log("�� 预初始化 OperateService...")
     // TODO: 使用 MCP 就不需要这里初始化了
-    const operateService = OperateService.getInstance()
-    await operateService.start()
+    // const operateService = OperateService.getInstance()
+    // await operateService.start()
     console.log("✅ OperateService 预初始化完成")
   } catch (error) {
     console.error("❌ OperateService 预初始化失败:", error)

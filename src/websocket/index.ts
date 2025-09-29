@@ -159,9 +159,8 @@ export const setupWebSocket = (app: Hono) => {
     upgradeWebSocket((_c) => {
       const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // TODO: 使用 MCP 就不需要这里初始化了
-      const operateService = OperateService.getInstance();
-      operateService.start();
+      // const operateService = OperateService.getInstance();
+      // operateService.start();
 
       return {
         onOpen(ws: WebSocketClient) {
