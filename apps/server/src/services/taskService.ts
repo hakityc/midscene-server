@@ -1,12 +1,12 @@
 import { mastra } from '../mastra';
-import { OperateService } from './operateService';
+import { WebOperateService } from './webOperateService';
 
 export class TaskService {
   private taskAgent = mastra.getAgent('taskAgent');
-  private operateService: OperateService;
+  private webOperateService: WebOperateService;
 
   constructor() {
-    this.operateService = OperateService.getInstance();
+    this.webOperateService = WebOperateService.getInstance();
   }
 
   /**
@@ -131,9 +131,9 @@ export class TaskService {
 
       // 初始化浏览器连接（使用单例模式）
       try {
-        if (!this.operateService.isReady()) {
+        if (!this.webOperateService.isReady()) {
           console.log('🔄 初始化浏览器连接...');
-          // await this.operateService.start();
+          // await this.webOperateService.start();
         } else {
           console.log('✅ 浏览器连接已就绪');
         }
@@ -159,13 +159,13 @@ export class TaskService {
         );
 
         try {
-          if (this.operateService) {
-            await this.operateService.execute(step.action);
+          if (this.webOperateService) {
+            await this.webOperateService.execute(step.action);
             console.log(`✅ 步骤 ${i + 1} 执行成功`);
 
             // 验证步骤
             try {
-              await this.operateService.expect(step.verify);
+              await this.webOperateService.expect(step.verify);
               console.log(`✅ 步骤 ${i + 1} 验证成功`);
               executedSteps.push({ ...step, error: '' });
             } catch (verifyError) {

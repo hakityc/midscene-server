@@ -1,4 +1,4 @@
-import { OperateService } from "../../services/operateService"
+import { WebOperateService } from "../../services/webOperateService"
 import type { MessageHandler, WebSocketMessage } from "../../types/websocket"
 import { wsLogger } from "../../utils/logger"
 import { createErrorResponse, createSuccessResponse, createSuccessResponseWithMeta } from "../builders/messageBuilder"
@@ -20,10 +20,10 @@ export function createAiHandler(): MessageHandler {
 
     try {
       const params = payload.params
-      const operateService = OperateService.getInstance()
+      const webOperateService = WebOperateService.getInstance()
       
       // 检查连接状态
-      const isConnected = await operateService.checkAndReconnect()
+      const isConnected = await webOperateService.checkAndReconnect()
       if (!isConnected) {
         const response = createErrorResponse(
           message as WebSocketMessage, 
@@ -44,9 +44,9 @@ export function createAiHandler(): MessageHandler {
         send(response)
       }
       
-      operateService.once('reconnected', onReconnected)
+      webOperateService.once('reconnected', onReconnected)
 
-      operateService.on("taskStartTip", (tip: string) => {
+      webOperateService.on("taskStartTip", (tip: string) => {
         // 格式化任务提示
         const { formatted, icon, category } = formatTaskTip(tip)
         const timestamp = new Date().toLocaleTimeString('zh-CN', {
@@ -74,7 +74,7 @@ export function createAiHandler(): MessageHandler {
         )
         send(response)
       })
-      await operateService.execute(params)
+      await webOperateService.execute(params)
       const response = createSuccessResponse(message as WebSocketMessage, `AI 处理完成`, WebSocketAction.AI)
       send(response)
     } catch (error) {

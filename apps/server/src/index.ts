@@ -6,7 +6,7 @@ import { setupError } from "./utils/error"
 import { setupGlobalErrorHandlers } from "./utils/globalErrorHandler"
 import { serverLogger } from "./utils/logger"
 import { setupWebSocket } from "./websocket"
-import { OperateService } from "./services/operateService"
+import { WebOperateService } from "./services/webOperateService"
 import { setupHealthRoutes } from './routes/health';
 
 const initApp = () => {
@@ -23,15 +23,15 @@ const startServer = async () => {
 
   const port = Number(process.env.PORT || "3000")
 
-  // 预初始化 OperateService
+  // 预初始化 WebOperateService
   try {
-    console.log("�� 预初始化 OperateService...")
+    console.log("�� 预初始化 WebOperateService...")
     // TODO: 使用 MCP 就不需要这里初始化了
-    // const operateService = OperateService.getInstance()
-    // await operateService.start()
-    console.log("✅ OperateService 预初始化完成")
+    // const webOperateService = WebOperateService.getInstance()
+    // await webOperateService.start()
+    console.log("✅ WebOperateService 预初始化完成")
   } catch (error) {
-    console.error("❌ OperateService 预初始化失败:", error)
+    console.error("❌ WebOperateService 预初始化失败:", error)
     // 不退出服务，让后续请求时重试
   }
   // 创建应用

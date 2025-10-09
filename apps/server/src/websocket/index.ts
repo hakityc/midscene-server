@@ -1,6 +1,6 @@
 import { createNodeWebSocket } from '@hono/node-ws';
 import type { Hono } from 'hono';
-import { OperateService } from '../services/operateService';
+import { WebOperateService } from '../services/webOperateService';
 import type { WebSocketClient, WebSocketMessage } from '../types/websocket';
 import { WebSocketAction } from '../utils/enums';
 import { wsLogger, setLogContextFromMessage } from '../utils/logger';
@@ -159,8 +159,8 @@ export const setupWebSocket = (app: Hono) => {
     upgradeWebSocket((_c) => {
       const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // const operateService = OperateService.getInstance();
-      // operateService.start();
+      // const webOperateService = WebOperateService.getInstance();
+      // webOperateService.start();
 
       return {
         onOpen(ws: WebSocketClient) {

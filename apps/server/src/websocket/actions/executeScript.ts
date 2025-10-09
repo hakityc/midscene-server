@@ -1,4 +1,4 @@
-import { OperateService } from "../../services/operateService"
+import { WebOperateService } from "../../services/webOperateService"
 import type { MessageHandler } from "../../types/websocket"
 import { wsLogger } from "../../utils/logger"
 import { createErrorResponse, createSuccessResponse } from "../builders/messageBuilder"
@@ -23,7 +23,7 @@ export function executeScriptHandler(): MessageHandler {
     )
 
     try {
-      const operateService = OperateService.getInstance()
+      const webOperateService = WebOperateService.getInstance()
       const rawParams = payload?.params as unknown
       let parsedParams: unknown = rawParams
 
@@ -41,12 +41,12 @@ export function executeScriptHandler(): MessageHandler {
 
       // 方式1：手动控制遮罩
       // maskController.start()
-      // await operateService.executeScript(script)
+      // await webOperateService.executeScript(script)
       // maskController.stop()
 
       // 方式2：自动控制遮罩（推荐，自动处理异常情况）
       await maskController.withMask(async () => {
-        await operateService.executeScript(script)
+        await webOperateService.executeScript(script)
       })
 
       const response = createSuccessResponse(message, `AI 处理完成`)

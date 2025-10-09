@@ -44,9 +44,9 @@ export function setupHealthRoutes(app: Hono): void {
   // 强制重连端点
   app.post('/health/reconnect', async (c) => {
     try {
-      const { OperateService } = await import('../services/operateService');
-      const operateService = OperateService.getInstance();
-      await operateService.forceReconnect();
+      const { WebOperateService } = await import('../services/webOperateService');
+      const webOperateService = WebOperateService.getInstance();
+      await webOperateService.forceReconnect();
 
       return c.json({
         status: 'success',

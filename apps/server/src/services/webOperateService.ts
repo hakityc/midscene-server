@@ -6,9 +6,9 @@ import { serviceLogger } from "../utils/logger"
 import { formatTaskTip, getTaskStageDescription } from "../utils/taskTipFormatter"
 import { setBrowserConnected } from "../routes/health"
 
-export class OperateService extends EventEmitter {
+export class WebOperateService extends EventEmitter {
   // ==================== 单例模式相关 ====================
-  private static instance: OperateService | null = null
+  private static instance: WebOperateService | null = null
 
   // ==================== 核心属性 ====================
   public agent: AgentOverChromeBridge | null = null
@@ -47,20 +47,20 @@ export class OperateService extends EventEmitter {
   /**
    * 获取单例实例
    */
-  public static getInstance(): OperateService {
-    if (!OperateService.instance) {
-      OperateService.instance = new OperateService()
+  public static getInstance(): WebOperateService {
+    if (!WebOperateService.instance) {
+      WebOperateService.instance = new WebOperateService()
     }
-    return OperateService.instance
+    return WebOperateService.instance
   }
 
   /**
    * 重置单例实例（用于测试或强制重新初始化）
    */
   public static resetInstance(): void {
-    if (OperateService.instance) {
-      OperateService.instance.stop().catch(console.error)
-      OperateService.instance = null
+    if (WebOperateService.instance) {
+      WebOperateService.instance.stop().catch(console.error)
+      WebOperateService.instance = null
     }
   }
 
@@ -72,14 +72,14 @@ export class OperateService extends EventEmitter {
    */
   public async start(): Promise<void> {
     if (this.isInitialized && this.agent) {
-      console.log("🔄 OperateService 已启动，跳过重复启动")
+      console.log("🔄 WebOperateService 已启动，跳过重复启动")
       return
     }
 
     // 清除停止标志，允许重新启动
     this.isStopping = false
 
-    console.log("🚀 启动 OperateService...")
+    console.log("🚀 启动 WebOperateService...")
 
     try {
       // 创建 AgentOverChromeBridge 实例
@@ -88,9 +88,9 @@ export class OperateService extends EventEmitter {
       // 初始化连接
       await this.initialize()
 
-      console.log("✅ OperateService 启动成功")
+      console.log("✅ WebOperateService 启动成功")
     } catch (error) {
-      console.error("❌ OperateService 启动失败:", error)
+      console.error("❌ WebOperateService 启动失败:", error)
       throw error
     }
   }
@@ -99,7 +99,7 @@ export class OperateService extends EventEmitter {
    * 停止服务 - 销毁 AgentOverChromeBridge
    */
   public async stop(): Promise<void> {
-    console.log("🛑 停止 OperateService...")
+    console.log("🛑 停止 WebOperateService...")
 
     // 设置停止标志，防止重连
     this.isStopping = true
@@ -119,9 +119,9 @@ export class OperateService extends EventEmitter {
       this.resetReconnectState()
       setBrowserConnected(false)
 
-      console.log("✅ OperateService 已停止")
+      console.log("✅ WebOperateService 已停止")
     } catch (error) {
-      console.error("❌ 停止 OperateService 时出错:", error)
+      console.error("❌ 停止 WebOperateService 时出错:", error)
       throw error
     }
   }
@@ -628,7 +628,7 @@ export class OperateService extends EventEmitter {
   async execute(prompt: string, maxRetries: number = 3): Promise<void> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
-      console.log("🔄 服务未启动，自动启动 OperateService...")
+      console.log("🔄 服务未启动，自动启动 WebOperateService...")
       await this.start()
     }
 
@@ -671,7 +671,7 @@ export class OperateService extends EventEmitter {
   async expect(prompt: string, maxRetries: number = 3): Promise<void> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
-      console.log("🔄 服务未启动，自动启动 OperateService...")
+      console.log("🔄 服务未启动，自动启动 WebOperateService...")
       await this.start()
     }
 
@@ -703,7 +703,7 @@ export class OperateService extends EventEmitter {
   async executeScript(prompt: string, maxRetries: number = 3, originalCmd?: string): Promise<void> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
-      console.log("🔄 服务未启动，自动启动 OperateService...")
+      console.log("🔄 服务未启动，自动启动 WebOperateService...")
       await this.start()
     }
 
@@ -779,7 +779,7 @@ export class OperateService extends EventEmitter {
     try {
       // 如果服务未启动，自动启动
       if (!this.isStarted()) {
-        console.log("🔄 服务未启动，自动启动 OperateService...")
+        console.log("🔄 服务未启动，自动启动 WebOperateService...")
         await this.start()
       }
 

@@ -1,4 +1,4 @@
-import { OperateService } from "../../services/operateService"
+import { WebOperateService } from "../../services/webOperateService"
 import type { MessageHandler, WebSocketMessage } from "../../types/websocket"
 import { wsLogger } from "../../utils/logger"
 import { createErrorResponse, createSuccessResponse } from "../builders/messageBuilder"
@@ -17,8 +17,8 @@ export function createConnectTabHandler(): MessageHandler {
 
     try {
 
-      const operateService = OperateService.getInstance()
-      const result = await operateService.connectLastTab()
+      const webOperateService = WebOperateService.getInstance()
+      const result = await webOperateService.connectLastTab()
       console.log(result, "标签页连接成功")
 
       const response = createSuccessResponse(message, `标签页连接成功`)

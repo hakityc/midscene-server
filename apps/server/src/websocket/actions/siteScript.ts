@@ -1,4 +1,4 @@
-import { OperateService } from "../../services/operateService"
+import { WebOperateService } from "../../services/webOperateService"
 import type { MessageHandler } from "../../types/websocket"
 import { createErrorResponse, createSuccessResponse } from "../builders/messageBuilder"
 import { wsLogger } from "../../utils/logger"
@@ -10,8 +10,8 @@ export function handleSiteScriptHandler(): MessageHandler {
     const { payload } = message
     try {
       wsLogger.info(message, "处理站点脚本请求")
-      const operateService = OperateService.getInstance()
-      const data = await operateService.evaluateJavaScript(payload.params, payload.originalCmd)
+      const webOperateService = WebOperateService.getInstance()
+      const data = await webOperateService.evaluateJavaScript(payload.params, payload.originalCmd)
       console.log('脚本执行结果:', data)
       wsLogger.info(data, "处理站点脚本请求完成")
       const response = createSuccessResponse(message, `处理完成`, WebSocketAction.SITE_SCRIPT)

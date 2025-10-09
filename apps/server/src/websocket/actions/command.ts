@@ -1,4 +1,4 @@
-import { OperateService } from "../../services/operateService"
+import { WebOperateService } from "../../services/webOperateService"
 import type { MessageHandler, WebSocketMessage } from "../../types/websocket"
 import { wsLogger } from "../../utils/logger"
 import { createErrorResponse, createSuccessResponse } from "../builders/messageBuilder"
@@ -14,7 +14,7 @@ export const createCommandHandler = (): MessageHandler => {
     try {
       const { meta, payload } = message
       const command = payload.params as Command
-      const operateService = OperateService.getInstance()
+      const webOperateService = WebOperateService.getInstance()
       wsLogger.info(
         {
           ...meta,
@@ -24,10 +24,10 @@ export const createCommandHandler = (): MessageHandler => {
       )
       switch (command) {
         case Command.START:
-          await operateService.start()
+          await webOperateService.start()
           break
         case Command.STOP:
-          await operateService.stop()
+          await webOperateService.stop()
           break
       }
 
