@@ -33,4 +33,4 @@ lerna-debug.log*
 
 # Midscene.js dump files
 midscene-server-deployment.tar.gz
-**/midscene_run/
+apps/**/midscene_run/

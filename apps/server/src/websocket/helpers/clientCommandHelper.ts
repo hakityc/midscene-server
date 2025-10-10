@@ -2,15 +2,6 @@ import type { WsInboundMessage, WsOutboundMessage } from "../../types/websocket"
 import { createCommandMessage } from "../builders/messageBuilder"
 
 /**
- * 遮罩控制器接口
- */
-export interface MaskController {
-  start: () => void
-  stop: () => void
-  withMask: <T>(action: () => Promise<T>) => Promise<T>
-}
-
-/**
  * 客户端命令辅助类
  * 用于向客户端发送各种控制命令
  */
@@ -54,8 +45,7 @@ export class ClientCommandHelper {
     action: () => Promise<T>,
     options: { enabled?: boolean } = {},
   ): Promise<T> {
-    const { enabled = true } = options
-
+    const { enabled = false } = options
     try {
       if (enabled) this.showFullMask()
       return await action()
@@ -65,42 +55,6 @@ export class ClientCommandHelper {
   }
 
 
-}
-
-/**
- * 创建遮罩控制器（函数式 API）
- * @param message - 入站消息
- * @param send - 消息发送函数
- * @param enableMask - 是否启用遮罩控制，默认为 true
- * @returns 包含 start、stop 和 withMask 方法的控制器对象
- */
-export const createMaskController = (
-  message: WsInboundMessage<string>,
-  send: (message: WsOutboundMessage<string>) => boolean,
-  enableMask = true,
-): MaskController => {
-  const start = () => {
-    if (!enableMask) return
-    const command = createCommandMessage(message, "showFullMask")
-    send(command)
-  }
-
-  const stop = () => {
-    if (!enableMask) return
-    const command = createCommandMessage(message, "hideFullMask")
-    send(command)
-  }
-
-  const withMask = async <T>(action: () => Promise<T>): Promise<T> => {
-    try {
-      start()
-      return await action()
-    } finally {
-      stop()
-    }
-  }
-
-  return { start, stop, withMask }
 }
 
 /**

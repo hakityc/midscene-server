@@ -18,6 +18,36 @@ export function createAiHandler(): MessageHandler {
       "处理 AI 请求"
     )
 
+    // 注册任务提示回调
+    const taskTipCallback = (tip: string) => {
+      // 格式化任务提示
+      const { formatted, icon, category } = formatTaskTip(tip)
+      const timestamp = new Date().toLocaleTimeString('zh-CN', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+
+      console.log(`🎯 WebSocket 监听到任务提示: ${tip}`)
+      // console.log(`📝 格式化后的用户友好提示: ${formatted}`)
+
+      // 发送格式化后的用户友好消息
+      const response = createSuccessResponseWithMeta(
+        message as WebSocketMessage,
+        formatted,
+        {
+          originalTip: tip,
+          category,
+          icon,
+          timestamp,
+          stage: getTaskStageDescription(category)
+        },
+        WebSocketAction.CALLBACK_AI_STEP
+      )
+      send(response)
+    }
+
     try {
       const params = payload.params
       const webOperateService = WebOperateService.getInstance()
@@ -46,38 +76,27 @@ export function createAiHandler(): MessageHandler {
       
       webOperateService.once('reconnected', onReconnected)
 
-      webOperateService.on("taskStartTip", (tip: string) => {
-        // 格式化任务提示
-        const { formatted, icon, category } = formatTaskTip(tip)
-        const timestamp = new Date().toLocaleTimeString('zh-CN', {
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        })
-
-        console.log(`🎯 WebSocket 监听到任务提示: ${tip}`)
-        // console.log(`📝 格式化后的用户友好提示: ${formatted}`)
-
-        // 发送格式化后的用户友好消息
-        const response = createSuccessResponseWithMeta(
-          message as WebSocketMessage,
-          formatted,
-          {
-            originalTip: tip,
-            category,
-            icon,
-            timestamp,
-            stage: getTaskStageDescription(category)
-          },
-          WebSocketAction.CALLBACK_AI_STEP
-        )
+      // 注册任务提示回调
+      webOperateService.onTaskTip(taskTipCallback)
+      
+      try {
+        await webOperateService.execute(params)
+        const response = createSuccessResponse(message as WebSocketMessage, `AI 处理完成`, WebSocketAction.AI)
         send(response)
-      })
-      await webOperateService.execute(params)
-      const response = createSuccessResponse(message as WebSocketMessage, `AI 处理完成`, WebSocketAction.AI)
-      send(response)
+      } finally {
+        // 清理回调，避免内存泄漏
+        webOperateService.offTaskTip(taskTipCallback)
+      }
     } catch (error) {
+      // 清理回调，避免内存泄漏
+      try {
+        const webOperateService = WebOperateService.getInstance()
+        webOperateService.offTaskTip(taskTipCallback)
+      } catch (cleanupError) {
+        // 忽略清理错误
+        console.warn("清理回调时出错:", cleanupError)
+      }
+      
       wsLogger.error(
         {
           connectionId,

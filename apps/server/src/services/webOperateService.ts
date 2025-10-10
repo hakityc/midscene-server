@@ -22,6 +22,9 @@ export class WebOperateService extends EventEmitter {
   private isReconnecting: boolean = false
   private isStopping: boolean = false // 标志服务正在停止，防止重连
 
+  // ==================== 回调机制属性 ====================
+  private taskTipCallbacks: Array<(tip: string) => void> = []
+
   // ==================== AgentOverChromeBridge 默认配置 ====================
   private readonly defaultAgentConfig: Partial<
     AgentOpt & {
@@ -62,6 +65,48 @@ export class WebOperateService extends EventEmitter {
       WebOperateService.instance.stop().catch(console.error)
       WebOperateService.instance = null
     }
+  }
+
+  // ==================== 回调机制方法 ====================
+
+  /**
+   * 注册任务提示回调
+   * @param callback 任务提示回调函数
+   */
+  public onTaskTip(callback: (tip: string) => void): void {
+    this.taskTipCallbacks.push(callback)
+  }
+
+  /**
+   * 移除任务提示回调
+   * @param callback 要移除的回调函数
+   */
+  public offTaskTip(callback: (tip: string) => void): void {
+    const index = this.taskTipCallbacks.indexOf(callback)
+    if (index > -1) {
+      this.taskTipCallbacks.splice(index, 1)
+    }
+  }
+
+  /**
+   * 清空所有任务提示回调
+   */
+  public clearTaskTipCallbacks(): void {
+    this.taskTipCallbacks = []
+  }
+
+  /**
+   * 触发任务提示回调
+   * @param tip 任务提示内容
+   */
+  private triggerTaskTipCallbacks(tip: string): void {
+    this.taskTipCallbacks.forEach(callback => {
+      try {
+        callback(tip)
+      } catch (error) {
+        console.error("任务提示回调执行失败:", error)
+      }
+    })
   }
 
   // ==================== 生命周期方法 ====================
@@ -217,6 +262,9 @@ export class WebOperateService extends EventEmitter {
 
     // 发射事件，让其他地方可以监听到
     this.emit("taskStartTip", tip)
+    
+    // 触发注册的回调
+    this.triggerTaskTipCallbacks(tip)
   }
 
   // ==================== 连接管理相关方法 ====================
