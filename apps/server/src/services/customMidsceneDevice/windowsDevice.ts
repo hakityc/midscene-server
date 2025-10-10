@@ -18,6 +18,7 @@ import {
 	defineActionTap,
 } from "@midscene/core/device";
 import assert from "node:assert";
+import { windowsNative } from "./windowsNativeImpl";
 
 /**
  * Windows 设备配置选项
@@ -37,17 +38,17 @@ export interface WindowsDeviceOptions {
 
 /**
  * WindowsDevice - Windows 桌面应用设备实现
- * 
+ *
  * 实现 AbstractInterface 接口，提供 Windows 平台的基础操作能力
  * 参考 Midscene Android/iOS 设备实现模式
- * 
+ *
  * 功能：
  * - 截图
  * - 鼠标操作（点击、双击、右键、悬停）
  * - 键盘输入
  * - 滚动
  * - 窗口管理
- * 
+ *
  * @example
  * ```ts
  * const device = new WindowsDevice({ deviceName: 'MyApp', debug: true })
@@ -63,7 +64,7 @@ export default class WindowsDevice implements AbstractInterface {
 	private destroyed = false;
 	private description: string | undefined;
 	private customActions?: DeviceAction<any>[];
-	
+
 	// ==================== 公开属性 ====================
 	interfaceType: InterfaceType = "windows";
 	uri: string | undefined;
@@ -104,7 +105,7 @@ export default class WindowsDevice implements AbstractInterface {
 	 */
 	private async initializeDeviceInfo(): Promise<void> {
 		const size = await this.size();
-		
+
 		this.description = `
 Windows Device: ${this.options.deviceName}
 Screen Size: ${size.width}x${size.height} (DPR: ${size.dpr || 1})
@@ -200,7 +201,7 @@ Status: Ready
 			defineActionScroll(async (param) => {
 				const { direction, distance } = param;
 				const element = param.locate;
-				
+
 				if (element) {
 					// 滚动特定元素区域
 					await this.scrollAt(
@@ -255,12 +256,12 @@ Status: Ready
 		this.assertNotDestroyed();
 
 		if (!this.cachedSize) {
-			// TODO: 实际实现时，应该调用真实的 Windows API 获取屏幕尺寸
-			// 例如使用 robotjs.getScreenSize() 或 Windows API
+			// 使用 robotjs 获取真实的屏幕尺寸
+			const screenInfo = windowsNative.getScreenSize();
 			this.cachedSize = {
-				width: 1920,
-				height: 1080,
-				dpr: 1,
+				width: screenInfo.width,
+				height: screenInfo.height,
+				dpr: screenInfo.dpr,
 			};
 
 			if (this.options.debug) {
@@ -278,16 +279,11 @@ Status: Ready
 	async screenshotBase64(): Promise<string> {
 		this.assertNotDestroyed();
 
-		// TODO: 实际实现时，应该调用真实的截图 API
-		// 例如使用 screenshot-desktop 或 Windows API
-		// const screenshot = await captureScreen()
-		// return `data:image/png;base64,${screenshot.toString('base64')}`
-
-		// Mock 实现：返回一个简单的 1x1 透明 PNG
-		this.cachedScreenshot = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+		// 使用 robotjs 捕获真实的屏幕截图
+		this.cachedScreenshot = windowsNative.captureScreen();
 
 		if (this.options.debug) {
-			console.log("📸 Mock screenshot captured");
+			console.log("📸 Screenshot captured");
 		}
 
 		return this.cachedScreenshot;
@@ -300,14 +296,12 @@ Status: Ready
 	 */
 	private async mouseClick(x: number, y: number): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`🖱️ Mouse click at (${x}, ${y})`);
 		}
 
-		// TODO: 实际实现
-		// 使用 robotjs.moveMouse(x, y) 和 robotjs.mouseClick()
-		// 或者使用 @nut-tree/nut-js
+		windowsNative.mouseClick(x, y);
 	}
 
 	/**
@@ -315,13 +309,12 @@ Status: Ready
 	 */
 	private async mouseDoubleClick(x: number, y: number): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`🖱️ Mouse double click at (${x}, ${y})`);
 		}
 
-		// TODO: 实际实现
-		// 使用 robotjs.mouseClick('left', true)
+		windowsNative.mouseDoubleClick(x, y);
 	}
 
 	/**
@@ -329,13 +322,12 @@ Status: Ready
 	 */
 	private async mouseRightClick(x: number, y: number): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`🖱️ Mouse right click at (${x}, ${y})`);
 		}
 
-		// TODO: 实际实现
-		// 使用 robotjs.mouseClick('right')
+		windowsNative.mouseRightClick(x, y);
 	}
 
 	/**
@@ -343,13 +335,12 @@ Status: Ready
 	 */
 	private async mouseHover(x: number, y: number): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`🖱️ Mouse hover at (${x}, ${y})`);
 		}
 
-		// TODO: 实际实现
-		// 使用 robotjs.moveMouse(x, y)
+		windowsNative.mouseHover(x, y);
 	}
 
 	/**
@@ -362,16 +353,12 @@ Status: Ready
 		toY: number
 	): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`🖱️ Drag from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
 		}
 
-		// TODO: 实际实现
-		// robotjs.moveMouse(fromX, fromY)
-		// robotjs.mouseToggle('down')
-		// robotjs.dragMouse(toX, toY)
-		// robotjs.mouseToggle('up')
+		windowsNative.dragAndDrop(fromX, fromY, toX, toY);
 	}
 
 	// ==================== 键盘操作方法 ====================
@@ -381,14 +368,12 @@ Status: Ready
 	 */
 	private async typeText(text: string): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`⌨️ Type text: "${text}"`);
 		}
 
-		// TODO: 实际实现
-		// 使用 robotjs.typeString(text)
-		// 或者对于非 ASCII 字符，使用剪贴板方式
+		windowsNative.typeText(text);
 	}
 
 	/**
@@ -396,14 +381,12 @@ Status: Ready
 	 */
 	private async keyPress(key: string): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`⌨️ Press key: ${key}`);
 		}
 
-		// TODO: 实际实现
-		// 使用 robotjs.keyTap(key)
-		// 支持修饰键：robotjs.keyTap('a', 'control')
+		windowsNative.keyPress(key);
 	}
 
 	// ==================== 滚动操作方法 ====================
@@ -418,7 +401,7 @@ Status: Ready
 		distance: number
 	): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`🔄 Scroll ${direction} at (${x}, ${y}) by ${distance}px`);
 		}
@@ -440,7 +423,7 @@ Status: Ready
 		distance: number
 	): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`🔄 Global scroll ${direction} by ${distance}px`);
 		}
@@ -486,7 +469,7 @@ Status: Ready
 		}>
 	> {
 		this.assertNotDestroyed();
-		
+
 		// TODO: 实际实现
 		// 使用 node-window-manager 或 Windows API
 		return [];
@@ -498,7 +481,7 @@ Status: Ready
 	 */
 	async activateWindow(windowHandle: string): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`🪟 Activate window: ${windowHandle}`);
 		}
@@ -513,7 +496,7 @@ Status: Ready
 	 */
 	async getClipboard(): Promise<string> {
 		this.assertNotDestroyed();
-		
+
 		// TODO: 实际实现
 		// 使用 clipboardy 或 Windows API
 		return "";
@@ -525,7 +508,7 @@ Status: Ready
 	 */
 	async setClipboard(text: string): Promise<void> {
 		this.assertNotDestroyed();
-		
+
 		if (this.options.debug) {
 			console.log(`📋 Set clipboard: "${text}"`);
 		}
