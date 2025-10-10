@@ -13,8 +13,6 @@ dist/*
 # deps
 node_modules/
 
-midscene_run/*
-
 # env
 .env
 .env.production
@@ -33,4 +31,4 @@ lerna-debug.log*
 
 # Midscene.js dump files
 midscene-server-deployment.tar.gz
-midscene_run/*
+**/midscene_run/*
