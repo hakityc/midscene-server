@@ -1,6 +1,6 @@
 /**
  * Windows 客户端 WebSocket 处理器
- * 
+ *
  * 职责：
  * - 处理 Windows 客户端的 WebSocket 连接
  * - 消息接收和分发
@@ -39,10 +39,7 @@ export function setupWindowsClientWebSocket(wss: any) {
 
         // 验证消息格式
         if (!validateMessage(message)) {
-          serviceLogger.warn(
-            { message },
-            "收到无效的 Windows 客户端消息"
-          )
+          serviceLogger.warn({ message }, "收到无效的 Windows 客户端消息")
           return
         }
 
@@ -56,10 +53,7 @@ export function setupWindowsClientWebSocket(wss: any) {
                   clientId = newClientId
                 })
                 .catch((error) => {
-                  serviceLogger.error(
-                    { error },
-                    "处理客户端注册失败"
-                  )
+                  serviceLogger.error({ error }, "处理客户端注册失败")
                 })
             }
             break
@@ -80,36 +74,24 @@ export function setupWindowsClientWebSocket(wss: any) {
             break
 
           default:
-            serviceLogger.warn(
-              { messageType: message.type },
-              "未知的消息类型"
-            )
+            serviceLogger.warn({ messageType: message.type }, "未知的消息类型")
         }
       } catch (error) {
-        serviceLogger.error(
-          { error, data: data.toString() },
-          "解析 Windows 客户端消息失败"
-        )
+        serviceLogger.error({ error, data: data.toString() }, "解析 Windows 客户端消息失败")
       }
     })
 
     // 连接断开
     ws.on("close", () => {
       if (clientId) {
-        serviceLogger.info(
-          { clientId },
-          "Windows 客户端断开连接"
-        )
+        serviceLogger.info({ clientId }, "Windows 客户端断开连接")
         connectionManager.unregisterClient(clientId)
       }
     })
 
     // 错误处理
-    ws.on("error", (error) => {
-      serviceLogger.error(
-        { error, clientId },
-        "Windows 客户端 WebSocket 错误"
-      )
+    ws.on("error", (error: Error) => {
+      serviceLogger.error({ error, clientId }, "Windows 客户端 WebSocket 错误")
     })
   })
 
@@ -132,10 +114,7 @@ function validateMessage(message: any): boolean {
   const now = Date.now()
   const timeDiff = Math.abs(now - message.timestamp)
   if (timeDiff > 30000) {
-    serviceLogger.warn(
-      { timestamp: message.timestamp, now, timeDiff },
-      "消息时间戳超出范围"
-    )
+    serviceLogger.warn({ timestamp: message.timestamp, now, timeDiff }, "消息时间戳超出范围")
     return false
   }
 
@@ -191,20 +170,14 @@ async function handleRegister(
 /**
  * 处理响应消息
  */
-function handleResponse(
-  response: WindowsWSResponse,
-  connectionManager: WindowsClientConnectionManager
-): void {
+function handleResponse(response: WindowsWSResponse, connectionManager: WindowsClientConnectionManager): void {
   connectionManager.handleResponse(response)
 }
 
 /**
  * 处理事件消息
  */
-function handleEvent(
-  event: WindowsWSEvent,
-  connectionManager: WindowsClientConnectionManager
-): void {
+function handleEvent(event: WindowsWSEvent, connectionManager: WindowsClientConnectionManager): void {
   connectionManager.handleEvent(event)
 }
 
@@ -230,4 +203,3 @@ function handlePing(
     })
   )
 }
-
