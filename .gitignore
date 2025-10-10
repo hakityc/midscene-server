@@ -9,7 +9,7 @@
 .idea/shelf
 
 dist/*
-**/dist/*
+apps/server/dist/*
 # deps
 node_modules/
 
