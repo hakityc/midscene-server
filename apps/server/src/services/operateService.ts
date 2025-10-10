@@ -272,6 +272,7 @@ export class OperateService extends EventEmitter {
       if (!this.agent) {
         throw new Error("Agent 未初始化")
       }
+      //@ts-ignore
       const tabs = await this.agent.getBrowserTabList({})
       serviceLogger.info({ tabs }, "浏览器标签页列表")
       if (tabs.length > 0) {
@@ -461,6 +462,7 @@ export class OperateService extends EventEmitter {
     try {
       // 使用更轻量级的方法：获取浏览器标签页列表
       // 这比evaluateJavaScript更快，不会执行页面脚本
+      //@ts-ignore
       await this.agent.getBrowserTabList({})
       setBrowserConnected(true)
       return true

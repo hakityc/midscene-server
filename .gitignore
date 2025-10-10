@@ -8,8 +8,10 @@
 .idea/usage.statistics.xml
 .idea/shelf
 
-dist/*
-apps/**/dist/*
+# 忽略所有 dist 目录（递归）
+dist/
+apps/**/dist/
+packages/**/dist/
 # deps
 node_modules/
 
@@ -31,4 +33,4 @@ lerna-debug.log*
 
 # Midscene.js dump files
 midscene-server-deployment.tar.gz
-**/midscene_run/*
+**/midscene_run/

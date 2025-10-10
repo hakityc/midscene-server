@@ -1,4 +1,4 @@
-import type { WsInboundMessage, WsOutboundMessage } from "@/types/websocket"
+import type { WsInboundMessage, WsOutboundMessage } from "../../types/websocket"
 import { createCommandMessage } from "../builders/messageBuilder"
 
 /**
@@ -25,8 +25,8 @@ export class ClientCommandHelper {
    * @param command - 命令名称
    * @param payload - 可选的命令载荷
    */
-  private sendCommand(command: string, payload?: unknown): void {
-    const commandMessage = createCommandMessage(this.message, command, payload)
+  private sendCommand(command: string): void {
+    const commandMessage = createCommandMessage(this.message, command)
     this.send(commandMessage)
   }
 
@@ -64,47 +64,7 @@ export class ClientCommandHelper {
     }
   }
 
-  /**
-   * 显示加载状态
-   * @param text - 可选的加载提示文本
-   */
-  showLoading(text?: string): void {
-    this.sendCommand("showLoading", text ? { text } : undefined)
-  }
 
-  /**
-   * 隐藏加载状态
-   */
-  hideLoading(): void {
-    this.sendCommand("hideLoading")
-  }
-
-  /**
-   * 显示提示消息
-   * @param message - 提示消息内容
-   * @param type - 消息类型
-   */
-  showToast(
-    message: string,
-    type: "info" | "success" | "warning" | "error" = "info",
-  ): void {
-    this.sendCommand("showToast", { message, type })
-  }
-
-  /**
-   * 高亮元素
-   * @param selector - 元素选择器
-   */
-  highlightElement(selector: string): void {
-    this.sendCommand("highlightElement", { selector })
-  }
-
-  /**
-   * 取消高亮
-   */
-  clearHighlight(): void {
-    this.sendCommand("clearHighlight")
-  }
 }
 
 /**
