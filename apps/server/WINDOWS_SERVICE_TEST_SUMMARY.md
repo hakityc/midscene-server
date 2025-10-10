@@ -145,13 +145,16 @@ npm run test:windows:full
 
 ## ⚠️ 已知限制
 
-### robotjs 依赖问题
-- **问题**: robotjs 0.6.0 不支持 Apple Silicon (ARM64)
-- **影响**: 无法在 macOS M1/M2/M3 上运行真实设备测试
-- **解决方案**: 
-  - 使用模拟测试进行开发
-  - 在 Windows 环境下进行完整测试
-  - 考虑升级到 robotjs 更新版本或使用替代方案
+### nut-js 依赖
+- **库**: @nut-tree/nut-js (替代 robotjs)
+- **优势**: 
+  - ✅ 支持 Apple Silicon (ARM64)
+  - ✅ 跨平台支持更好 (macOS/Windows/Linux)
+  - ✅ API 更现代，使用 Promise
+  - ✅ 活跃维护
+- **使用**: 
+  - 开发环境可以在 macOS 上直接使用
+  - 完整测试仍需在 Windows 环境下进行
 
 ### TODO 功能
 以下功能已定义但未实现:

@@ -24,41 +24,25 @@ export function executeScriptHandler(): MessageHandler {
       "处理 AI 请求"
     )
 
-    // 注册任务提示回调
-    const taskTipCallback = (tip: string) => {
-      // 格式化任务提示
-      const { formatted, icon, category } = formatTaskTip(tip)
-      const timestamp = new Date().toLocaleTimeString('zh-CN', {
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      })
+    const webOperateService = WebOperateService.getInstance()
 
-      console.log(`🎯 WebSocket 监听到任务提示: ${tip}`)
-
-      // 发送格式化后的用户友好消息
-      const response = createSuccessResponseWithMeta(
-        message,
-        formatted,
-        {
-          originalTip: tip,
-          category,
-          icon,
-          timestamp,
-          stage: getTaskStageDescription(category)
-        },
-        WebSocketAction.CALLBACK_AI_STEP
-      )
-      send(response)
-    }
+    // 使用封装好的方法创建任务提示回调
+    const taskTipCallback = webOperateService.createTaskTipCallback({
+      send,
+      message,
+      connectionId,
+      wsLogger,
+      createSuccessResponseWithMeta: createSuccessResponseWithMeta as any,
+      createErrorResponse: createErrorResponse as any,
+      formatTaskTip,
+      getTaskStageDescription,
+      WebSocketAction
+    })
 
     try {
-      const webOperateService = WebOperateService.getInstance()
-      
       // 注册任务提示回调
       webOperateService.onTaskTip(taskTipCallback)
-      
+
       const rawParams = payload?.params as unknown
       let parsedParams: unknown = rawParams
 
@@ -96,7 +80,7 @@ export function executeScriptHandler(): MessageHandler {
         // 忽略清理错误
         console.warn("清理回调时出错:", cleanupError)
       }
-      
+
       wsLogger.error(
         {
           connectionId,

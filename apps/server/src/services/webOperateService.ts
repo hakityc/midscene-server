@@ -23,7 +23,7 @@ export class WebOperateService extends EventEmitter {
   private isStopping: boolean = false // 标志服务正在停止，防止重连
 
   // ==================== 回调机制属性 ====================
-  private taskTipCallbacks: Array<(tip: string) => void> = []
+  private taskTipCallbacks: Array<(tip: string, bridgeError?: Error | null) => void> = []
 
   // ==================== AgentOverChromeBridge 默认配置 ====================
   private readonly defaultAgentConfig: Partial<
@@ -73,7 +73,7 @@ export class WebOperateService extends EventEmitter {
    * 注册任务提示回调
    * @param callback 任务提示回调函数
    */
-  public onTaskTip(callback: (tip: string) => void): void {
+  public onTaskTip(callback: (tip: string, bridgeError?: Error | null) => void): void {
     this.taskTipCallbacks.push(callback)
   }
 
@@ -81,7 +81,7 @@ export class WebOperateService extends EventEmitter {
    * 移除任务提示回调
    * @param callback 要移除的回调函数
    */
-  public offTaskTip(callback: (tip: string) => void): void {
+  public offTaskTip(callback: (tip: string, bridgeError?: Error | null) => void): void {
     const index = this.taskTipCallbacks.indexOf(callback)
     if (index > -1) {
       this.taskTipCallbacks.splice(index, 1)
@@ -96,13 +96,107 @@ export class WebOperateService extends EventEmitter {
   }
 
   /**
+   * 创建任务提示回调（封装通用逻辑，供 WebSocket handler 使用）
+   * @param config 配置对象
+   * @returns 配置好的任务提示回调函数
+   */
+  public createTaskTipCallback<T>(config: {
+    send: (response: any) => boolean
+    message: T
+    connectionId: string
+    wsLogger: any
+    createSuccessResponseWithMeta: (message: T, data: any, meta: any, action?: any) => any
+    createErrorResponse: (message: T, error: Error, errorMessage: string) => any
+    formatTaskTip: (tip: string) => { formatted: string; icon: string; category: string }
+    getTaskStageDescription: (category: string) => string
+    WebSocketAction: any
+  }): (tip: string, bridgeError?: Error | null) => void {
+    const {
+      send,
+      message,
+      connectionId,
+      wsLogger,
+      createSuccessResponseWithMeta,
+      createErrorResponse,
+      formatTaskTip,
+      getTaskStageDescription,
+      WebSocketAction
+    } = config
+
+    return (tip: string, bridgeError?: Error | null) => {
+      try {
+        // 格式化任务提示
+        const { formatted, icon, category } = formatTaskTip(tip)
+        const timestamp = new Date().toLocaleTimeString('zh-CN', {
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        })
+
+        console.log(`🎯 WebSocket 监听到任务提示: ${tip}`)
+
+        // 如果有 bridge 错误，先发送错误消息
+        if (bridgeError) {
+          const errorResponse = createErrorResponse(
+            message,
+            bridgeError,
+            `Bridge 通信失败: ${bridgeError.message}`
+          )
+          send(errorResponse)
+          
+          wsLogger.warn(
+            {
+              connectionId,
+              tip,
+              error: bridgeError.message,
+              stack: bridgeError.stack,
+            },
+            "Bridge 调用失败，但任务继续执行"
+          )
+        }
+
+        // 发送格式化后的用户友好消息
+        const response = createSuccessResponseWithMeta(
+          message,
+          formatted,
+          {
+            originalTip: tip,
+            category,
+            icon,
+            timestamp,
+            stage: getTaskStageDescription(category),
+            bridgeError: bridgeError ? {
+              message: bridgeError.message,
+              type: 'bridge_timeout'
+            } : undefined
+          },
+          WebSocketAction.CALLBACK_AI_STEP
+        )
+        send(response)
+      } catch (error) {
+        // 捕获回调执行过程中的任何错误，避免影响主流程
+        wsLogger.warn(
+          {
+            connectionId,
+            tip,
+            error,
+          },
+          "任务提示回调执行失败，但不影响主任务"
+        )
+      }
+    }
+  }
+
+  /**
    * 触发任务提示回调
    * @param tip 任务提示内容
+   * @param bridgeError Bridge 调用错误（如果有）
    */
-  private triggerTaskTipCallbacks(tip: string): void {
+  private triggerTaskTipCallbacks(tip: string, bridgeError?: Error | null): void {
     this.taskTipCallbacks.forEach(callback => {
       try {
-        callback(tip)
+        callback(tip, bridgeError)
       } catch (error) {
         console.error("任务提示回调执行失败:", error)
       }
@@ -230,19 +324,37 @@ export class WebOperateService extends EventEmitter {
 
     // 设置新的回调，同时保留原有功能
     this.agent.onTaskStartTip = async (tip: string) => {
-      // 先调用原始的回调（showStatusMessage）
-      if (originalCallback) {
-        await originalCallback(tip)
+      let bridgeError: Error | null = null
+
+      try {
+        // 先调用原始的回调（showStatusMessage）
+        if (originalCallback) {
+          await originalCallback(tip)
+        }
+      } catch (error: any) {
+        // 捕获 bridge 调用超时等错误，避免成为未处理的 Promise 拒绝
+        bridgeError = error
+        console.warn(`⚠️ showStatusMessage 调用失败 (可能是 bridge 超时):`, error?.message)
+        serviceLogger.warn(
+          {
+            tip,
+            error: error?.message,
+            stack: error?.stack,
+          },
+          "showStatusMessage 调用失败，但继续执行任务"
+        )
       }
-      // 再调用我们的回调
-      this.handleTaskStartTip(tip)
+
+      // 再调用我们的回调（即使 showStatusMessage 失败也要执行）
+      // 如果有 bridge 错误，也通过回调通知出去
+      this.handleTaskStartTip(tip, bridgeError)
     }
   }
 
   /**
    * 处理任务开始提示的统一方法
    */
-  private handleTaskStartTip(tip: string): void {
+  private handleTaskStartTip(tip: string, bridgeError?: Error | null): void {
     const { formatted, category, icon } = formatTaskTip(tip)
     const stageDescription = getTaskStageDescription(category)
 
@@ -261,10 +373,10 @@ export class WebOperateService extends EventEmitter {
     )
 
     // 发射事件，让其他地方可以监听到
-    this.emit("taskStartTip", tip)
-    
-    // 触发注册的回调
-    this.triggerTaskTipCallbacks(tip)
+    this.emit("taskStartTip", tip, bridgeError)
+
+    // 触发注册的回调，并传递 bridge 错误信息
+    this.triggerTaskTipCallbacks(tip, bridgeError)
   }
 
   // ==================== 连接管理相关方法 ====================

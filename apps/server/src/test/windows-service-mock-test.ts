@@ -1,12 +1,12 @@
 /**
  * Windows 操作服务模拟测试
- * 
+ *
  * 此测试不依赖 robotjs，通过模拟 WindowsClientConnectionManager 来测试服务逻辑
  * 适用于：
  * - macOS/Linux 开发环境
  * - CI/CD 环境
  * - 快速功能验证
- * 
+ *
  * 注意：完整的功能测试需要在 Windows 环境下进行
  */
 
@@ -24,11 +24,11 @@ async function mockTest() {
   // ==================== 测试 1: 服务单例模式 ====================
   console.log("🔒 测试 1: 单例模式")
   console.log("─".repeat(60))
-  
+
   try {
     const instance1 = WindowsOperateService.getInstance()
     const instance2 = WindowsOperateService.getInstance()
-    
+
     if (instance1 !== instance2) {
       throw new Error("单例模式失败：获取到不同的实例")
     }
@@ -36,7 +36,7 @@ async function mockTest() {
 
     WindowsOperateService.resetInstance()
     const instance3 = WindowsOperateService.getInstance()
-    
+
     if (instance3 === instance1) {
       throw new Error("重置实例失败：获取到相同的实例")
     }
@@ -54,15 +54,15 @@ async function mockTest() {
   // ==================== 测试 2: 服务生命周期 ====================
   console.log("♻️  测试 2: 服务生命周期")
   console.log("─".repeat(60))
-  
+
   try {
     const service = WindowsOperateService.getInstance()
-    
+
     // 2.1 初始状态
     console.log("  检查初始状态...")
     const initialStarted = service.isStarted()
     const initialReady = service.isReady()
-    
+
     if (initialStarted || initialReady) {
       throw new Error("初始状态应该是未启动")
     }
@@ -99,13 +99,13 @@ async function mockTest() {
   // ==================== 测试 3: 错误处理 ====================
   console.log("⚠️  测试 3: 错误处理")
   console.log("─".repeat(60))
-  
+
   try {
     const service = WindowsOperateService.getInstance()
-    
+
     // 3.1 未启动时调用方法应该抛出错误
     console.log("  测试未启动时调用方法...")
-    
+
     let errorCaught = false
     try {
       await service.getDeviceInfo()
@@ -115,7 +115,7 @@ async function mockTest() {
         errorCaught = true
       }
     }
-    
+
     if (!errorCaught) {
       throw new Error("应该抛出未启动错误")
     }
@@ -131,7 +131,7 @@ async function mockTest() {
         errorCaught = true
       }
     }
-    
+
     if (!errorCaught) {
       throw new Error("应该抛出未启动错误")
     }
@@ -148,17 +148,16 @@ async function mockTest() {
   // ==================== 测试 4: ConnectionManager 集成 ====================
   console.log("🔗 测试 4: ConnectionManager 集成")
   console.log("─".repeat(60))
-  
+
   try {
     const connectionManager = WindowsClientConnectionManager.getInstance()
     console.log("  ✓ ConnectionManager 单例获取成功")
-    
+
     const availableClients = connectionManager.getAvailableClients()
     console.log(`  ✓ 可用客户端数量: ${availableClients.length}`)
-    
+
     const stats = connectionManager.getStats()
-    console.log(`  ✓ 连接统计: 总计 ${stats.totalClients} 个客户端, ${stats.activeClients} 个活跃`)
-    
+
     if (availableClients.length === 0) {
       console.log("  ℹ️  提示: 没有真实的 Windows 客户端连接（这是正常的）")
     }
@@ -173,20 +172,20 @@ async function mockTest() {
   // ==================== 测试 5: 服务配置 ====================
   console.log("⚙️  测试 5: 服务配置")
   console.log("─".repeat(60))
-  
+
   try {
     const service = WindowsOperateService.getInstance()
-    
+
     // 检查服务是否有 agent 属性
     console.log(`  ✓ 服务有 agent 属性: ${service.agent !== undefined}`)
-    
+
     // 检查服务方法是否存在
     const methods = [
       'start', 'stop', 'isStarted', 'isReady',
       'execute', 'expect', 'executeScript',
       'getDeviceInfo', 'screenshot', 'checkAndReconnect'
     ]
-    
+
     for (const method of methods) {
       if (typeof (service as any)[method] !== 'function') {
         throw new Error(`方法 ${method} 不存在`)

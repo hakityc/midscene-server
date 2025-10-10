@@ -18,39 +18,23 @@ export function createAiHandler(): MessageHandler {
       "处理 AI 请求"
     )
 
-    // 注册任务提示回调
-    const taskTipCallback = (tip: string) => {
-      // 格式化任务提示
-      const { formatted, icon, category } = formatTaskTip(tip)
-      const timestamp = new Date().toLocaleTimeString('zh-CN', {
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      })
-
-      console.log(`🎯 WebSocket 监听到任务提示: ${tip}`)
-      // console.log(`📝 格式化后的用户友好提示: ${formatted}`)
-
-      // 发送格式化后的用户友好消息
-      const response = createSuccessResponseWithMeta(
-        message as WebSocketMessage,
-        formatted,
-        {
-          originalTip: tip,
-          category,
-          icon,
-          timestamp,
-          stage: getTaskStageDescription(category)
-        },
-        WebSocketAction.CALLBACK_AI_STEP
-      )
-      send(response)
-    }
+    const webOperateService = WebOperateService.getInstance()
+    
+    // 使用封装好的方法创建任务提示回调
+    const taskTipCallback = webOperateService.createTaskTipCallback({
+      send,
+      message: message as WebSocketMessage,
+      connectionId,
+      wsLogger,
+      createSuccessResponseWithMeta: createSuccessResponseWithMeta as any,
+      createErrorResponse: createErrorResponse as any,
+      formatTaskTip,
+      getTaskStageDescription,
+      WebSocketAction
+    })
 
     try {
       const params = payload.params
-      const webOperateService = WebOperateService.getInstance()
       
       // 检查连接状态
       const isConnected = await webOperateService.checkAndReconnect()

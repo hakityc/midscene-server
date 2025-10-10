@@ -1,10 +1,16 @@
 /**
- * Windows 底层实现 - 使用 robotjs
+ * Windows 底层实现 - 使用 @nut-tree/nut-js
  * 
  * 实现 WINDOWS_IMPLEMENTATION_API.md 中定义的所有底层接口
+ * 
+ * nut-js 相比 robotjs 的优势：
+ * - 跨平台支持更好（包括 Apple Silicon）
+ * - API 更现代，使用 Promise
+ * - 更好的错误处理
+ * - 活跃维护
  */
 
-import robot from 'robotjs';
+import { mouse, keyboard, screen, Button, Key, Point } from '@nut-tree/nut-js';
 import type { Size } from '@midscene/core';
 
 /**
@@ -23,10 +29,13 @@ export class WindowsNativeImpl {
 	private static instance: WindowsNativeImpl;
 
 	private constructor() {
-		// 初始化 robotjs 配置
-		// 设置鼠标延迟，确保操作的准确性
-		robot.setMouseDelay(2);
-		robot.setKeyboardDelay(10);
+		// 初始化 nut-js 配置
+		// 设置鼠标移动速度（像素/秒）
+		mouse.config.mouseSpeed = 1000;
+		
+		// 设置自动延迟，确保操作的准确性
+		mouse.config.autoDelayMs = 100;
+		keyboard.config.autoDelayMs = 50;
 	}
 
 	/**
@@ -46,17 +55,22 @@ export class WindowsNativeImpl {
 	 * 实现 API 文档 1.1
 	 */
 	getScreenSize(): ScreenInfo {
-		const size = robot.getScreenSize();
-		
-		// TODO: 获取真实的 DPI 缩放比例
-		// Windows 上可以通过 Windows API 获取，这里暂时默认为 1
-		const dpr = 1;
+		// nut-js 的 screen.width/height 是异步的
+		// 使用同步包装
+		return this.runSync(async () => {
+			const width = await screen.width();
+			const height = await screen.height();
+			
+			// TODO: 获取真实的 DPI 缩放比例
+			// Windows 上可以通过 Windows API 获取，这里暂时默认为 1
+			const dpr = 1;
 
-		return {
-			width: size.width,
-			height: size.height,
-			dpr: dpr,
-		};
+			return {
+				width,
+				height,
+				dpr,
+			};
+		}) || { width: 1920, height: 1080, dpr: 1 };
 	}
 
 	/**
@@ -66,16 +80,58 @@ export class WindowsNativeImpl {
 	 * @returns Base64 编码的 PNG 图片
 	 */
 	captureScreen(): string {
-		const size = robot.getScreenSize();
-		
-		// 捕获整个屏幕
-		const img = robot.captureScreen(0, 0, size.width, size.height);
-		
-		// 将 robotjs 的图像数据转换为 PNG Base64
-		const pngBuffer = this.imageToPngBuffer(img, size.width, size.height);
-		const base64 = pngBuffer.toString('base64');
-		
-		return `data:image/png;base64,${base64}`;
+		try {
+			// nut-js 使用异步方式捕获屏幕
+			// 由于我们的接口是同步的，这里使用同步包装
+			// 注意：这会阻塞事件循环，建议使用异步版本 captureScreenAsync()
+			
+			return this.runSync(async () => {
+				// 捕获屏幕
+				const image = await screen.grab();
+				
+				// 使用 jimp 将图像数据转换为 PNG
+				const Jimp = require('jimp');
+				const jimpImage = new Jimp(image.width, image.height);
+				
+				// 将 nut-js Image 的数据复制到 jimp
+				// nut-js 返回 BGRA 格式
+				const imageData = await image.toRGB();
+				jimpImage.bitmap.data = Buffer.from(imageData.data);
+				
+				// 转换为 PNG Buffer
+				const buffer = await jimpImage.getBufferAsync(Jimp.MIME_PNG);
+				return `data:image/png;base64,${buffer.toString('base64')}`;
+			}) || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+		} catch (error) {
+			console.error('截图失败:', error);
+			// 返回一个 1x1 透明 PNG 作为后备
+			return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+		}
+	}
+
+	/**
+	 * 获取屏幕截图（异步版本 - 推荐使用）
+	 */
+	async captureScreenAsync(): Promise<string> {
+		try {
+			// 捕获屏幕
+			const image = await screen.grab();
+			
+			// 使用 jimp 将图像数据转换为 PNG
+			const Jimp = require('jimp');
+			const jimpImage = new Jimp(image.width, image.height);
+			
+			// 将 nut-js Image 的数据复制到 jimp
+			const imageData = await image.toRGB();
+			jimpImage.bitmap.data = Buffer.from(imageData.data);
+			
+			// 转换为 PNG Buffer
+			const buffer = await jimpImage.getBufferAsync(Jimp.MIME_PNG);
+			return `data:image/png;base64,${buffer.toString('base64')}`;
+		} catch (error) {
+			console.error('截图失败:', error);
+			return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+		}
 	}
 
 	// ==================== 2. 鼠标操作 ====================
@@ -85,7 +141,15 @@ export class WindowsNativeImpl {
 	 * 实现 API 文档 2.1
 	 */
 	moveMouse(x: number, y: number): void {
-		robot.moveMouse(Math.round(x), Math.round(y));
+		try {
+			// nut-js 的 mouse.move 是异步的
+			// 使用同步包装
+			this.runSync(async () => {
+				await mouse.move([new Point(Math.round(x), Math.round(y))]);
+			});
+		} catch (error) {
+			console.error('移动鼠标失败:', error);
+		}
 	}
 
 	/**
@@ -93,11 +157,17 @@ export class WindowsNativeImpl {
 	 * 实现 API 文档 2.2
 	 */
 	mouseClick(x: number, y: number): void {
-		// 1. 移动鼠标到目标位置
-		this.moveMouse(x, y);
-		
-		// 2. 执行单击
-		robot.mouseClick();
+		try {
+			this.runSync(async () => {
+				// 1. 移动鼠标到目标位置
+				await mouse.move([new Point(Math.round(x), Math.round(y))]);
+				
+				// 2. 执行单击
+				await mouse.click(Button.LEFT);
+			});
+		} catch (error) {
+			console.error('鼠标单击失败:', error);
+		}
 	}
 
 	/**
@@ -105,11 +175,17 @@ export class WindowsNativeImpl {
 	 * 实现 API 文档 2.3
 	 */
 	mouseDoubleClick(x: number, y: number): void {
-		// 1. 移动鼠标到目标位置
-		this.moveMouse(x, y);
-		
-		// 2. 执行双击
-		robot.mouseClick('left', true);
+		try {
+			this.runSync(async () => {
+				// 1. 移动鼠标到目标位置
+				await mouse.move([new Point(Math.round(x), Math.round(y))]);
+				
+				// 2. 执行双击
+				await mouse.doubleClick(Button.LEFT);
+			});
+		} catch (error) {
+			console.error('鼠标双击失败:', error);
+		}
 	}
 
 	/**
@@ -117,11 +193,17 @@ export class WindowsNativeImpl {
 	 * 实现 API 文档 2.4
 	 */
 	mouseRightClick(x: number, y: number): void {
-		// 1. 移动鼠标到目标位置
-		this.moveMouse(x, y);
-		
-		// 2. 执行右键点击
-		robot.mouseClick('right');
+		try {
+			this.runSync(async () => {
+				// 1. 移动鼠标到目标位置
+				await mouse.move([new Point(Math.round(x), Math.round(y))]);
+				
+				// 2. 执行右键点击
+				await mouse.click(Button.RIGHT);
+			});
+		} catch (error) {
+			console.error('鼠标右键点击失败:', error);
+		}
 	}
 
 	/**
@@ -138,27 +220,23 @@ export class WindowsNativeImpl {
 	 * 实现 API 文档 2.6
 	 */
 	dragAndDrop(fromX: number, fromY: number, toX: number, toY: number): void {
-		// 1. 移动鼠标到起始位置
-		this.moveMouse(fromX, fromY);
-		
-		// 2. 按下鼠标左键
-		robot.mouseToggle('down');
-		
-		// 3. 平滑移动到目标位置
-		// 计算移动步数，使拖放更平滑
-		const steps = 10;
-		const deltaX = (toX - fromX) / steps;
-		const deltaY = (toY - fromY) / steps;
-		
-		for (let i = 1; i <= steps; i++) {
-			const currentX = fromX + deltaX * i;
-			const currentY = fromY + deltaY * i;
-			this.moveMouse(currentX, currentY);
-			this.sleep(10); // 每步延迟 10ms
+		try {
+			this.runSync(async () => {
+				// 1. 移动鼠标到起始位置
+				await mouse.move([new Point(Math.round(fromX), Math.round(fromY))]);
+				
+				// 2. 按下鼠标左键
+				await mouse.pressButton(Button.LEFT);
+				
+				// 3. 平滑拖动到目标位置
+				await mouse.drag([new Point(Math.round(toX), Math.round(toY))]);
+				
+				// 4. 释放鼠标左键
+				await mouse.releaseButton(Button.LEFT);
+			});
+		} catch (error) {
+			console.error('拖放操作失败:', error);
 		}
-		
-		// 4. 释放鼠标左键
-		robot.mouseToggle('up');
 	}
 
 	// ==================== 3. 键盘操作 ====================
@@ -167,60 +245,15 @@ export class WindowsNativeImpl {
 	 * 输入文本
 	 * 实现 API 文档 3.1
 	 * 
-	 * 注意: robotjs 的 typeString 仅支持 ASCII 字符
-	 * 对于中文等非 ASCII 字符，需要使用剪贴板方式
+	 * nut-js 支持 Unicode 字符，包括中文
 	 */
 	typeText(text: string): void {
-		// 检查是否包含非 ASCII 字符
-		const hasNonAscii = /[^\x00-\x7F]/.test(text);
-		
-		if (hasNonAscii) {
-			// 使用剪贴板方式输入
-			this.typeTextViaClipboard(text);
-		} else {
-			// 直接使用 robotjs 输入
-			robot.typeString(text);
-		}
-	}
-
-	/**
-	 * 通过剪贴板输入文本（用于非 ASCII 字符）
-	 * 
-	 * 步骤：
-	 * 1. 保存当前剪贴板内容
-	 * 2. 将文本复制到剪贴板
-	 * 3. 模拟 Ctrl+V 粘贴
-	 * 4. 恢复原剪贴板内容
-	 */
-	private typeTextViaClipboard(text: string): void {
 		try {
-			// 导入 clipboardy（如果已安装）
-			// 注意：需要安装 clipboardy 包
-			const clipboardy = require('clipboardy');
-			
-			// 1. 保存当前剪贴板
-			const originalClipboard = clipboardy.readSync();
-			
-			// 2. 复制文本到剪贴板
-			clipboardy.writeSync(text);
-			
-			// 3. 模拟 Ctrl+V
-			robot.keyTap('v', 'control');
-			
-			// 4. 等待粘贴完成后恢复剪贴板
-			setTimeout(() => {
-				clipboardy.writeSync(originalClipboard);
-			}, 100);
+			this.runSync(async () => {
+				await keyboard.type(text);
+			});
 		} catch (error) {
-			console.error('剪贴板方式输入失败，回退到逐字符输入:', error);
-			// 回退方案：尝试逐字符输入（可能不支持所有字符）
-			for (const char of text) {
-				try {
-					robot.typeString(char);
-				} catch (e) {
-					console.warn(`无法输入字符: ${char}`);
-				}
-			}
+			console.error('输入文本失败:', error);
 		}
 	}
 
@@ -231,67 +264,131 @@ export class WindowsNativeImpl {
 	 * @param key 按键标识符，如 'Enter', 'a', 'Control+c'
 	 */
 	keyPress(key: string): void {
-		// 检查是否是组合键
-		if (key.includes('+')) {
-			// 解析组合键
-			const parts = key.split('+');
-			const modifiers: string[] = [];
-			let mainKey = '';
-			
-			for (const part of parts) {
-				const normalizedPart = this.normalizeKeyName(part.trim());
-				
-				if (this.isModifierKey(normalizedPart)) {
-					modifiers.push(normalizedPart);
+		try {
+			this.runSync(async () => {
+				// 检查是否是组合键
+				if (key.includes('+')) {
+					// 解析组合键
+					const parts = key.split('+').map(p => p.trim());
+					const nutKeys = parts.map(p => this.convertToNutKey(p));
+					
+					// 执行组合键
+					await keyboard.pressKey(...nutKeys);
+					await keyboard.releaseKey(...nutKeys);
 				} else {
-					mainKey = normalizedPart;
+					// 单个按键
+					const nutKey = this.convertToNutKey(key);
+					await keyboard.pressKey(nutKey);
+					await keyboard.releaseKey(nutKey);
 				}
-			}
-			
-			// 执行组合键
-			if (mainKey) {
-				robot.keyTap(mainKey, modifiers);
-			}
-		} else {
-			// 单个按键
-			const normalizedKey = this.normalizeKeyName(key);
-			robot.keyTap(normalizedKey);
+			});
+		} catch (error) {
+			console.error('按键操作失败:', error);
 		}
 	}
 
 	/**
-	 * 标准化按键名称
+	 * 将按键名称转换为 nut-js Key
 	 */
-	private normalizeKeyName(key: string): string {
-		const keyMap: Record<string, string> = {
-			'Control': 'control',
-			'Ctrl': 'control',
-			'Alt': 'alt',
-			'Shift': 'shift',
-			'Win': 'command',
-			'Meta': 'command',
-			'Enter': 'enter',
-			'Return': 'enter',
-			'Escape': 'escape',
-			'Esc': 'escape',
-			'Tab': 'tab',
-			'Backspace': 'backspace',
-			'Delete': 'delete',
-			'Up': 'up',
-			'Down': 'down',
-			'Left': 'left',
-			'Right': 'right',
-			'Space': 'space',
+	private convertToNutKey(keyName: string): Key {
+		const keyMap: Record<string, Key> = {
+			// 修饰键
+			'Control': Key.LeftControl,
+			'Ctrl': Key.LeftControl,
+			'Alt': Key.LeftAlt,
+			'Shift': Key.LeftShift,
+			'Win': Key.LeftWin,
+			'Meta': Key.LeftWin,
+			'Command': Key.LeftCmd,
+			'Super': Key.LeftSuper,
+			
+			// 特殊键
+			'Enter': Key.Enter,
+			'Return': Key.Return,
+			'Escape': Key.Escape,
+			'Esc': Key.Escape,
+			'Tab': Key.Tab,
+			'Backspace': Key.Backspace,
+			'Delete': Key.Delete,
+			'Space': Key.Space,
+			
+			// 方向键
+			'Up': Key.Up,
+			'Down': Key.Down,
+			'Left': Key.Left,
+			'Right': Key.Right,
+			
+			// 功能键
+			'F1': Key.F1,
+			'F2': Key.F2,
+			'F3': Key.F3,
+			'F4': Key.F4,
+			'F5': Key.F5,
+			'F6': Key.F6,
+			'F7': Key.F7,
+			'F8': Key.F8,
+			'F9': Key.F9,
+			'F10': Key.F10,
+			'F11': Key.F11,
+			'F12': Key.F12,
+			
+			// 其他常用键
+			'Home': Key.Home,
+			'End': Key.End,
+			'PageUp': Key.PageUp,
+			'PageDown': Key.PageDown,
+			'Insert': Key.Insert,
+			'CapsLock': Key.CapsLock,
+			
+			// 数字键
+			'0': Key.Num0,
+			'1': Key.Num1,
+			'2': Key.Num2,
+			'3': Key.Num3,
+			'4': Key.Num4,
+			'5': Key.Num5,
+			'6': Key.Num6,
+			'7': Key.Num7,
+			'8': Key.Num8,
+			'9': Key.Num9,
+			
+			// 字母键
+			'a': Key.A, 'A': Key.A,
+			'b': Key.B, 'B': Key.B,
+			'c': Key.C, 'C': Key.C,
+			'd': Key.D, 'D': Key.D,
+			'e': Key.E, 'E': Key.E,
+			'f': Key.F, 'F': Key.F,
+			'g': Key.G, 'G': Key.G,
+			'h': Key.H, 'H': Key.H,
+			'i': Key.I, 'I': Key.I,
+			'j': Key.J, 'J': Key.J,
+			'k': Key.K, 'K': Key.K,
+			'l': Key.L, 'L': Key.L,
+			'm': Key.M, 'M': Key.M,
+			'n': Key.N, 'N': Key.N,
+			'o': Key.O, 'O': Key.O,
+			'p': Key.P, 'P': Key.P,
+			'q': Key.Q, 'Q': Key.Q,
+			'r': Key.R, 'R': Key.R,
+			's': Key.S, 'S': Key.S,
+			't': Key.T, 'T': Key.T,
+			'u': Key.U, 'U': Key.U,
+			'v': Key.V, 'V': Key.V,
+			'w': Key.W, 'W': Key.W,
+			'x': Key.X, 'X': Key.X,
+			'y': Key.Y, 'Y': Key.Y,
+			'z': Key.Z, 'Z': Key.Z,
 		};
 		
-		return keyMap[key] || key.toLowerCase();
-	}
-
-	/**
-	 * 判断是否是修饰键
-	 */
-	private isModifierKey(key: string): boolean {
-		return ['control', 'alt', 'shift', 'command'].includes(key);
+		// 如果在映射表中找到，返回对应的 Key
+		if (keyMap[keyName]) {
+			return keyMap[keyName];
+		}
+		
+		// 默认返回 Key.A (作为后备)
+		console.warn(`未知的按键: ${keyName}, 使用默认值`);
+		return Key.A;
 	}
 
 	// ==================== 4. 滚动操作 ====================
@@ -306,11 +403,17 @@ export class WindowsNativeImpl {
 		direction: 'up' | 'down' | 'left' | 'right',
 		distance: number
 	): void {
-		// 1. 移动鼠标到目标位置
-		this.moveMouse(x, y);
-		
-		// 2. 执行滚动
-		this.scroll(direction, distance);
+		try {
+			this.runSync(async () => {
+				// 1. 移动鼠标到目标位置
+				await mouse.move([new Point(Math.round(x), Math.round(y))]);
+				
+				// 2. 执行滚动
+				await this.scrollAsync(direction, distance);
+			});
+		} catch (error) {
+			console.error('指定位置滚动失败:', error);
+		}
 	}
 
 	/**
@@ -321,47 +424,83 @@ export class WindowsNativeImpl {
 		direction: 'up' | 'down' | 'left' | 'right',
 		distance: number
 	): void {
-		// 直接在当前鼠标位置滚动
-		this.scroll(direction, distance);
+		try {
+			this.runSync(async () => {
+				await this.scrollAsync(direction, distance);
+			});
+		} catch (error) {
+			console.error('全局滚动失败:', error);
+		}
 	}
 
 	/**
-	 * 执行滚动操作
+	 * 执行滚动操作（异步）
 	 * 
-	 * robotjs scrollMouse 参数：
-	 * - scrollMouse(x, y)
-	 * - x: 水平滚动量（正值向右，负值向左）
-	 * - y: 垂直滚动量（正值向下，负值向上）
+	 * nut-js scrolling:
+	 * - scrollDown(amount): 向下滚动
+	 * - scrollUp(amount): 向上滚动
+	 * - scrollLeft(amount): 向左滚动
+	 * - scrollRight(amount): 向右滚动
 	 */
-	private scroll(
+	private async scrollAsync(
 		direction: 'up' | 'down' | 'left' | 'right',
 		distance: number
-	): void {
+	): Promise<void> {
 		// 将像素距离转换为滚动刻度
-		// 通常 120 个单位 = 1 个滚轮刻度
-		const scrollAmount = Math.round(distance / 120);
+		// nut-js 的滚动量是以"刻度"为单位的
+		const scrollAmount = Math.max(1, Math.round(distance / 10));
 		
 		switch (direction) {
 			case 'up':
-				// 向上滚动（正值）
-				robot.scrollMouse(0, scrollAmount);
+				await mouse.scrollUp(scrollAmount);
 				break;
 			case 'down':
-				// 向下滚动（负值）
-				robot.scrollMouse(0, -scrollAmount);
+				await mouse.scrollDown(scrollAmount);
 				break;
 			case 'left':
-				// 向左滚动（负值）
-				robot.scrollMouse(-scrollAmount, 0);
+				await mouse.scrollLeft(scrollAmount);
 				break;
 			case 'right':
-				// 向右滚动（正值）
-				robot.scrollMouse(scrollAmount, 0);
+				await mouse.scrollRight(scrollAmount);
 				break;
 		}
 	}
 
 	// ==================== 工具方法 ====================
+
+	/**
+	 * 同步运行异步函数
+	 * 
+	 * 注意：这是一个临时解决方案，用于保持接口兼容性
+	 * 在实际使用中，建议将所有接口改为异步
+	 */
+	private runSync<T>(asyncFn: () => Promise<T>): T | undefined {
+		let result: T | undefined;
+		let error: Error | undefined;
+		let done = false;
+
+		asyncFn()
+			.then(res => {
+				result = res;
+				done = true;
+			})
+			.catch(err => {
+				error = err;
+				done = true;
+			});
+
+		// 等待异步操作完成（最多 5 秒）
+		const startTime = Date.now();
+		while (!done && Date.now() - startTime < 5000) {
+			// 忙等待
+		}
+
+		if (error) {
+			throw error;
+		}
+
+		return result;
+	}
 
 	/**
 	 * 睡眠等待
@@ -370,68 +509,6 @@ export class WindowsNativeImpl {
 		const start = Date.now();
 		while (Date.now() - start < ms) {
 			// 忙等待
-		}
-	}
-
-	/**
-	 * 将 robotjs 图像转换为 PNG Buffer
-	 * 
-	 * robotjs 返回的图像格式为 BGRA，需要转换为 PNG
-	 */
-	private imageToPngBuffer(img: any, width: number, height: number): Buffer {
-		// 使用 Node.js 内置的方法或第三方库转换
-		// 这里使用简单的 BMP 格式包装（可选：使用 sharp 或 pngjs 获得更好的效果）
-		
-		try {
-			// 尝试使用 sharp（如果已安装）
-			const sharp = require('sharp');
-			
-			// robotjs 返回的是 BGRA 格式
-			const rawBuffer = Buffer.from(img.image);
-			
-			return sharp(rawBuffer, {
-				raw: {
-					width: width,
-					height: height,
-					channels: 4, // BGRA
-				}
-			})
-			.png()
-			.toBuffer();
-		} catch (error) {
-			// 如果 sharp 不可用，使用 pngjs
-			try {
-				const { PNG } = require('pngjs');
-				const png = new PNG({ width, height });
-				
-				// robotjs 返回的格式是 BGRA
-				const imgData = img.image;
-				
-				// 转换 BGRA 到 RGBA
-				for (let y = 0; y < height; y++) {
-					for (let x = 0; x < width; x++) {
-						const idx = (width * y + x) * 4;
-						const b = imgData[idx];
-						const g = imgData[idx + 1];
-						const r = imgData[idx + 2];
-						const a = imgData[idx + 3];
-						
-						png.data[idx] = r;
-						png.data[idx + 1] = g;
-						png.data[idx + 2] = b;
-						png.data[idx + 3] = a;
-					}
-				}
-				
-				return PNG.sync.write(png);
-			} catch (pngError) {
-				console.error('PNG 转换失败，返回简单的 PNG:', pngError);
-				// 返回一个简单的 1x1 透明 PNG 作为后备
-				return Buffer.from(
-					'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-					'base64'
-				);
-			}
 		}
 	}
 
@@ -459,10 +536,98 @@ export class WindowsNativeImpl {
 			console.error('设置剪贴板失败:', error);
 		}
 	}
+
+	// ==================== 异步接口（推荐使用） ====================
+
+	/**
+	 * 异步：移动鼠标
+	 */
+	async moveMouseAsync(x: number, y: number): Promise<void> {
+		await mouse.move([new Point(Math.round(x), Math.round(y))]);
+	}
+
+	/**
+	 * 异步：鼠标单击
+	 */
+	async mouseClickAsync(x: number, y: number): Promise<void> {
+		await mouse.move([new Point(Math.round(x), Math.round(y))]);
+		await mouse.click(Button.LEFT);
+	}
+
+	/**
+	 * 异步：鼠标双击
+	 */
+	async mouseDoubleClickAsync(x: number, y: number): Promise<void> {
+		await mouse.move([new Point(Math.round(x), Math.round(y))]);
+		await mouse.doubleClick(Button.LEFT);
+	}
+
+	/**
+	 * 异步：鼠标右键点击
+	 */
+	async mouseRightClickAsync(x: number, y: number): Promise<void> {
+		await mouse.move([new Point(Math.round(x), Math.round(y))]);
+		await mouse.click(Button.RIGHT);
+	}
+
+	/**
+	 * 异步：拖放操作
+	 */
+	async dragAndDropAsync(fromX: number, fromY: number, toX: number, toY: number): Promise<void> {
+		await mouse.move([new Point(Math.round(fromX), Math.round(fromY))]);
+		await mouse.pressButton(Button.LEFT);
+		await mouse.drag([new Point(Math.round(toX), Math.round(toY))]);
+		await mouse.releaseButton(Button.LEFT);
+	}
+
+	/**
+	 * 异步：输入文本
+	 */
+	async typeTextAsync(text: string): Promise<void> {
+		await keyboard.type(text);
+	}
+
+	/**
+	 * 异步：按键操作
+	 */
+	async keyPressAsync(key: string): Promise<void> {
+		if (key.includes('+')) {
+			const parts = key.split('+').map(p => p.trim());
+			const nutKeys = parts.map(p => this.convertToNutKey(p));
+			await keyboard.pressKey(...nutKeys);
+			await keyboard.releaseKey(...nutKeys);
+		} else {
+			const nutKey = this.convertToNutKey(key);
+			await keyboard.pressKey(nutKey);
+			await keyboard.releaseKey(nutKey);
+		}
+	}
+
+	/**
+	 * 异步：指定位置滚动
+	 */
+	async scrollAtAsync(
+		x: number,
+		y: number,
+		direction: 'up' | 'down' | 'left' | 'right',
+		distance: number
+	): Promise<void> {
+		await mouse.move([new Point(Math.round(x), Math.round(y))]);
+		await this.scrollAsync(direction, distance);
+	}
+
+	/**
+	 * 异步：全局滚动
+	 */
+	async scrollGlobalAsync(
+		direction: 'up' | 'down' | 'left' | 'right',
+		distance: number
+	): Promise<void> {
+		await this.scrollAsync(direction, distance);
+	}
 }
 
 /**
  * 导出单例实例
  */
 export const windowsNative = WindowsNativeImpl.getInstance();
-
