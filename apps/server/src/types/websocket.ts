@@ -16,6 +16,7 @@ export interface WsInboundMessage<P = unknown> {
     params: P;
     site:string;
     originalCmd: string;
+    option?: string;
   };
 }
 

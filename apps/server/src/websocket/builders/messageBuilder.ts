@@ -6,7 +6,7 @@ import type {
 import { WebSocketAction } from '../../utils/enums';
 
 /**
- * 构建基础消息
+ * 构建出站消息（服务端 -> 客户端）
  */
 function buildOutbound<R = unknown>(
   messageId: string,
@@ -190,6 +190,24 @@ export function createProcessingErrorResponse(
   );
 }
 
+/**
+ * 构指令消息
+ */
+export function createCommandMessage(
+  originalMessage: WebSocketMessage,
+  result: string,
+): WsOutboundMessage<string> {
+  return buildOutbound<string>(
+    originalMessage.meta.messageId,
+    originalMessage.meta.conversationId,
+    WebSocketAction.COMMAND,
+    'success',
+    {
+      result
+    },
+  );
+}
+
 export const MessageBuilder = {
   createSuccessResponse,
   createErrorResponse,
@@ -199,4 +217,5 @@ export const MessageBuilder = {
   createUnknownActionResponse,
   createParseErrorResponse,
   createProcessingErrorResponse,
+  createCommandMessage
 };
