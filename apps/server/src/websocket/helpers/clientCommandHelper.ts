@@ -40,17 +40,23 @@ export class ClientCommandHelper {
    * @param action - 要执行的异步操作
    * @param options - 配置选项
    * @returns 操作的结果
+   * @note 如果执行成功，会隐藏遮罩；如果执行失败，保持遮罩显示，让用户看到错误状态
    */
   async executeWithMask<T>(
     action: () => Promise<T>,
     options: { enabled?: boolean } = {},
   ): Promise<T> {
     const { enabled = false } = options
+    if (enabled) this.showFullMask()
+
     try {
-      if (enabled) this.showFullMask()
-      return await action()
-    } finally {
+      const result = await action()
+      // 只有成功时才隐藏遮罩
       if (enabled) this.hideFullMask()
+      return result
+    } catch (error) {
+      // 出错时不隐藏遮罩，让用户看到错误状态
+      throw error
     }
   }
 
