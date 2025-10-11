@@ -1,5 +1,5 @@
 // 简单测试CLS功能
-import "dotenv/config"
+import 'dotenv/config';
 import {
   controllerLogger,
   serverLogger,

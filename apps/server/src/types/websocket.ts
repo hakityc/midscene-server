@@ -14,7 +14,7 @@ export interface WsInboundMessage<P = unknown> {
   payload: {
     action: WebSocketAction | string;
     params: P;
-    site:string;
+    site: string;
     originalCmd: string;
     option?: string;
   };

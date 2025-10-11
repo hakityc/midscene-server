@@ -184,4 +184,3 @@ export function getTemplateById(id: string): Template | undefined {
 export function getAllTemplates(): Template[] {
   return templates;
 }
-

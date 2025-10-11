@@ -1,5 +1,8 @@
-import type { WsInboundMessage, WsOutboundMessage } from "../../types/websocket"
-import { createCommandMessage } from "../builders/messageBuilder"
+import type {
+  WsInboundMessage,
+  WsOutboundMessage,
+} from '../../types/websocket';
+import { createCommandMessage } from '../builders/messageBuilder';
 
 /**
  * 客户端命令辅助类
@@ -17,22 +20,22 @@ export class ClientCommandHelper {
    * @param payload - 可选的命令载荷
    */
   private sendCommand(command: string): void {
-    const commandMessage = createCommandMessage(this.message, command)
-    this.send(commandMessage)
+    const commandMessage = createCommandMessage(this.message, command);
+    this.send(commandMessage);
   }
 
   /**
    * 显示全屏遮罩
    */
   showFullMask(): void {
-    this.sendCommand("showFullMask")
+    this.sendCommand('showFullMask');
   }
 
   /**
    * 隐藏全屏遮罩
    */
   hideFullMask(): void {
-    this.sendCommand("hideFullMask")
+    this.sendCommand('hideFullMask');
   }
 
   /**
@@ -46,21 +49,13 @@ export class ClientCommandHelper {
     action: () => Promise<T>,
     options: { enabled?: boolean } = {},
   ): Promise<T> {
-    const { enabled = false } = options
-    if (enabled) this.showFullMask()
-
-    try {
-      const result = await action()
-      // 只有成功时才隐藏遮罩
-      if (enabled) this.hideFullMask()
-      return result
-    } catch (error) {
-      // 出错时不隐藏遮罩，让用户看到错误状态
-      throw error
-    }
+    const { enabled = false } = options;
+    if (enabled) this.showFullMask();
+    const result = await action();
+    // 只有成功时才隐藏遮罩
+    if (enabled) this.hideFullMask();
+    return result;
   }
-
-
 }
 
 /**
@@ -73,6 +68,5 @@ export const createClientCommandHelper = (
   message: WsInboundMessage<string>,
   send: (message: WsOutboundMessage<string>) => boolean,
 ): ClientCommandHelper => {
-  return new ClientCommandHelper(message, send)
-}
-
+  return new ClientCommandHelper(message, send);
+};

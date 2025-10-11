@@ -44,21 +44,26 @@ export function setupHealthRoutes(app: Hono): void {
   // 强制重连端点
   app.post('/health/reconnect', async (c) => {
     try {
-      const { WebOperateService } = await import('../services/webOperateService');
+      const { WebOperateService } = await import(
+        '../services/webOperateService'
+      );
       const webOperateService = WebOperateService.getInstance();
       await webOperateService.forceReconnect();
 
       return c.json({
         status: 'success',
         message: '重连成功',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      return c.json({
-        status: 'error',
-        error: (error as Error).message,
-        timestamp: new Date().toISOString()
-      }, 500);
+      return c.json(
+        {
+          status: 'error',
+          error: (error as Error).message,
+          timestamp: new Date().toISOString(),
+        },
+        500,
+      );
     }
   });
 }

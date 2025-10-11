@@ -48,7 +48,10 @@ export function createSuccessResponse<R = string>(
 /**
  * 构建包含额外元数据的成功响应消息
  */
-export function createSuccessResponseWithMeta<R = string, M = Record<string, any>>(
+export function createSuccessResponseWithMeta<
+  R = string,
+  M = Record<string, any>,
+>(
   originalMessage: WsInboundMessage,
   result: R,
   metadata?: M,
@@ -56,9 +59,15 @@ export function createSuccessResponseWithMeta<R = string, M = Record<string, any
 ): WsOutboundMessage<{ data: R; meta?: M }> {
   const messageId = originalMessage.meta.messageId;
   const conversationId = originalMessage.meta.conversationId;
-  return buildOutbound<{ data: R; meta?: M }>(messageId, conversationId, action, 'success', {
-    result: { data: result, meta: metadata },
-  });
+  return buildOutbound<{ data: R; meta?: M }>(
+    messageId,
+    conversationId,
+    action,
+    'success',
+    {
+      result: { data: result, meta: metadata },
+    },
+  );
 }
 
 /**
@@ -203,7 +212,7 @@ export function createCommandMessage(
     WebSocketAction.COMMAND,
     'success',
     {
-      result
+      result,
     },
   );
 }
@@ -217,5 +226,5 @@ export const MessageBuilder = {
   createUnknownActionResponse,
   createParseErrorResponse,
   createProcessingErrorResponse,
-  createCommandMessage
+  createCommandMessage,
 };

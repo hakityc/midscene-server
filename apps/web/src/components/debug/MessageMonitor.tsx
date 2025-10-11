@@ -1,9 +1,19 @@
+import { format } from 'date-fns';
+import {
+  ArrowDown,
+  ArrowUp,
+  Download,
+  Info,
+  RefreshCw,
+  Trash2,
+  Wifi,
+  WifiOff,
+  XCircle,
+} from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { MonitorMessage } from '@/types/debug';
-import { format } from 'date-fns';
-import { ArrowDown, ArrowUp, Download, Info, RefreshCw, Trash2, Wifi, WifiOff, XCircle } from 'lucide-react';
-import { useState } from 'react';
 
 interface MessageMonitorProps {
   messages: MonitorMessage[];
@@ -12,10 +22,18 @@ interface MessageMonitorProps {
   onConnect: () => void;
 }
 
-export function MessageMonitor({ messages, onClear, status, onConnect }: MessageMonitorProps) {
+export function MessageMonitor({
+  messages,
+  onClear,
+  status,
+  onConnect,
+}: MessageMonitorProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const getIcon = (direction: MonitorMessage['direction'], type: MonitorMessage['type']) => {
+  const getIcon = (
+    direction: MonitorMessage['direction'],
+    type: MonitorMessage['type'],
+  ) => {
     if (direction === 'sent') return <ArrowUp className="h-4 w-4" />;
     if (direction === 'received') return <ArrowDown className="h-4 w-4" />;
     if (type === 'error') return <XCircle className="h-4 w-4" />;
@@ -35,7 +53,7 @@ export function MessageMonitor({ messages, onClear, status, onConnect }: Message
 
   const exportMessages = () => {
     const dataStr = JSON.stringify(messages, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
     const exportFileDefaultName = `messages-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.json`;
 
     const linkElement = document.createElement('a');
@@ -76,7 +94,9 @@ export function MessageMonitor({ messages, onClear, status, onConnect }: Message
               onClick={onConnect}
               disabled={status === 'connecting'}
             >
-              <RefreshCw className={`h-3 w-3 mr-1 ${status === 'connecting' ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-3 w-3 mr-1 ${status === 'connecting' ? 'animate-spin' : ''}`}
+              />
               重连
             </Button>
             <Button
@@ -111,10 +131,23 @@ export function MessageMonitor({ messages, onClear, status, onConnect }: Message
               <div
                 key={message.id}
                 className={`p-3 rounded-lg border ${getColor(message.type)} text-sm transition-all cursor-pointer hover:shadow-md`}
-                onClick={() => setExpandedId(expandedId === message.id ? null : message.id)}
+                onClick={() =>
+                  setExpandedId(expandedId === message.id ? null : message.id)
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setExpandedId(
+                      expandedId === message.id ? null : message.id,
+                    );
+                  }
+                }}
+                role="button"
+                tabIndex={0}
               >
                 <div className="flex items-start gap-2">
-                  <div className="mt-0.5">{getIcon(message.direction, message.type)}</div>
+                  <div className="mt-0.5">
+                    {getIcon(message.direction, message.type)}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="font-semibold text-xs">

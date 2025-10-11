@@ -1,8 +1,8 @@
+import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { MessageMeta } from '@/types/debug';
-import { RefreshCw } from 'lucide-react';
 
 interface MetaFormProps {
   meta: MessageMeta;
@@ -10,7 +10,11 @@ interface MetaFormProps {
   onRefreshMessageId: () => void;
 }
 
-export function MetaForm({ meta, onChange, onRefreshMessageId }: MetaFormProps) {
+export function MetaForm({
+  meta,
+  onChange,
+  onRefreshMessageId,
+}: MetaFormProps) {
   const updateField = (field: keyof MessageMeta, value: string | number) => {
     onChange({ ...meta, [field]: value });
   };
@@ -35,11 +39,7 @@ export function MetaForm({ meta, onChange, onRefreshMessageId }: MetaFormProps) 
       <div>
         <Label className="text-xs font-medium">Message ID</Label>
         <div className="flex gap-2 mt-1">
-          <Input
-            value={meta.messageId}
-            readOnly
-            className="flex-1 bg-muted"
-          />
+          <Input value={meta.messageId} readOnly className="flex-1 bg-muted" />
           <Button
             size="sm"
             variant="outline"

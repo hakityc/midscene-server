@@ -1,3 +1,4 @@
+import { GripVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,6 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import type { FlowAction, FlowActionType } from '@/types/debug';
-import { GripVertical, Trash2 } from 'lucide-react';
 
 interface FlowActionItemProps {
   action: FlowAction;
@@ -31,7 +31,12 @@ const actionTypeOptions: Array<{ value: FlowActionType; label: string }> = [
   { value: 'aiKeyboardPress', label: 'AI 按键 (aiKeyboardPress)' },
 ];
 
-export function FlowActionItem({ action, index, onChange, onRemove }: FlowActionItemProps) {
+export function FlowActionItem({
+  action,
+  index,
+  onChange,
+  onRemove,
+}: FlowActionItemProps) {
   const updateField = (field: string, value: unknown) => {
     onChange({ ...action, [field]: value } as FlowAction);
   };
@@ -191,7 +196,9 @@ export function FlowActionItem({ action, index, onChange, onRemove }: FlowAction
                 <Input
                   type="number"
                   value={action.distance || 0}
-                  onChange={(e) => updateField('distance', Number(e.target.value))}
+                  onChange={(e) =>
+                    updateField('distance', Number(e.target.value))
+                  }
                   placeholder="500"
                   className="mt-1 h-8 text-xs"
                 />
@@ -233,7 +240,9 @@ export function FlowActionItem({ action, index, onChange, onRemove }: FlowAction
               <Input
                 type="number"
                 value={action.timeoutMs || 15000}
-                onChange={(e) => updateField('timeoutMs', Number(e.target.value))}
+                onChange={(e) =>
+                  updateField('timeoutMs', Number(e.target.value))
+                }
                 placeholder="15000"
                 className="mt-1 h-8 text-xs"
               />
@@ -243,7 +252,9 @@ export function FlowActionItem({ action, index, onChange, onRemove }: FlowAction
               <Input
                 type="number"
                 value={action.checkIntervalMs || 3000}
-                onChange={(e) => updateField('checkIntervalMs', Number(e.target.value))}
+                onChange={(e) =>
+                  updateField('checkIntervalMs', Number(e.target.value))
+                }
                 placeholder="3000"
                 className="mt-1 h-8 text-xs"
               />
@@ -291,12 +302,12 @@ export function FlowActionItem({ action, index, onChange, onRemove }: FlowAction
     <div className="p-3 bg-white border-2 border-black rounded-none shadow-[3px_3px_0_0_#000]">
       <div className="flex items-center gap-2 mb-3">
         <GripVertical className="h-4 w-4 text-gray-400 cursor-move flex-shrink-0" />
-        <span className="text-xs font-bold text-gray-500 flex-shrink-0">#{index + 1}</span>
+        <span className="text-xs font-bold text-gray-500 flex-shrink-0">
+          #{index + 1}
+        </span>
         <Select
           value={action.type}
-          onValueChange={(val) =>
-            onChange({ type: val } as FlowAction)
-          }
+          onValueChange={(val) => onChange({ type: val } as FlowAction)}
         >
           <SelectTrigger className="h-7 text-xs flex-1">
             <SelectValue />
@@ -322,4 +333,3 @@ export function FlowActionItem({ action, index, onChange, onRemove }: FlowAction
     </div>
   );
 }
-

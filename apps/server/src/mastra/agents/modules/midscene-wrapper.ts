@@ -35,7 +35,7 @@ export class MidsceneWrapper {
 
       // 调用 MCP 工具进行元素定位
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_aiLocate']) {
+      if (tools?.midscene_aiLocate) {
         // 模拟 MCP 工具调用 - 实际使用时需要根据真实的 MCP API 调用
         return {
           success: true,
@@ -63,7 +63,7 @@ export class MidsceneWrapper {
 
       // 调用 MCP 工具进行页面描述
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_describe_page']) {
+      if (tools?.midscene_describe_page) {
         // 模拟 MCP 工具调用
         return `当前页面是一个包含多个交互元素的网页，包括按钮、输入框和文本内容。页面布局清晰，元素可见且可操作。`;
       }
@@ -84,7 +84,7 @@ export class MidsceneWrapper {
 
       // 调用 MCP 工具进行内容查询
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_aiQuery']) {
+      if (tools?.midscene_aiQuery) {
         // 模拟 MCP 工具调用
         return {
           query: prompt,
@@ -103,13 +103,16 @@ export class MidsceneWrapper {
   /**
    * 验证页面状态
    */
-  async assertPageState(assertion: string, message?: string): Promise<boolean> {
+  async assertPageState(
+    assertion: string,
+    _message?: string,
+  ): Promise<boolean> {
     try {
       logger.info(`🔍 验证页面状态: ${assertion}`);
 
       // 调用 MCP 工具进行状态验证
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_aiAssert']) {
+      if (tools?.midscene_aiAssert) {
         // 模拟 MCP 工具调用 - 这里简单返回 true，实际使用时需要真实验证
         return true;
       }
@@ -133,7 +136,7 @@ export class MidsceneWrapper {
 
       // 调用 MCP 工具进行等待
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_aiWaitFor']) {
+      if (tools?.midscene_aiWaitFor) {
         // 模拟等待逻辑
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return;
@@ -155,7 +158,7 @@ export class MidsceneWrapper {
 
       // 调用 MCP 工具获取上下文
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_get_tabs']) {
+      if (tools?.midscene_get_tabs) {
         // 模拟上下文数据
         return {
           url: 'https://example.com',
@@ -184,7 +187,7 @@ export class MidsceneWrapper {
 
       // 调用 MCP 工具进行点击
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_aiTap']) {
+      if (tools?.midscene_aiTap) {
         return {
           success: true,
           element: element,
@@ -216,7 +219,7 @@ export class MidsceneWrapper {
 
       // 调用 MCP 工具进行输入
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_aiInput']) {
+      if (tools?.midscene_aiInput) {
         return {
           success: true,
           element: element,
@@ -245,7 +248,7 @@ export class MidsceneWrapper {
 
       // 调用 MCP 工具进行滚动
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_aiScroll']) {
+      if (tools?.midscene_aiScroll) {
         return {
           success: true,
           action: 'scroll',
@@ -271,7 +274,7 @@ export class MidsceneWrapper {
 
       // 调用 MCP 工具进行截图
       const tools = await mcpClient.getTools();
-      if (tools && tools['midscene_screenshot']) {
+      if (tools?.midscene_screenshot) {
         return {
           success: true,
           action: 'screenshot',

@@ -13,7 +13,11 @@ interface ActionSelectorProps {
   onChange: (value: WebSocketAction) => void;
 }
 
-const actionOptions: Array<{ value: WebSocketAction; label: string; description: string }> = [
+const actionOptions: Array<{
+  value: WebSocketAction;
+  label: string;
+  description: string;
+}> = [
   {
     value: 'aiScript',
     label: 'AI Script',
@@ -57,7 +61,10 @@ export function ActionSelector({ value, onChange }: ActionSelectorProps) {
   return (
     <div className="space-y-2">
       <Label className="text-sm font-semibold">选择 Action 类型</Label>
-      <Select value={value} onValueChange={(val) => onChange(val as WebSocketAction)}>
+      <Select
+        value={value}
+        onValueChange={(val) => onChange(val as WebSocketAction)}
+      >
         <SelectTrigger>
           <SelectValue placeholder="选择一个 Action" />
         </SelectTrigger>
@@ -77,4 +84,3 @@ export function ActionSelector({ value, onChange }: ActionSelectorProps) {
     </div>
   );
 }
-

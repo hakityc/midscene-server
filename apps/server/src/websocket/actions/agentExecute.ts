@@ -1,4 +1,4 @@
-import { mastra } from "../../mastra"
+import { mastra } from '../../mastra';
 import type { MessageHandler, WebSocketMessage } from '../../types/websocket';
 import { wsLogger } from '../../utils/logger';
 import {
@@ -21,30 +21,30 @@ export function createAgentExecuteHandler(): MessageHandler {
     );
 
     try {
-      const browserAgent = mastra.getAgent("browserAgent")
-      const params = payload.params
+      const browserAgent = mastra.getAgent('browserAgent');
+      const params = payload.params;
       await browserAgent.streamVNext(params, {
         onStepFinish: ({ text, toolCalls, toolResults, finishReason }) => {
-          console.log("🔧 Tool Step:", {
+          console.log('🔧 Tool Step:', {
             textLength: text?.length || 0,
             toolCalls: toolCalls?.length || 0,
             toolResults: toolResults?.length || 0,
             finishReason,
-          })
+          });
         },
         onFinish: ({ steps, text, finishReason }) => {
-          console.log("🏁 Finish:", {
+          console.log('🏁 Finish:', {
             steps: steps?.length || 0,
             textLength: text?.length || 0,
             finishReason,
-          })
+          });
           const response = createSuccessResponse(
             message as WebSocketMessage,
             `Agent 处理完成`,
           );
           send(response);
         },
-      })
+      });
     } catch (error) {
       wsLogger.error(
         {

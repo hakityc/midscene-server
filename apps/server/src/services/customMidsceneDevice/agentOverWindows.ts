@@ -1,17 +1,19 @@
-import { Agent, type AgentOpt } from "@midscene/core/agent"
-import WindowsDeviceProxy, { type WindowsDeviceProxyOptions } from "./windowsDeviceProxy"
-import { WindowsClientConnectionManager } from "../windowsClientConnectionManager"
+import { Agent, type AgentOpt } from '@midscene/core/agent';
+import { WindowsClientConnectionManager } from '../windowsClientConnectionManager';
+import WindowsDeviceProxy, {
+  type WindowsDeviceProxyOptions,
+} from './windowsDeviceProxy';
 
 /**
  * AgentOverWindows 构造函数选项
  */
 export interface AgentOverWindowsOpt extends AgentOpt {
   /** Windows 设备代理选项 */
-  deviceOptions?: WindowsDeviceProxyOptions
+  deviceOptions?: WindowsDeviceProxyOptions;
   /** 是否在销毁时清理资源 */
-  closeAfterDisconnect?: boolean
+  closeAfterDisconnect?: boolean;
   /** 连接管理器实例（可选，不提供则使用单例） */
-  connectionManager?: WindowsClientConnectionManager
+  connectionManager?: WindowsClientConnectionManager;
 }
 
 /**
@@ -89,33 +91,34 @@ export interface AgentOverWindowsOpt extends AgentOpt {
  */
 export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
   // ==================== 私有属性 ====================
-  private destroyAfterDisconnectFlag?: boolean
-  private isLaunched = false
-  private connectionManager: WindowsClientConnectionManager
+  private destroyAfterDisconnectFlag?: boolean;
+  private isLaunched = false;
+  private connectionManager: WindowsClientConnectionManager;
 
   // ==================== 构造函数 ====================
 
   constructor(opts?: AgentOverWindowsOpt) {
     // 获取或创建连接管理器
-    const connectionManager = opts?.connectionManager || WindowsClientConnectionManager.getInstance()
-    
+    const connectionManager =
+      opts?.connectionManager || WindowsClientConnectionManager.getInstance();
+
     // 创建 WindowsDeviceProxy 实例
     const windowsDeviceProxy = new WindowsDeviceProxy(
       connectionManager,
-      opts?.deviceOptions
-    )
-    
+      opts?.deviceOptions,
+    );
+
     // 调用父类构造函数
     // Agent 会自动初始化：
     // - insight: AI 能力
     // - taskExecutor: 任务执行器
     // - dump: 执行记录
     // - modelConfigManager: 模型配置管理
-    super(windowsDeviceProxy, opts)
-    
+    super(windowsDeviceProxy, opts);
+
     // 保存引用
-    this.connectionManager = connectionManager
-    this.destroyAfterDisconnectFlag = opts?.closeAfterDisconnect
+    this.connectionManager = connectionManager;
+    this.destroyAfterDisconnectFlag = opts?.closeAfterDisconnect;
   }
 
   // ==================== 生命周期方法 ====================
@@ -128,19 +131,19 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    */
   async launch(): Promise<void> {
     if (this.isLaunched) {
-      console.log("⚠️ WindowsDevice already launched, skipping")
-      return
+      console.log('⚠️ WindowsDevice already launched, skipping');
+      return;
     }
 
     try {
       // 启动 Windows 设备
-      await this.interface.launch()
-      this.isLaunched = true
+      await this.interface.launch();
+      this.isLaunched = true;
 
-      console.log("✅ WindowsDevice launched successfully")
+      console.log('✅ WindowsDevice launched successfully');
     } catch (error) {
-      console.error("❌ Failed to launch WindowsDevice:", error)
-      throw error
+      console.error('❌ Failed to launch WindowsDevice:', error);
+      throw error;
     }
   }
 
@@ -151,7 +154,7 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * 参考 AgentOverChromeBridge.setDestroyOptionsAfterConnect()
    */
   async setDestroyOptionsAfterConnect(): Promise<void> {
-    await this.launch()
+    await this.launch();
   }
 
   /**
@@ -161,27 +164,27 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    */
   async destroy(closeAfterDisconnect?: boolean): Promise<void> {
     if (this.destroyed) {
-      console.log("⚠️ Agent already destroyed, skipping")
-      return
+      console.log('⚠️ Agent already destroyed, skipping');
+      return;
     }
 
-    const shouldClose = closeAfterDisconnect ?? this.destroyAfterDisconnectFlag
+    const shouldClose = closeAfterDisconnect ?? this.destroyAfterDisconnectFlag;
 
     try {
       if (shouldClose && this.isLaunched) {
         // 销毁 Windows 设备
-        await this.interface.destroy()
-        console.log("✅ WindowsDevice destroyed")
+        await this.interface.destroy();
+        console.log('✅ WindowsDevice destroyed');
       }
 
       // 标记为已销毁
-      this.destroyed = true
-      this.isLaunched = false
+      this.destroyed = true;
+      this.isLaunched = false;
 
-      console.log("✅ AgentOverWindows destroyed")
+      console.log('✅ AgentOverWindows destroyed');
     } catch (error) {
-      console.error("❌ Failed to destroy AgentOverWindows:", error)
-      throw error
+      console.error('❌ Failed to destroy AgentOverWindows:', error);
+      throw error;
     }
   }
 
@@ -210,16 +213,19 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * console.log(result?.result)
    * ```
    */
-  async aiAction(prompt: string, options?: any): Promise<
+  async aiAction(
+    prompt: string,
+    options?: any,
+  ): Promise<
     | {
-        result: Record<string, any>
+        result: Record<string, any>;
       }
     | {
-        yamlFlow?: import("@midscene/core").MidsceneYamlFlowItem[]
+        yamlFlow?: import('@midscene/core').MidsceneYamlFlowItem[];
       }
     | undefined
   > {
-    this.assertLaunched()
+    this.assertLaunched();
 
     // 使用基类的 ai 方法执行任务
     // ai 方法会：
@@ -228,7 +234,7 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
     // 3. 通过 interface (WindowsDevice) 执行动作
     // 4. 记录执行过程到 dump
     // 5. 生成报告
-    return await this.ai(prompt, options?.type)
+    return await this.ai(prompt, options?.type);
   }
 
   // ==================== Windows 特定方法 ====================
@@ -250,14 +256,14 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    */
   async getWindowList(): Promise<
     Array<{
-      handle: string
-      title: string
-      processId: number
-      isActive: boolean
+      handle: string;
+      title: string;
+      processId: number;
+      isActive: boolean;
     }>
   > {
-    this.assertLaunched()
-    return await this.interface.getWindowList()
+    this.assertLaunched();
+    return await this.interface.getWindowList();
   }
 
   /**
@@ -275,8 +281,8 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * ```
    */
   async activateWindow(windowHandle: string): Promise<void> {
-    this.assertLaunched()
-    await this.interface.activateWindow(windowHandle)
+    this.assertLaunched();
+    await this.interface.activateWindow(windowHandle);
   }
 
   /**
@@ -291,8 +297,8 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * ```
    */
   async getClipboard(): Promise<string> {
-    this.assertLaunched()
-    return await this.interface.getClipboard()
+    this.assertLaunched();
+    return await this.interface.getClipboard();
   }
 
   /**
@@ -308,8 +314,8 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * ```
    */
   async setClipboard(text: string): Promise<void> {
-    this.assertLaunched()
-    await this.interface.setClipboard(text)
+    this.assertLaunched();
+    await this.interface.setClipboard(text);
   }
 
   /**
@@ -323,9 +329,13 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * console.log(`屏幕尺寸: ${info.width}x${info.height}`)
    * ```
    */
-  async getDeviceInfo(): Promise<{ width: number; height: number; dpr?: number }> {
-    this.assertLaunched()
-    return await this.interface.size()
+  async getDeviceInfo(): Promise<{
+    width: number;
+    height: number;
+    dpr?: number;
+  }> {
+    this.assertLaunched();
+    return await this.interface.size();
   }
 
   /**
@@ -345,8 +355,8 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * ```
    */
   async screenshot(): Promise<string> {
-    this.assertLaunched()
-    return await this.interface.screenshotBase64()
+    this.assertLaunched();
+    return await this.interface.screenshotBase64();
   }
 
   // ==================== 便捷方法 ====================
@@ -357,7 +367,7 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * @param prompt - 任务描述
    */
   async execute(prompt: string): Promise<void> {
-    await this.aiAction(prompt)
+    await this.aiAction(prompt);
   }
 
   /**
@@ -366,7 +376,7 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * @param assertion - 断言描述
    */
   async expect(assertion: string): Promise<void> {
-    await this.aiAssert(assertion)
+    await this.aiAssert(assertion);
   }
 
   // ==================== 工具方法 ====================
@@ -377,14 +387,12 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
   private assertLaunched(): void {
     if (!this.isLaunched) {
       throw new Error(
-        "WindowsDevice not launched. Please call agent.launch() or agent.setDestroyOptionsAfterConnect() first."
-      )
+        'WindowsDevice not launched. Please call agent.launch() or agent.setDestroyOptionsAfterConnect() first.',
+      );
     }
 
     if (this.destroyed) {
-      throw new Error(
-        "Agent has been destroyed and cannot execute operations"
-      )
+      throw new Error('Agent has been destroyed and cannot execute operations');
     }
   }
 
@@ -394,16 +402,16 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
    * @returns 状态信息对象
    */
   getStatus(): {
-    isLaunched: boolean
-    isDestroyed: boolean
-    deviceName: string
-    interfaceType: string
+    isLaunched: boolean;
+    isDestroyed: boolean;
+    deviceName: string;
+    interfaceType: string;
   } {
     return {
       isLaunched: this.isLaunched,
       isDestroyed: this.destroyed,
-      deviceName: this.interface.options.deviceName || "Unknown",
+      deviceName: this.interface.options.deviceName || 'Unknown',
       interfaceType: this.interface.interfaceType,
-    }
+    };
   }
 }

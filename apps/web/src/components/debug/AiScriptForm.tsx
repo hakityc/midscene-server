@@ -1,9 +1,9 @@
+import { Plus } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import type { Task } from '@/types/debug';
-import { Plus } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 import { TaskItem } from './TaskItem';
 
 interface AiScriptFormProps {
@@ -45,7 +45,9 @@ export function AiScriptForm({
       <div>
         <div className="flex items-center justify-between mb-3">
           <Label className="text-sm font-extrabold">任务列表</Label>
-          <span className="text-xs text-gray-500 font-medium">{tasks.length} 个任务</span>
+          <span className="text-xs text-gray-500 font-medium">
+            {tasks.length} 个任务
+          </span>
         </div>
 
         <div className="space-y-3">
@@ -73,7 +75,10 @@ export function AiScriptForm({
       <div className="p-3 bg-blue-50 border-2 border-black rounded-none shadow-[3px_3px_0_0_#000]">
         <Label className="text-sm font-extrabold mb-3 block">执行选项</Label>
         <div className="flex items-center gap-2">
-          <Switch checked={enableLoadingShade} onCheckedChange={onLoadingShadeChange} />
+          <Switch
+            checked={enableLoadingShade}
+            onCheckedChange={onLoadingShadeChange}
+          />
           <Label className="text-xs font-bold">启用 Loading 遮罩</Label>
         </div>
         <p className="text-xs text-gray-600 mt-2 font-medium">
@@ -83,4 +88,3 @@ export function AiScriptForm({
     </div>
   );
 }
-

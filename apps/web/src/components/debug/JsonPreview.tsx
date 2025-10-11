@@ -1,11 +1,11 @@
+import { CheckCircle2, Clipboard, Copy, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { WsInboundMessage } from '@/types/debug';
-import { validateJson } from '@/utils/messageBuilder';
 import { parseJsonString } from '@/utils/jsonParser';
-import { CheckCircle2, Copy, XCircle, Clipboard } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { validateJson } from '@/utils/messageBuilder';
 
 interface JsonPreviewProps {
   message: WsInboundMessage;
@@ -14,7 +14,12 @@ interface JsonPreviewProps {
   onFormUpdate?: (formData: any) => void;
 }
 
-export function JsonPreview({ message, editable = false, onEdit, onFormUpdate }: JsonPreviewProps) {
+export function JsonPreview({
+  message,
+  editable = false,
+  onEdit,
+  onFormUpdate,
+}: JsonPreviewProps) {
   const [jsonString, setJsonString] = useState('');
   const [isValid, setIsValid] = useState(true);
   const [error, setError] = useState('');
@@ -29,9 +34,9 @@ export function JsonPreview({ message, editable = false, onEdit, onFormUpdate }:
 
   const handleChange = (value: string) => {
     setJsonString(value);
-    
+
     if (!editable) return;
-    
+
     const validation = validateJson(value);
     setIsValid(validation.isValid);
     setError(validation.error || '');
@@ -41,7 +46,7 @@ export function JsonPreview({ message, editable = false, onEdit, onFormUpdate }:
       if (onEdit) {
         onEdit(validation.parsed as WsInboundMessage);
       }
-      
+
       // 解析并更新表单
       if (onFormUpdate) {
         const parseResult = parseJsonString(value);
@@ -79,26 +84,20 @@ export function JsonPreview({ message, editable = false, onEdit, onFormUpdate }:
         <Label className="text-sm font-semibold">JSON 预览</Label>
         <div className="flex items-center gap-2">
           {editable && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handlePaste}
-            >
+            <Button size="sm" variant="outline" onClick={handlePaste}>
               <Clipboard className="h-3 w-3 mr-1" />
               粘贴 JSON
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleCopy}
-          >
+          <Button size="sm" variant="outline" onClick={handleCopy}>
             <Copy className="h-3 w-3 mr-1" />
             {copied ? '已复制!' : '复制'}
           </Button>
           <div
             className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md border ${
-              isValid ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-400' : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-400'
+              isValid
+                ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-400'
+                : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-400'
             }`}
           >
             {isValid ? (

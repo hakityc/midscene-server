@@ -1,7 +1,7 @@
-import { LibSQLStore } from '@mastra/libsql';
-import { Memory } from '@mastra/memory';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { LibSQLStore } from '@mastra/libsql';
+import { Memory } from '@mastra/memory';
 
 const envUrl = process.env.MEMORY_DB_URL;
 

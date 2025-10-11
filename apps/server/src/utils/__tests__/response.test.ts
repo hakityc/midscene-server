@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import { successResponse, errorResponse } from '../response';
 import type { Context } from 'hono';
+import { describe, expect, it, vi } from 'vitest';
+import { errorResponse, successResponse } from '../response';
 
 // 创建 mock Context 对象
 const createMockContext = () => {
@@ -29,7 +29,7 @@ describe('response utils', () => {
           data: testData,
           message,
         },
-        200
+        200,
       );
     });
 
@@ -45,7 +45,7 @@ describe('response utils', () => {
           data: testData,
           message: undefined,
         },
-        200
+        200,
       );
     });
 
@@ -62,7 +62,7 @@ describe('response utils', () => {
           data: testData,
           message: '创建成功',
         },
-        customStatus
+        customStatus,
       );
     });
 
@@ -77,7 +77,7 @@ describe('response utils', () => {
           data: null,
           message: undefined,
         },
-        200
+        200,
       );
     });
 
@@ -93,7 +93,7 @@ describe('response utils', () => {
           data: testData,
           message: undefined,
         },
-        200
+        200,
       );
     });
   });
@@ -110,7 +110,7 @@ describe('response utils', () => {
           success: false,
           error: errorMessage,
         },
-        400
+        400,
       );
     });
 
@@ -126,7 +126,7 @@ describe('response utils', () => {
           success: false,
           error: errorMessage,
         },
-        customStatus
+        customStatus,
       );
     });
 
@@ -141,7 +141,7 @@ describe('response utils', () => {
           success: false,
           error: errorMessage,
         },
-        404
+        404,
       );
     });
 
@@ -156,7 +156,7 @@ describe('response utils', () => {
           success: false,
           error: errorMessage,
         },
-        500
+        500,
       );
     });
 
@@ -170,9 +170,8 @@ describe('response utils', () => {
           success: false,
           error: '',
         },
-        400
+        400,
       );
     });
   });
 });
-

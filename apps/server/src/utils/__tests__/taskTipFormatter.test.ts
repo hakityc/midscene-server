@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { formatTaskTip, getTaskStageDescription } from '../taskTipFormatter';
 
 describe('taskTipFormatter', () => {
@@ -361,7 +361,10 @@ describe('taskTipFormatter', () => {
   describe('集成测试', () => {
     it('应该正确处理完整的任务流程', () => {
       const stages = [
-        { tip: 'Planning / LoadYaml - task.yaml', expectedCategory: 'planning' },
+        {
+          tip: 'Planning / LoadYaml - task.yaml',
+          expectedCategory: 'planning',
+        },
         { tip: 'Planning / Plan - 执行登录', expectedCategory: 'planning' },
         { tip: 'Insight / Locate - 用户名输入框', expectedCategory: 'insight' },
         { tip: 'Action / Input - admin', expectedCategory: 'action' },
@@ -390,4 +393,3 @@ describe('taskTipFormatter', () => {
     });
   });
 });
-

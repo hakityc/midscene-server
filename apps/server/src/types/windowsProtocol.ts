@@ -2,8 +2,6 @@
  * Windows 客户端 WebSocket 通信协议定义
  */
 
-import type { Size } from "@midscene/core"
-
 // ==================== 基础消息类型 ====================
 
 /**
@@ -11,11 +9,11 @@ import type { Size } from "@midscene/core"
  */
 export interface WindowsWSMessage {
   /** 消息ID（UUID） */
-  id: string
+  id: string;
   /** 消息类型 */
-  type: "request" | "response" | "event" | "ping" | "pong"
+  type: 'request' | 'response' | 'event' | 'ping' | 'pong';
   /** 时间戳 */
-  timestamp: number
+  timestamp: number;
 }
 
 // ==================== 请求消息 ====================
@@ -25,38 +23,38 @@ export interface WindowsWSMessage {
  */
 export type WindowsAction =
   // 基础操作
-  | "screenshot"
-  | "getScreenSize"
-  | "mouseClick"
-  | "mouseDoubleClick"
-  | "mouseRightClick"
-  | "mouseHover"
-  | "mouseDrag"
-  | "typeText"
-  | "keyPress"
-  | "scroll"
+  | 'screenshot'
+  | 'getScreenSize'
+  | 'mouseClick'
+  | 'mouseDoubleClick'
+  | 'mouseRightClick'
+  | 'mouseHover'
+  | 'mouseDrag'
+  | 'typeText'
+  | 'keyPress'
+  | 'scroll'
   // 窗口管理
-  | "getWindowList"
-  | "activateWindow"
-  | "getActiveWindow"
+  | 'getWindowList'
+  | 'activateWindow'
+  | 'getActiveWindow'
   // 剪贴板
-  | "getClipboard"
-  | "setClipboard"
+  | 'getClipboard'
+  | 'setClipboard'
   // 连接管理
-  | "register"
-  | "getStatus"
+  | 'register'
+  | 'getStatus';
 
 /**
  * 请求消息（Server -> Client）
  */
 export interface WindowsWSRequest extends WindowsWSMessage {
-  type: "request"
+  type: 'request';
   /** 操作类型 */
-  action: WindowsAction
+  action: WindowsAction;
   /** 操作参数 */
-  params: any
+  params: any;
   /** 超时时间（ms），默认10秒 */
-  timeout?: number
+  timeout?: number;
 }
 
 // ==================== 响应消息 ====================
@@ -65,19 +63,19 @@ export interface WindowsWSRequest extends WindowsWSMessage {
  * 响应消息（Client -> Server）
  */
 export interface WindowsWSResponse extends WindowsWSMessage {
-  type: "response"
+  type: 'response';
   /** 对应的请求ID */
-  requestId: string
+  requestId: string;
   /** 是否成功 */
-  success: boolean
+  success: boolean;
   /** 返回数据 */
-  data?: any
+  data?: any;
   /** 错误信息 */
   error?: {
-    code: string
-    message: string
-    stack?: string
-  }
+    code: string;
+    message: string;
+    stack?: string;
+  };
 }
 
 // ==================== 事件消息 ====================
@@ -86,11 +84,11 @@ export interface WindowsWSResponse extends WindowsWSMessage {
  * 事件消息（Client -> Server，主动上报）
  */
 export interface WindowsWSEvent extends WindowsWSMessage {
-  type: "event"
+  type: 'event';
   /** 事件类型 */
-  event: string
+  event: string;
   /** 事件数据 */
-  data: any
+  data: any;
 }
 
 // ==================== 心跳消息 ====================
@@ -99,14 +97,14 @@ export interface WindowsWSEvent extends WindowsWSMessage {
  * Ping 消息
  */
 export interface WindowsWSPing extends WindowsWSMessage {
-  type: "ping"
+  type: 'ping';
 }
 
 /**
  * Pong 消息
  */
 export interface WindowsWSPong extends WindowsWSMessage {
-  type: "pong"
+  type: 'pong';
 }
 
 // ==================== 注册消息 ====================
@@ -116,15 +114,15 @@ export interface WindowsWSPong extends WindowsWSMessage {
  */
 export interface ClientRegistrationData {
   /** 机器名 */
-  machineName: string
+  machineName: string;
   /** 操作系统信息 */
-  os: string
+  os: string;
   /** IP 地址 */
-  ip?: string
+  ip?: string;
   /** 客户端支持的能力 */
-  capabilities: WindowsAction[]
+  capabilities: WindowsAction[];
   /** 客户端版本 */
-  version?: string
+  version?: string;
 }
 
 /**
@@ -132,9 +130,9 @@ export interface ClientRegistrationData {
  */
 export interface ClientRegistrationResponse {
   /** 客户端ID */
-  clientId: string
+  clientId: string;
   /** 服务器时间 */
-  serverTime: number
+  serverTime: number;
 }
 
 // ==================== 操作参数类型 ====================
@@ -143,57 +141,57 @@ export interface ClientRegistrationResponse {
  * 鼠标点击参数
  */
 export interface MouseClickParams {
-  x: number
-  y: number
+  x: number;
+  y: number;
 }
 
 /**
  * 鼠标拖拽参数
  */
 export interface MouseDragParams {
-  fromX: number
-  fromY: number
-  toX: number
-  toY: number
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
 }
 
 /**
  * 输入文本参数
  */
 export interface TypeTextParams {
-  text: string
+  text: string;
 }
 
 /**
  * 按键参数
  */
 export interface KeyPressParams {
-  key: string
-  modifiers?: string[]  // 'control', 'shift', 'alt', 'meta'
+  key: string;
+  modifiers?: string[]; // 'control', 'shift', 'alt', 'meta'
 }
 
 /**
  * 滚动参数
  */
 export interface ScrollParams {
-  x?: number
-  y?: number
-  direction: "up" | "down" | "left" | "right"
-  distance: number
+  x?: number;
+  y?: number;
+  direction: 'up' | 'down' | 'left' | 'right';
+  distance: number;
 }
 
 /**
  * 激活窗口参数
  */
 export interface ActivateWindowParams {
-  windowHandle: string
+  windowHandle: string;
 }
 
 /**
  * 设置剪贴板参数
  */
 export interface SetClipboardParams {
-  text: string
+  text: string;
 }
 
 // ==================== 返回数据类型 ====================
@@ -203,13 +201,13 @@ export interface SetClipboardParams {
  */
 export interface WindowInfo {
   /** 窗口句柄 */
-  handle: string
+  handle: string;
   /** 窗口标题 */
-  title: string
+  title: string;
   /** 进程ID */
-  processId: number
+  processId: number;
   /** 是否为活动窗口 */
-  isActive: boolean
+  isActive: boolean;
 }
 
 /**
@@ -217,19 +215,19 @@ export interface WindowInfo {
  */
 export interface ClientStatus {
   /** 客户端ID */
-  clientId: string
+  clientId: string;
   /** 机器名 */
-  machineName: string
+  machineName: string;
   /** 连接状态 */
-  status: "connected" | "disconnected" | "busy"
+  status: 'connected' | 'disconnected' | 'busy';
   /** 最后心跳时间 */
-  lastHeartbeat: number
+  lastHeartbeat: number;
   /** 活动请求数 */
-  activeRequests: number
+  activeRequests: number;
   /** 总处理请求数 */
-  totalRequests: number
+  totalRequests: number;
   /** 连接时长（ms） */
-  uptime: number
+  uptime: number;
 }
 
 // ==================== 辅助类型 ====================
@@ -242,5 +240,4 @@ export type AnyWindowsWSMessage =
   | WindowsWSResponse
   | WindowsWSEvent
   | WindowsWSPing
-  | WindowsWSPong
-
+  | WindowsWSPong;

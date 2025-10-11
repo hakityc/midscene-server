@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MonitorMessage, WsInboundMessage, WsOutboundMessage } from '@/types/debug';
+import type {
+  MonitorMessage,
+  WsInboundMessage,
+  WsOutboundMessage,
+} from '@/types/debug';
 
-type WebSocketStatus = 'idle' | 'connecting' | 'open' | 'closing' | 'closed' | 'error';
+type WebSocketStatus =
+  | 'idle'
+  | 'connecting'
+  | 'open'
+  | 'closing'
+  | 'closed'
+  | 'error';
 
 interface UseWebSocketReturn {
   status: WebSocketStatus;
@@ -74,13 +84,20 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
       ws.onclose = (event) => {
         setStatus('closed');
         addMessage('info', 'info', `WebSocket 连接关闭 (code: ${event.code})`);
-        
+
         // 如果不是主动关闭，则尝试重连
         if (event.code !== 1000 && event.code !== 1001) {
           if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-            const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
-            addMessage('info', 'info', `将在 ${delay / 1000} 秒后重连... (尝试 ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
-            
+            const delay = Math.min(
+              1000 * 2 ** reconnectAttemptsRef.current,
+              10000,
+            );
+            addMessage(
+              'info',
+              'info',
+              `将在 ${delay / 1000} 秒后重连... (尝试 ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`,
+            );
+
             reconnectTimeoutRef.current = setTimeout(() => {
               reconnectAttemptsRef.current++;
               createWebSocketConnection(); // 直接递归调用
@@ -173,7 +190,12 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
       try {
         const jsonString = JSON.stringify(message);
         ws.send(jsonString);
-        addMessage('sent', 'info', `发送 ${message.payload.action} 请求`, message);
+        addMessage(
+          'sent',
+          'info',
+          `发送 ${message.payload.action} 请求`,
+          message,
+        );
       } catch (e) {
         const errorMsg = e instanceof Error ? e.message : '发送消息失败';
         setError(errorMsg);
@@ -210,4 +232,3 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
     clearMessages,
   };
 }
-

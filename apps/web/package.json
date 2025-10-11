@@ -6,10 +6,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "echo \"no lint configured\""
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "fix": "biome check --write ."
   },
   "type": "module",
   "devDependencies": {
+    "@biomejs/biome": "2.2.2",
     "@types/react": "19.1.15",
     "@types/react-dom": "19.1.9",
     "@types/uuid": "^10.0.0",

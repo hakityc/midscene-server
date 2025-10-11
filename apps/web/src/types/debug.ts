@@ -190,4 +190,3 @@ export interface Template {
   action: WebSocketAction;
   message: WsInboundMessage;
 }
-

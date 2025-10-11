@@ -116,10 +116,7 @@ export function GenericForm({ actionType }: GenericFormProps) {
       <p className="text-sm font-semibold text-muted-foreground">
         {actionType} 暂无可配置参数
       </p>
-      <p className="text-xs text-muted-foreground mt-2">
-        请直接发送消息
-      </p>
+      <p className="text-xs text-muted-foreground mt-2">请直接发送消息</p>
     </div>
   );
 }
-

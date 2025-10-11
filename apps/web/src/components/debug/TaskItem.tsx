@@ -1,10 +1,10 @@
+import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import type { FlowAction, Task } from '@/types/debug';
-import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
 import { FlowActionItem } from './FlowActionItem';
 
 interface TaskItemProps {
@@ -52,7 +52,11 @@ export function TaskItem({ task, index, onChange, onRemove }: TaskItemProps) {
           onClick={() => setCollapsed(!collapsed)}
           className="h-6 w-6 p-0 hover:bg-amber-200"
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
         </Button>
         <div className="flex-1 space-y-3">
           <div className="flex items-center gap-2">
@@ -83,7 +87,9 @@ export function TaskItem({ task, index, onChange, onRemove }: TaskItemProps) {
               <div className="flex items-center gap-2">
                 <Switch
                   checked={task.continueOnError}
-                  onCheckedChange={(checked) => updateTask('continueOnError', checked)}
+                  onCheckedChange={(checked) =>
+                    updateTask('continueOnError', checked)
+                  }
                 />
                 <Label className="text-xs font-bold">失败时继续执行</Label>
               </div>
@@ -103,7 +109,9 @@ export function TaskItem({ task, index, onChange, onRemove }: TaskItemProps) {
                       key={actionIndex}
                       action={action}
                       index={actionIndex}
-                      onChange={(updatedAction) => updateAction(actionIndex, updatedAction)}
+                      onChange={(updatedAction) =>
+                        updateAction(actionIndex, updatedAction)
+                      }
                       onRemove={() => removeAction(actionIndex)}
                     />
                   ))}
@@ -124,4 +132,3 @@ export function TaskItem({ task, index, onChange, onRemove }: TaskItemProps) {
     </div>
   );
 }
-

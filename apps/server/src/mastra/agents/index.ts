@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import "dotenv/config"
+import 'dotenv/config';
 
 // 根据环境变量动态创建模型实例
 export const createModel = () => {

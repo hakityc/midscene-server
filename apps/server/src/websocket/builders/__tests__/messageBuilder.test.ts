@@ -1,18 +1,18 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { WsInboundMessage } from '../../../types/websocket';
+import { WebSocketAction } from '../../../utils/enums';
 import {
-  MessageBuilder,
-  createSuccessResponse,
-  createErrorResponse,
-  createSystemMessage,
   createBroadcastMessage,
-  createWelcomeMessage,
-  createUnknownActionResponse,
+  createCommandMessage,
+  createErrorResponse,
   createParseErrorResponse,
   createProcessingErrorResponse,
-  createCommandMessage,
+  createSuccessResponse,
+  createSystemMessage,
+  createUnknownActionResponse,
+  createWelcomeMessage,
+  MessageBuilder,
 } from '../messageBuilder';
-import { WebSocketAction } from '../../../utils/enums';
-import type { WsInboundMessage } from '../../../types/websocket';
 
 describe('MessageBuilder', () => {
   let mockInboundMessage: WsInboundMessage;
@@ -53,7 +53,11 @@ describe('MessageBuilder', () => {
     it('应该支持自定义 action', () => {
       const result = 'test result';
       const customAction = WebSocketAction.AI;
-      const response = createSuccessResponse(mockInboundMessage, result, customAction);
+      const response = createSuccessResponse(
+        mockInboundMessage,
+        result,
+        customAction,
+      );
 
       expect(response.payload.action).toBe(customAction);
       expect(response.payload.status).toBe('success');
@@ -196,13 +200,18 @@ describe('MessageBuilder', () => {
   describe('createUnknownActionResponse', () => {
     it('应该创建未知动作响应', () => {
       const unknownAction = 'unknownAction';
-      const response = createUnknownActionResponse(mockInboundMessage, unknownAction);
+      const response = createUnknownActionResponse(
+        mockInboundMessage,
+        unknownAction,
+      );
 
       expect(response.meta.messageId).toBe('test-message-id');
       expect(response.meta.conversationId).toBe('test-conversation-id');
       expect(response.payload.action).toBe(unknownAction);
       expect(response.payload.status).toBe('failed');
-      expect(response.payload.error).toBe(`未知的 action 类型: ${unknownAction}`);
+      expect(response.payload.error).toBe(
+        `未知的 action 类型: ${unknownAction}`,
+      );
     });
   });
 
@@ -273,11 +282,19 @@ describe('MessageBuilder', () => {
       expect(MessageBuilder.createSuccessResponse).toBe(createSuccessResponse);
       expect(MessageBuilder.createErrorResponse).toBe(createErrorResponse);
       expect(MessageBuilder.createSystemMessage).toBe(createSystemMessage);
-      expect(MessageBuilder.createBroadcastMessage).toBe(createBroadcastMessage);
+      expect(MessageBuilder.createBroadcastMessage).toBe(
+        createBroadcastMessage,
+      );
       expect(MessageBuilder.createWelcomeMessage).toBe(createWelcomeMessage);
-      expect(MessageBuilder.createUnknownActionResponse).toBe(createUnknownActionResponse);
-      expect(MessageBuilder.createParseErrorResponse).toBe(createParseErrorResponse);
-      expect(MessageBuilder.createProcessingErrorResponse).toBe(createProcessingErrorResponse);
+      expect(MessageBuilder.createUnknownActionResponse).toBe(
+        createUnknownActionResponse,
+      );
+      expect(MessageBuilder.createParseErrorResponse).toBe(
+        createParseErrorResponse,
+      );
+      expect(MessageBuilder.createProcessingErrorResponse).toBe(
+        createProcessingErrorResponse,
+      );
       expect(MessageBuilder.createCommandMessage).toBe(createCommandMessage);
     });
   });
@@ -317,4 +334,3 @@ describe('MessageBuilder', () => {
     });
   });
 });
-

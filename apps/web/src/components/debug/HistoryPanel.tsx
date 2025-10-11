@@ -1,8 +1,8 @@
+import { format } from 'date-fns';
+import { Clock, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { HistoryItem } from '@/types/debug';
-import { format } from 'date-fns';
-import { Clock, Trash2, Upload } from 'lucide-react';
 
 interface HistoryPanelProps {
   history: HistoryItem[];
@@ -11,7 +11,12 @@ interface HistoryPanelProps {
   onClear: () => void;
 }
 
-export function HistoryPanel({ history, onLoad, onRemove, onClear }: HistoryPanelProps) {
+export function HistoryPanel({
+  history,
+  onLoad,
+  onRemove,
+  onClear,
+}: HistoryPanelProps) {
   return (
     <Card>
       <CardHeader className="pb-3">

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AppError, setupError } from '../error';
 import type { Hono } from 'hono';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AppError, setupError } from '../error';
 
 // Mock serverLogger
 vi.mock('../logger', () => ({
@@ -100,7 +100,7 @@ describe('setupError', () => {
         success: false,
         error: '自定义错误',
       },
-      400
+      400,
     );
   });
 
@@ -115,7 +115,7 @@ describe('setupError', () => {
         success: false,
         error: 'Internal Server Error',
       },
-      500
+      500,
     );
   });
 
@@ -131,7 +131,7 @@ describe('setupError', () => {
         error: 'Type Error',
         message: '类型错误',
       },
-      400
+      400,
     );
   });
 
@@ -178,7 +178,7 @@ describe('setupError', () => {
         error: 'Validation Error',
         message: '验证失败',
       },
-      400
+      400,
     );
   });
 
@@ -200,4 +200,3 @@ describe('setupError', () => {
     });
   });
 });
-

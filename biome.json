@@ -32,7 +32,8 @@
       "recommended": true,
       "a11y": {
         "useKeyWithClickEvents": "off",
-        "useValidAnchor": "off"
+        "useValidAnchor": "off",
+        "useSemanticElements": "off"
       },
       "style": {
         "noParameterAssign": "off",
@@ -43,12 +44,14 @@
         "useExhaustiveDependencies": "off"
       },
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "noStaticOnlyClass": "off"
       },
       "suspicious": {
         "noExplicitAny": "off",
         "noArrayIndexKey": "off",
-        "noImplicitAnyLet": "off"
+        "noImplicitAnyLet": "off",
+        "noUnknownAtRules": "off"
       }
     }
   },

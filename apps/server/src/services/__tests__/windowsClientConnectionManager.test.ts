@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type {
+  ClientRegistrationData,
+  WindowsWSResponse,
+} from '../../types/windowsProtocol';
 import { WindowsClientConnectionManager } from '../windowsClientConnectionManager';
-import type { ClientRegistrationData, WindowsWSResponse } from '../../types/windowsProtocol';
 
 // Mock logger
 vi.mock('../../utils/logger', () => ({
@@ -19,7 +22,7 @@ describe('WindowsClientConnectionManager', () => {
   beforeEach(() => {
     // 重置单例实例
     (WindowsClientConnectionManager as any).instance = null;
-    
+
     manager = WindowsClientConnectionManager.getInstance();
 
     mockWs = {
@@ -35,9 +38,9 @@ describe('WindowsClientConnectionManager', () => {
     const stats = manager.getStats();
     if (stats.pendingRequests > 0) {
       // 给待处理的请求一些时间完成，然后销毁
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    
+
     manager.destroy();
     vi.useRealTimers();
     vi.clearAllMocks();
@@ -64,7 +67,7 @@ describe('WindowsClientConnectionManager', () => {
 
       expect(clientId).toBeDefined();
       expect(typeof clientId).toBe('string');
-      
+
       const client = manager.getClient(clientId);
       expect(client).toBeDefined();
       expect(client?.metadata.machineName).toBe('TEST-PC');
@@ -202,7 +205,7 @@ describe('WindowsClientConnectionManager', () => {
 
       const available = manager.getAvailableClients();
       expect(available).toHaveLength(2);
-      expect(available.every(c => c.status === 'connected')).toBe(true);
+      expect(available.every((c) => c.status === 'connected')).toBe(true);
     });
 
     it('应该过滤掉已断开的客户端', () => {
@@ -264,7 +267,7 @@ describe('WindowsClientConnectionManager', () => {
         clientId,
         'screenshot',
         {},
-        5000
+        5000,
       );
 
       // 获取发送的请求
@@ -289,7 +292,7 @@ describe('WindowsClientConnectionManager', () => {
 
     it('应该在客户端不存在时抛出错误', async () => {
       await expect(
-        manager.sendRequest('non-existent', 'screenshot', {})
+        manager.sendRequest('non-existent', 'screenshot', {}),
       ).rejects.toThrow('客户端不存在');
     });
 
@@ -306,7 +309,7 @@ describe('WindowsClientConnectionManager', () => {
         clientId,
         'screenshot',
         {},
-        1000
+        1000,
       );
 
       // 快进超时时间
@@ -347,7 +350,7 @@ describe('WindowsClientConnectionManager', () => {
       manager.handleResponse(response);
 
       await requestPromise;
-      
+
       const finalClient = manager.getClient(clientId);
       expect(finalClient?.activeRequests).toBe(0);
     });
@@ -365,7 +368,7 @@ describe('WindowsClientConnectionManager', () => {
       });
 
       await expect(
-        manager.sendRequest(clientId, 'screenshot', {})
+        manager.sendRequest(clientId, 'screenshot', {}),
       ).rejects.toThrow('WebSocket 发送失败');
 
       // 验证请求计数被正确清理
@@ -474,7 +477,7 @@ describe('WindowsClientConnectionManager', () => {
 
     it('应该能够停止心跳检测', () => {
       manager.stopHeartbeat();
-      
+
       const metadata: ClientRegistrationData = {
         machineName: 'PC-1',
         os: 'Windows 10',
@@ -522,19 +525,23 @@ describe('WindowsClientConnectionManager', () => {
       };
 
       const clientId = manager.registerClient(mockWs, metadata);
-      
+
       // 发送请求但不响应
-      const req1 = manager.sendRequest(clientId, 'screenshot', {}).catch(() => {});
-      const req2 = manager.sendRequest(clientId, 'mouseClick', { x: 100, y: 100 }).catch(() => {});
+      const req1 = manager
+        .sendRequest(clientId, 'screenshot', {})
+        .catch(() => {});
+      const req2 = manager
+        .sendRequest(clientId, 'mouseClick', { x: 100, y: 100 })
+        .catch(() => {});
 
       const stats = manager.getStats();
       expect(stats.activeRequests).toBe(2);
       expect(stats.pendingRequests).toBe(2);
-      
+
       // 清理：响应这些请求或等待它们超时
       const sentRequest1 = JSON.parse(mockWs.send.mock.calls[0][0]);
       const sentRequest2 = JSON.parse(mockWs.send.mock.calls[1][0]);
-      
+
       manager.handleResponse({
         id: 'resp-1',
         type: 'response',
@@ -543,7 +550,7 @@ describe('WindowsClientConnectionManager', () => {
         data: {},
         timestamp: Date.now(),
       });
-      
+
       manager.handleResponse({
         id: 'resp-2',
         type: 'response',
@@ -552,7 +559,7 @@ describe('WindowsClientConnectionManager', () => {
         data: {},
         timestamp: Date.now(),
       });
-      
+
       await req1;
       await req2;
     });
@@ -592,4 +599,3 @@ describe('WindowsClientConnectionManager', () => {
     });
   });
 });
-

@@ -1,8 +1,6 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { History, Send } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { ActionSelector } from '@/components/debug/ActionSelector';
 import { AiScriptForm } from '@/components/debug/AiScriptForm';
 import { HistoryPanel } from '@/components/debug/HistoryPanel';
@@ -16,6 +14,11 @@ import {
   SiteScriptForm,
 } from '@/components/debug/SimpleActionForms';
 import { TemplatePanel } from '@/components/debug/TemplatePanel';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useMessageHistory } from '@/hooks/useMessageHistory';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import type {
@@ -33,14 +36,13 @@ import {
   generateMeta,
 } from '@/utils/messageBuilder';
 import { getAllTemplates } from '@/utils/templates';
-import { History, Send } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 
 export default function MidsceneDebugPage() {
   const endpoint = 'ws://localhost:3000/ws';
-  const { status, error, messages, connect, send, clearMessages } = useWebSocket(endpoint);
-  const { history, addHistory, removeHistory, clearHistory } = useMessageHistory();
+  const { status, error, messages, connect, send, clearMessages } =
+    useWebSocket(endpoint);
+  const { history, addHistory, removeHistory, clearHistory } =
+    useMessageHistory();
 
   // 状态管理
   const [action, setAction] = useState<WebSocketAction>('aiScript');
@@ -65,7 +67,9 @@ export default function MidsceneDebugPage() {
 
   // 其他 Action 状态
   const [aiPrompt, setAiPrompt] = useState('点击搜索按钮');
-  const [siteScript, setSiteScript] = useState('console.log("Hello from Midscene");');
+  const [siteScript, setSiteScript] = useState(
+    'console.log("Hello from Midscene");',
+  );
   const [siteScriptCmd, setSiteScriptCmd] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoSavePath, setVideoSavePath] = useState('');
@@ -83,7 +87,11 @@ export default function MidsceneDebugPage() {
 
   // 刷新 Message ID
   const refreshMessageId = useCallback(() => {
-    setMeta((prev) => ({ ...prev, messageId: uuidv4(), timestamp: Date.now() }));
+    setMeta((prev) => ({
+      ...prev,
+      messageId: uuidv4(),
+      timestamp: Date.now(),
+    }));
   }, []);
 
   // 从 JSON 更新表单
@@ -164,35 +172,34 @@ export default function MidsceneDebugPage() {
   }, [buildMessage, send, addHistory, refreshMessageId]);
 
   // 加载历史记录
-  const handleLoadHistory = useCallback(
-    (item: HistoryItem) => {
-      const msg = item.message;
-      setAction(msg.payload.action as WebSocketAction);
-      setMeta(msg.meta);
+  const handleLoadHistory = useCallback((item: HistoryItem) => {
+    const msg = item.message;
+    setAction(msg.payload.action as WebSocketAction);
+    setMeta(msg.meta);
 
-      // 根据 action 类型恢复状态
-      if (msg.payload.action === 'aiScript') {
-        const params = msg.payload.params as { tasks: Task[] };
-        if (params.tasks) {
-          setTasks(
-            params.tasks.map((t) => ({
-              ...t,
-              id: uuidv4(),
-            })),
-          );
-        }
-        setEnableLoadingShade(msg.payload.option?.includes('LOADING_SHADE') || false);
-      } else if (msg.payload.action === 'ai') {
-        setAiPrompt(msg.payload.params as string);
-      } else if (msg.payload.action === 'siteScript') {
-        setSiteScript(msg.payload.params as string);
-        setSiteScriptCmd(msg.payload.originalCmd || '');
+    // 根据 action 类型恢复状态
+    if (msg.payload.action === 'aiScript') {
+      const params = msg.payload.params as { tasks: Task[] };
+      if (params.tasks) {
+        setTasks(
+          params.tasks.map((t) => ({
+            ...t,
+            id: uuidv4(),
+          })),
+        );
       }
+      setEnableLoadingShade(
+        msg.payload.option?.includes('LOADING_SHADE') || false,
+      );
+    } else if (msg.payload.action === 'ai') {
+      setAiPrompt(msg.payload.params as string);
+    } else if (msg.payload.action === 'siteScript') {
+      setSiteScript(msg.payload.params as string);
+      setSiteScriptCmd(msg.payload.originalCmd || '');
+    }
 
-      setShowHistory(false);
-    },
-    [],
-  );
+    setShowHistory(false);
+  }, []);
 
   // 加载模板
   const handleLoadTemplate = useCallback((template: Template) => {
@@ -210,7 +217,9 @@ export default function MidsceneDebugPage() {
           })),
         );
       }
-      setEnableLoadingShade(msg.payload.option?.includes('LOADING_SHADE') || false);
+      setEnableLoadingShade(
+        msg.payload.option?.includes('LOADING_SHADE') || false,
+      );
     }
   }, []);
 
@@ -263,7 +272,7 @@ export default function MidsceneDebugPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-3xl font-bold">
                 Midscene Debug Tool
-            </CardTitle>
+              </CardTitle>
               <div className="flex items-center gap-3">
                 <ThemeToggle />
                 <Button
@@ -329,7 +338,11 @@ export default function MidsceneDebugPage() {
                   <Separator />
                   {renderForm()}
                   <Separator />
-                  <MetaForm meta={meta} onChange={setMeta} onRefreshMessageId={refreshMessageId} />
+                  <MetaForm
+                    meta={meta}
+                    onChange={setMeta}
+                    onRefreshMessageId={refreshMessageId}
+                  />
                 </TabsContent>
 
                 <TabsContent value="json" className="space-y-4">
@@ -337,7 +350,7 @@ export default function MidsceneDebugPage() {
                     <JsonPreview
                       message={currentMessage}
                       editable={true}
-                      onEdit={(message) => {
+                      onEdit={(_message) => {
                         // 可以在这里处理消息更新，如果需要的话
                       }}
                       onFormUpdate={handleJsonToFormUpdate}
@@ -369,7 +382,10 @@ export default function MidsceneDebugPage() {
             {showHistory ? (
               <>
                 <div className="h-[calc(50vh-1rem)]">
-                  <TemplatePanel templates={templates} onLoad={handleLoadTemplate} />
+                  <TemplatePanel
+                    templates={templates}
+                    onLoad={handleLoadTemplate}
+                  />
                 </div>
                 <div className="h-[calc(50vh-1rem)]">
                   <HistoryPanel
@@ -383,11 +399,11 @@ export default function MidsceneDebugPage() {
             ) : (
               <div className="h-[calc(100vh-10rem)]">
                 <MessageMonitor
-              messages={messages}
-              onClear={clearMessages}
-              status={status}
-              onConnect={connect}
-            />
+                  messages={messages}
+                  onClear={clearMessages}
+                  status={status}
+                  onConnect={connect}
+                />
               </div>
             )}
           </div>

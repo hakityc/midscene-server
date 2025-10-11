@@ -1,9 +1,8 @@
 import { createNodeWebSocket } from '@hono/node-ws';
 import type { Hono } from 'hono';
-import { WebOperateService } from '../services/webOperateService';
 import type { WebSocketClient, WebSocketMessage } from '../types/websocket';
 import { WebSocketAction } from '../utils/enums';
-import { wsLogger, setLogContextFromMessage } from '../utils/logger';
+import { setLogContextFromMessage, wsLogger } from '../utils/logger';
 import { MessageBuilder } from './builders/messageBuilder';
 import {
   handleConnectionError,
@@ -178,7 +177,7 @@ export const setupWebSocket = (app: Hono) => {
             wsLogger.debug(
               {
                 connectionId,
-                rawData
+                rawData,
               },
               '收到原始消息',
             );

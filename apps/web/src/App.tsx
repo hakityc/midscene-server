@@ -1,7 +1,7 @@
-import MidsceneDebugPage from "@/pages/midsceneDebugPage";
-import { ThemeProvider } from "@/hooks/useTheme";
+import { ThemeProvider } from '@/hooks/useTheme';
+import MidsceneDebugPage from '@/pages/midsceneDebugPage';
 
-export function App(){
+export function App() {
   return (
     <ThemeProvider>
       <MidsceneDebugPage />

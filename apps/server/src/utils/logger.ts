@@ -1,8 +1,8 @@
 import { hostname } from 'node:os';
-import "dotenv/config"
+import 'dotenv/config';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import pino from 'pino';
 import { TencentCLSTransport } from './tencentCLSTransport.js';
-import { AsyncLocalStorage } from 'node:async_hooks';
 
 // 日志上下文接口
 interface LogContext {
@@ -93,9 +93,10 @@ export const createLogger = (name: string) => {
         const context = logContextStorage.getStore();
 
         // 合并上下文信息到日志对象
-        const logObj = typeof obj === 'object' && obj !== null
-          ? { ...obj, ...context }
-          : { ...context, message: typeof obj === 'string' ? obj : '' };
+        const logObj =
+          typeof obj === 'object' && obj !== null
+            ? { ...obj, ...context }
+            : { ...context, message: typeof obj === 'string' ? obj : '' };
 
         // 调用原始方法
         originalMethod(logObj, msg);
@@ -124,9 +125,10 @@ export const createLogger = (name: string) => {
         const context = logContextStorage.getStore();
 
         // 合并上下文信息到日志对象
-        const logObj = typeof obj === 'object' && obj !== null
-          ? { ...obj, ...context }
-          : { ...context, message: typeof obj === 'string' ? obj : '' };
+        const logObj =
+          typeof obj === 'object' && obj !== null
+            ? { ...obj, ...context }
+            : { ...context, message: typeof obj === 'string' ? obj : '' };
 
         // 调用原始方法
         originalMethod(logObj, msg);
@@ -178,7 +180,10 @@ export const withLogContext = <T>(context: LogContext, fn: () => T): T => {
 };
 
 // 从 WebSocket 消息设置日志上下文
-export const setLogContextFromMessage = (message: any, connectionId?: string) => {
+export const setLogContextFromMessage = (
+  message: any,
+  connectionId?: string,
+) => {
   const context: LogContext = {
     messageId: message?.meta?.messageId,
     conversationId: message?.meta?.conversationId,

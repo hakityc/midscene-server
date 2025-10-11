@@ -55,7 +55,6 @@ export interface SessionContext {
  * 借鉴 Midscene Agent 的上下文管理和状态保持能力
  */
 export class ContextManager {
-  private memory: Memory;
   private currentSession: SessionContext;
   private frozenContext?: PageContext;
   private contextCache = new Map<string, PageContext>();

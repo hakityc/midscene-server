@@ -1,10 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import type {
-  WsInboundMessage,
-  MessageMeta,
-  WebSocketAction,
   FlowAction,
+  MessageMeta,
   Task,
+  WsInboundMessage,
 } from '@/types/debug';
 
 /**
@@ -21,9 +20,11 @@ export function generateMeta(conversationId?: string): MessageMeta {
 /**
  * 过滤对象中的 undefined 值
  */
-function filterUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
+function filterUndefined<T extends Record<string, unknown>>(
+  obj: T,
+): Partial<T> {
   return Object.fromEntries(
-    Object.entries(obj).filter(([_, value]) => value !== undefined)
+    Object.entries(obj).filter(([_, value]) => value !== undefined),
   ) as Partial<T>;
 }
 
@@ -31,7 +32,9 @@ function filterUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> 
  * 将 FlowAction 转换为 API 格式
  * 根据官方文档支持所有可选配置参数
  */
-export function flowActionToApiFormat(action: FlowAction): Record<string, unknown> {
+export function flowActionToApiFormat(
+  action: FlowAction,
+): Record<string, unknown> {
   switch (action.type) {
     case 'aiTap':
       return filterUndefined({
@@ -197,4 +200,3 @@ export function validateJson(jsonString: string): {
     };
   }
 }
-

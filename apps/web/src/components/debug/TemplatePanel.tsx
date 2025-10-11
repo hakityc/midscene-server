@@ -1,7 +1,7 @@
+import { BookTemplate, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Template } from '@/types/debug';
-import { BookTemplate, Upload } from 'lucide-react';
 
 interface TemplatePanelProps {
   templates: Template[];

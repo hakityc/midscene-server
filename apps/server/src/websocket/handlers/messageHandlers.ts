@@ -1,15 +1,16 @@
-import type { MessageHandler } from "../../types/websocket"
-import { WebSocketAction } from "../../utils/enums"
-import { createConnectTabHandler } from "../actions/connect"
-import { createDownloadVideoHandler } from "../actions/downloadVideo"
-import { createAiHandler } from "../actions/execute"
-import { createAgentExecuteHandler } from "../actions/agentExecute"
-import { executeScriptHandler } from "../actions/executeScript"
-import { handleSiteScriptHandler } from "../actions/siteScript"
-import { createCommandHandler } from "../actions/command"
+import type { MessageHandler } from '../../types/websocket';
+import { WebSocketAction } from '../../utils/enums';
+import { createCommandHandler } from '../actions/command';
+import { createConnectTabHandler } from '../actions/connect';
+import { createDownloadVideoHandler } from '../actions/downloadVideo';
+import { createAiHandler } from '../actions/execute';
+import { executeScriptHandler } from '../actions/executeScript';
+import { handleSiteScriptHandler } from '../actions/siteScript';
 
 // 创建所有消息处理器 - 支持部分WebSocketAction
-export function createMessageHandlers(): Partial<Record<WebSocketAction, MessageHandler>> {
+export function createMessageHandlers(): Partial<
+  Record<WebSocketAction, MessageHandler>
+> {
   return {
     [WebSocketAction.CONNECT_TAB]: createConnectTabHandler(),
     [WebSocketAction.AI]: createAiHandler(),
@@ -21,5 +22,5 @@ export function createMessageHandlers(): Partial<Record<WebSocketAction, Message
     [WebSocketAction.DOWNLOAD_VIDEO_CALLBACK]: async () => {},
     [WebSocketAction.SITE_SCRIPT]: handleSiteScriptHandler(),
     [WebSocketAction.COMMAND]: createCommandHandler(),
-  }
+  };
 }

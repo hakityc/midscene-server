@@ -1,18 +1,18 @@
-import type { 
-  WsInboundMessage, 
-  Task, 
-  MessageMeta, 
-  WebSocketAction,
-  FlowAction 
-} from '@/types/debug';
 import { v4 as uuidv4 } from 'uuid';
+import type {
+  FlowAction,
+  MessageMeta,
+  Task,
+  WebSocketAction,
+  WsInboundMessage,
+} from '@/types/debug';
 
 /**
  * 解析 JSON 消息到表单状态
  */
 export function parseJsonToForm(jsonMessage: WsInboundMessage) {
   const { meta, payload } = jsonMessage;
-  
+
   // 解析元数据
   const parsedMeta: MessageMeta = {
     messageId: meta.messageId || uuidv4(),
@@ -22,7 +22,7 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
 
   // 解析 Action 类型
   const action = payload.action as WebSocketAction;
-  
+
   // 解析 Action 特定的参数
   const result: {
     action: WebSocketAction;
@@ -47,20 +47,20 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
       result.enableLoadingShade = option === 'LOADING_SHADE';
       break;
     }
-    
+
     case 'ai': {
       const { prompt } = payload.params as any;
       result.aiPrompt = prompt;
       break;
     }
-    
+
     case 'siteScript': {
       const { script, cmd } = payload.params as any;
       result.siteScript = script;
       result.siteScriptCmd = cmd;
       break;
     }
-    
+
     case 'downloadVideo': {
       const { url, savePath } = payload.params as any;
       result.videoUrl = url;
@@ -77,7 +77,7 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
  */
 function parseTasks(tasks: any[]): Task[] {
   if (!Array.isArray(tasks)) return [];
-  
+
   return tasks.map((task, index) => ({
     id: uuidv4(),
     name: task.name || `任务 ${index + 1}`,
@@ -91,7 +91,7 @@ function parseTasks(tasks: any[]): Task[] {
  */
 function parseFlow(flow: any[]): FlowAction[] {
   if (!Array.isArray(flow)) return [];
-  
+
   return flow.map((action) => {
     // 处理不同类型的动作
     if (action.aiTap) {
@@ -101,7 +101,7 @@ function parseFlow(flow: any[]): FlowAction[] {
         xpath: action.xpath,
       };
     }
-    
+
     if (action.aiInput) {
       return {
         type: 'aiInput' as const,
@@ -110,21 +110,21 @@ function parseFlow(flow: any[]): FlowAction[] {
         xpath: action.xpath,
       };
     }
-    
+
     if (action.aiAssert) {
       return {
         type: 'aiAssert' as const,
         assertion: action.aiAssert,
       };
     }
-    
+
     if (action.sleep) {
       return {
         type: 'sleep' as const,
         duration: action.sleep,
       };
     }
-    
+
     if (action.aiHover) {
       return {
         type: 'aiHover' as const,
@@ -132,7 +132,7 @@ function parseFlow(flow: any[]): FlowAction[] {
         xpath: action.xpath,
       };
     }
-    
+
     if (action.aiScroll) {
       return {
         type: 'aiScroll' as const,
@@ -140,7 +140,7 @@ function parseFlow(flow: any[]): FlowAction[] {
         distance: action.aiScroll.distance || 100,
       };
     }
-    
+
     if (action.aiWaitFor) {
       return {
         type: 'aiWaitFor' as const,
@@ -148,7 +148,7 @@ function parseFlow(flow: any[]): FlowAction[] {
         timeoutMs: action.timeoutMs || 15000,
       };
     }
-    
+
     if (action.aiKeyboardPress) {
       return {
         type: 'aiKeyboardPress' as const,
@@ -156,7 +156,7 @@ function parseFlow(flow: any[]): FlowAction[] {
         locate: action.aiKeyboardPress.locate,
       };
     }
-    
+
     // 默认返回空动作
     return {
       type: 'aiTap' as const,
@@ -175,7 +175,7 @@ export function parseJsonString(jsonString: string): {
 } {
   try {
     const parsed = JSON.parse(jsonString);
-    
+
     // 验证基本结构
     if (!parsed.meta || !parsed.payload) {
       return {
@@ -183,7 +183,7 @@ export function parseJsonString(jsonString: string): {
         error: 'JSON 格式无效：缺少 meta 或 payload 字段',
       };
     }
-    
+
     // 验证 payload 结构
     if (!parsed.payload.action) {
       return {
@@ -191,9 +191,9 @@ export function parseJsonString(jsonString: string): {
         error: 'JSON 格式无效：payload 中缺少 action 字段',
       };
     }
-    
+
     const formData = parseJsonToForm(parsed as WsInboundMessage);
-    
+
     return {
       success: true,
       data: formData,

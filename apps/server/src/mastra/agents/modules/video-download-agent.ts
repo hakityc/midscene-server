@@ -1,7 +1,4 @@
 import { Agent } from '@mastra/core';
-import { createTool } from '@mastra/core/tools';
-import { MCPClient } from '@mastra/mcp';
-import { z } from 'zod';
 import { createModel } from '../index';
 
 // 视频下载智能体指令 - 使用实际可用的工具
