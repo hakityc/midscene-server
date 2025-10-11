@@ -362,27 +362,36 @@ export class WebOperateService extends EventEmitter {
       try {
         let bridgeError: Error | null = null
 
-        try {
-          // 先调用原始的回调（showStatusMessage）
-          if (originalCallback) {
-            await originalCallback(tip)
-          }
-        } catch (error: any) {
-          // 捕获 bridge 调用超时等错误，避免成为未处理的 Promise 拒绝
-          bridgeError = error
-          console.warn(`⚠️ showStatusMessage 调用失败 (可能是 bridge 超时):`, error?.message)
-          serviceLogger.warn(
-            {
-              tip,
-              error: error?.message,
-              stack: error?.stack,
-            },
-            "showStatusMessage 调用失败，但继续执行任务"
-          )
+        // 先调用原始的回调（showStatusMessage），但不 await
+        // 因为 BridgeServer 可能会在内部产生延迟的 Promise 拒绝
+        // 这些拒绝发生在回调返回之后，无法通过 try-catch 捕获
+        if (originalCallback) {
+          // 使用 Promise.resolve 包装并立即添加 .catch
+          // 这样可以捕获所有同步和异步的错误，避免未处理的 Promise 拒绝
+          Promise.resolve(originalCallback(tip))
+            .catch((error: any) => {
+              // 捕获所有错误（包括延迟的错误）
+              console.warn(`⚠️ showStatusMessage 调用失败 (可能是 bridge 连接断开):`, error?.message)
+              serviceLogger.warn(
+                {
+                  tip,
+                  error: error?.message,
+                  stack: error?.stack,
+                },
+                "showStatusMessage 调用失败（延迟错误）"
+              )
+
+              // 记录到错误跟踪中
+              this.taskErrors.push({
+                taskName: tip,
+                error: error instanceof Error ? error : new Error(String(error)),
+                timestamp: Date.now()
+              })
+            })
         }
 
-        // 再调用我们的回调（即使 showStatusMessage 失败也要执行）
-        // 如果有 bridge 错误，也通过回调通知出去
+        // 立即调用我们的回调，不等待 showStatusMessage 完成
+        // 这样即使 bridge 连接有问题，我们的处理逻辑也能正常执行
         this.handleTaskStartTip(tip, bridgeError)
       } catch (error: any) {
         // 最外层的 try-catch，确保任何未预期的错误都被捕获
