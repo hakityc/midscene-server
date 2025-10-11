@@ -24,6 +24,11 @@
     "create-deployment-package": "tar -czf midscene-server-deployment.tar.gz -C dist .",
     "start": "NODE_ENV=staging node dist/server/index.js | pino-pretty",
     "start:dev": "tsx src/index.ts",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest watch",
     "test:logger": "tsx src/test/logger-test.ts",
     "test:cls": "tsx src/test/simple-cls-test.ts",
     "test:windows": "tsx src/test/windows-service-mock-test.ts",
@@ -49,11 +54,11 @@
     "@midscene/core": "0.30.1",
     "@midscene/mcp": "0.28.4",
     "@midscene/web": "^0.29.4",
+    "@nut-tree/nut-js": "^4.2.0",
     "dotenv": "^17.2.1",
     "hono": "^4.9.5",
     "pino": "9.9.4",
     "pino-pretty": "13.1.1",
-    "@nut-tree/nut-js": "^4.2.0",
     "tencentcloud-cls-sdk-js-web": "1.0.13",
     "yaml": "2.8.1",
     "zod": "^3.25.76"
@@ -61,7 +66,11 @@
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "@types/node": "^20.19.11",
+    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/ui": "3.2.4",
+    "happy-dom": "20.0.0",
     "tsx": "^4.20.5",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "3.2.4"
   }
 }

@@ -34,3 +34,4 @@ lerna-debug.log*
 # Midscene.js dump files
 midscene-server-deployment.tar.gz
 apps/server/midscene_run/
+apps/server/coverage/
