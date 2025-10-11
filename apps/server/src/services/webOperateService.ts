@@ -41,6 +41,7 @@ export class WebOperateService extends EventEmitter {
     cacheId: "midscene",
     generateReport: true,
     autoPrintReportMsg: true,
+    aiActionContext:'如果出现任何弹窗，将其关闭'
   }
 
   private constructor() {
