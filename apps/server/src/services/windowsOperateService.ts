@@ -627,8 +627,9 @@ export class WindowsOperateService extends EventEmitter {
    * @param yamlContent - YAML 脚本内容
    * @param maxRetries - 最大重试次数
    * @param originalCmd - 兜底命令
+   * @returns 返回脚本执行结果
    */
-  async executeScript(yamlContent: string, maxRetries: number = 3, originalCmd?: string): Promise<void> {
+  async executeScript(yamlContent: string, maxRetries: number = 3, originalCmd?: string): Promise<any> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
       console.log("🔄 服务未启动，自动启动 WindowsOperateService...")
@@ -639,9 +640,23 @@ export class WindowsOperateService extends EventEmitter {
     await this.ensureConnection()
 
     try {
-      await this.runWithRetry(yamlContent, maxRetries, (attempt, max) =>
-        this.executeScriptWithRetry(yamlContent, originalCmd, attempt, max)
-      )
+      const result = await this.runWithRetry(yamlContent, maxRetries, async (_attempt, _max) => {
+        if (!this.agent) {
+          throw new AppError("服务启动失败，无法执行脚本", 503)
+        }
+
+        try {
+          const yamlResult = await this.agent.runYaml(yamlContent)
+          serviceLogger.info({ yamlContent }, "Windows YAML 脚本执行完成")
+          return yamlResult
+        } catch (error: any) {
+          if (error.message?.includes("ai")) {
+            throw new AppError(`AI 执行失败: ${error.message}`, 500)
+          }
+          throw new AppError(`脚本执行失败: ${error.message}`, 500)
+        }
+      })
+      return result
     } catch (error: any) {
       // 如果提供了 originalCmd，则先尝试兜底执行
       if (originalCmd) {
@@ -651,7 +666,7 @@ export class WindowsOperateService extends EventEmitter {
             { yamlContent, originalCmd, originalError: error?.message },
             "YAML 执行失败，但兜底执行成功，忽略原错误"
           )
-          return
+          return undefined // 兜底执行没有返回值
         } catch (fallbackErr: any) {
           serviceLogger.error(
             {
@@ -666,27 +681,6 @@ export class WindowsOperateService extends EventEmitter {
         }
       }
       throw error
-    }
-  }
-
-  private async executeScriptWithRetry(
-    yamlContent: string,
-    _originalCmd: string | undefined,
-    _attempt: number,
-    _maxRetries: number
-  ): Promise<void> {
-    if (!this.agent) {
-      throw new AppError("服务启动失败，无法执行脚本", 503)
-    }
-
-    try {
-      await this.agent.runYaml(yamlContent)
-      serviceLogger.info({ yamlContent }, "Windows YAML 脚本执行完成")
-    } catch (error: any) {
-      if (error.message?.includes("ai")) {
-        throw new AppError(`AI 执行失败: ${error.message}`, 500)
-      }
-      throw new AppError(`脚本执行失败: ${error.message}`, 500)
     }
   }
 

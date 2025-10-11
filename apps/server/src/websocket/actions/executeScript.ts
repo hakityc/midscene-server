@@ -58,14 +58,34 @@ export function executeScriptHandler(): MessageHandler {
 
       const script = yaml.stringify(parsedParams)
 
+      let scriptResult: any
       try {
         await maskController.executeWithMask(async () => {
-          await webOperateService.executeScript(script)
+          scriptResult = await webOperateService.executeScript(script)
+          console.log("🚀 AI 处理完成，返回结果:", scriptResult)
         },{
           enabled: payload.option?.includes('LOADING_SHADE')
         })
 
-        const response = createSuccessResponse(message, `AI 处理完成`)
+        // 将执行结果返回给客户端，包含错误信息（如果有）
+        const hasErrors = scriptResult?._hasErrors || false
+        const taskErrors = scriptResult?._taskErrors || []
+
+        let responseMessage = `${payload.action} 处理完成`
+        if (hasErrors && taskErrors.length > 0) {
+          const errorSummary = taskErrors.map((err: any) => `${err.taskName}: ${err.error.message}`).join('; ')
+          responseMessage += ` (⚠️ 部分任务执行失败: ${errorSummary})`
+        }
+
+        const response = createSuccessResponse(
+          message,
+          {
+            message: responseMessage,
+            result: scriptResult?.result,
+            hasErrors,
+            taskErrors: hasErrors ? taskErrors : undefined
+          }
+        )
         send(response)
       } finally {
         // 清理回调，避免内存泄漏

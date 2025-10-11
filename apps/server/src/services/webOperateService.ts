@@ -25,6 +25,9 @@ export class WebOperateService extends EventEmitter {
   // ==================== 回调机制属性 ====================
   private taskTipCallbacks: Array<(tip: string, bridgeError?: Error | null) => void> = []
 
+  // ==================== 错误跟踪属性 ====================
+  private taskErrors: Array<{ taskName: string; error: Error; timestamp: number }> = []
+
   // ==================== AgentOverChromeBridge 默认配置 ====================
   private readonly defaultAgentConfig: Partial<
     AgentOpt & {
@@ -96,6 +99,20 @@ export class WebOperateService extends EventEmitter {
   }
 
   /**
+   * 清空错误跟踪
+   */
+  public clearTaskErrors(): void {
+    this.taskErrors = []
+  }
+
+  /**
+   * 获取任务错误列表
+   */
+  public getTaskErrors(): Array<{ taskName: string; error: Error; timestamp: number }> {
+    return [...this.taskErrors]
+  }
+
+  /**
    * 创建任务提示回调（封装通用逻辑，供 WebSocket handler 使用）
    * @param config 配置对象
    * @returns 配置好的任务提示回调函数
@@ -136,21 +153,33 @@ export class WebOperateService extends EventEmitter {
 
         console.log(`🎯 WebSocket 监听到任务提示: ${tip}`)
 
-        // 如果有 bridge 错误，先发送错误消息
+        // 如果有 bridge 错误，先发送警告消息（不是致命错误，任务继续执行）
         if (bridgeError) {
+          // 判断错误类型
+          const errorType = bridgeError.message.includes('Connection lost')
+            ? 'connection_lost'
+            : bridgeError.message.includes('timeout')
+              ? 'bridge_timeout'
+              : 'bridge_error'
+
+          const errorMessage = errorType === 'connection_lost'
+            ? '⚠️ 浏览器扩展连接已断开，但任务继续在服务端执行'
+            : `⚠️ Bridge 通信异常: ${bridgeError.message}`
+
           const errorResponse = createErrorResponse(
             message,
             bridgeError,
-            `Bridge 通信失败: ${bridgeError.message}`
+            errorMessage
           )
           send(errorResponse)
-          
+
           wsLogger.warn(
             {
               connectionId,
               tip,
               error: bridgeError.message,
               stack: bridgeError.stack,
+              errorType,
             },
             "Bridge 调用失败，但任务继续执行"
           )
@@ -168,7 +197,11 @@ export class WebOperateService extends EventEmitter {
             stage: getTaskStageDescription(category),
             bridgeError: bridgeError ? {
               message: bridgeError.message,
-              type: 'bridge_timeout'
+              type: bridgeError.message.includes('Connection lost')
+                ? 'connection_lost'
+                : bridgeError.message.includes('timeout')
+                  ? 'bridge_timeout'
+                  : 'bridge_error'
             } : undefined
           },
           WebSocketAction.CALLBACK_AI_STEP
@@ -323,31 +356,59 @@ export class WebOperateService extends EventEmitter {
     const originalCallback = this.agent.onTaskStartTip
 
     // 设置新的回调，同时保留原有功能
+    // 注意：这个回调会被 Midscene 内部调用，需要确保永远不抛出未捕获的错误
     this.agent.onTaskStartTip = async (tip: string) => {
-      let bridgeError: Error | null = null
-
       try {
-        // 先调用原始的回调（showStatusMessage）
-        if (originalCallback) {
-          await originalCallback(tip)
+        let bridgeError: Error | null = null
+
+        try {
+          // 先调用原始的回调（showStatusMessage）
+          if (originalCallback) {
+            await originalCallback(tip)
+          }
+        } catch (error: any) {
+          // 捕获 bridge 调用超时等错误，避免成为未处理的 Promise 拒绝
+          bridgeError = error
+          console.warn(`⚠️ showStatusMessage 调用失败 (可能是 bridge 超时):`, error?.message)
+          serviceLogger.warn(
+            {
+              tip,
+              error: error?.message,
+              stack: error?.stack,
+            },
+            "showStatusMessage 调用失败，但继续执行任务"
+          )
         }
+
+        // 再调用我们的回调（即使 showStatusMessage 失败也要执行）
+        // 如果有 bridge 错误，也通过回调通知出去
+        this.handleTaskStartTip(tip, bridgeError)
       } catch (error: any) {
-        // 捕获 bridge 调用超时等错误，避免成为未处理的 Promise 拒绝
-        bridgeError = error
-        console.warn(`⚠️ showStatusMessage 调用失败 (可能是 bridge 超时):`, error?.message)
-        serviceLogger.warn(
+        // 最外层的 try-catch，确保任何未预期的错误都被捕获
+        // 防止 Promise 拒绝变成未处理的拒绝
+        console.error("❌ onTaskStartTip 回调执行失败:", error)
+        serviceLogger.error(
           {
             tip,
             error: error?.message,
             stack: error?.stack,
           },
-          "showStatusMessage 调用失败，但继续执行任务"
+          "onTaskStartTip 回调执行失败"
         )
-      }
 
-      // 再调用我们的回调（即使 showStatusMessage 失败也要执行）
-      // 如果有 bridge 错误，也通过回调通知出去
-      this.handleTaskStartTip(tip, bridgeError)
+        // 尝试通知客户端发生了严重错误
+        try {
+          this.triggerTaskTipCallbacks(
+            tip || "未知任务",
+            error instanceof Error ? error : new Error(String(error))
+          )
+        } catch (notifyError) {
+          // 如果通知也失败了，只记录日志，不再抛出
+          console.error("❌ 无法通知客户端错误:", notifyError)
+        }
+
+        // 不再抛出错误，避免未处理的 Promise 拒绝
+      }
     }
   }
 
@@ -355,28 +416,67 @@ export class WebOperateService extends EventEmitter {
    * 处理任务开始提示的统一方法
    */
   private handleTaskStartTip(tip: string, bridgeError?: Error | null): void {
-    const { formatted, category, icon } = formatTaskTip(tip)
-    const stageDescription = getTaskStageDescription(category)
+    try {
+      const { formatted, category, icon } = formatTaskTip(tip)
+      const stageDescription = getTaskStageDescription(category)
 
-    console.log(`🤖 AI 任务开始: ${tip}`)
-    console.log(`${icon} ${formatted} (${stageDescription})`)
+      console.log(`🤖 AI 任务开始: ${tip}`)
+      console.log(`${icon} ${formatted} (${stageDescription})`)
 
-    serviceLogger.info(
-      {
-        tip,
-        formatted,
-        category,
-        icon,
-        stage: stageDescription,
-      },
-      "AI 任务开始执行"
-    )
+      // 如果有 bridge 错误，记录到错误跟踪中
+      if (bridgeError) {
+        this.taskErrors.push({
+          taskName: tip,
+          error: bridgeError,
+          timestamp: Date.now()
+        })
 
-    // 发射事件，让其他地方可以监听到
-    this.emit("taskStartTip", tip, bridgeError)
+        console.warn(`⚠️ 记录任务错误: ${tip} - ${bridgeError.message}`)
+      }
 
-    // 触发注册的回调，并传递 bridge 错误信息
-    this.triggerTaskTipCallbacks(tip, bridgeError)
+      serviceLogger.info(
+        {
+          tip,
+          formatted,
+          category,
+          icon,
+          stage: stageDescription,
+          bridgeError: bridgeError ? {
+            message: bridgeError.message,
+            type: bridgeError.message.includes('Connection lost') ? 'connection_lost' : 'bridge_error'
+          } : undefined
+        },
+        "AI 任务开始执行"
+      )
+
+      // 发射事件，让其他地方可以监听到
+      this.emit("taskStartTip", tip, bridgeError)
+
+      // 触发注册的回调，并传递 bridge 错误信息
+      this.triggerTaskTipCallbacks(tip, bridgeError)
+    } catch (error: any) {
+      // 捕获任何错误，防止影响主流程
+      console.error("❌ handleTaskStartTip 执行失败:", error)
+      serviceLogger.error(
+        {
+          tip,
+          error: error?.message,
+          stack: error?.stack,
+        },
+        "handleTaskStartTip 执行失败"
+      )
+
+      // 尝试通知客户端发生了错误
+      try {
+        this.triggerTaskTipCallbacks(
+          tip || "未知任务",
+          error instanceof Error ? error : new Error(String(error))
+        )
+      } catch (notifyError) {
+        // 如果通知也失败了，只记录日志
+        console.error("❌ 无法通知客户端 handleTaskStartTip 错误:", notifyError)
+      }
+    }
   }
 
   // ==================== 连接管理相关方法 ====================
@@ -858,9 +958,43 @@ export class WebOperateService extends EventEmitter {
   }
 
   /**
-   * 执行 YAML 脚本
+   * 运行 YAML 脚本并跟踪错误（自定义包装方法）
+   * @param prompt YAML 脚本内容
+   * @returns 包含错误信息的执行结果
    */
-  async executeScript(prompt: string, maxRetries: number = 3, originalCmd?: string): Promise<void> {
+  private async runYamlWithErrorTracking(prompt: string): Promise<any> {
+    if (!this.agent) {
+      throw new AppError("Agent 未初始化", 503)
+    }
+
+    // 清理之前的错误记录
+    this.clearTaskErrors()
+
+    try {
+      const result = await this.agent.runYaml(prompt)
+
+      // 检查是否有任务错误发生
+      const taskErrors = this.getTaskErrors()
+
+      return {
+        ...result,
+        // 添加错误跟踪信息
+        _wrapped: true,
+        _timestamp: Date.now(),
+        _taskErrors: taskErrors.length > 0 ? taskErrors : undefined,
+        _hasErrors: taskErrors.length > 0
+      }
+    } catch (error: any) {
+      // 如果有异常，包装错误信息
+      throw error
+    }
+  }
+
+  /**
+   * 执行 YAML 脚本
+   * @returns 返回脚本执行结果
+   */
+  async executeScript(prompt: string, maxRetries: number = 3, originalCmd?: string): Promise<any> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
       console.log("🔄 服务未启动，自动启动 WebOperateService...")
@@ -871,9 +1005,34 @@ export class WebOperateService extends EventEmitter {
     await this.ensureCurrentTabConnection()
 
     try {
-      await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
-        this.executeScriptWithRetry(prompt, originalCmd, attempt, max)
-      )
+      const result = await this.runWithRetry(prompt, maxRetries, async (_attempt, _max) => {
+        // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
+        if (!this.agent) {
+          throw new AppError("服务启动失败，无法执行脚本", 503)
+        }
+
+        try {
+          // 使用自定义的 runYamlWithErrorTracking 方法
+          const yamlResult = await this.runYamlWithErrorTracking(prompt)
+
+          serviceLogger.info(
+            {
+              prompt,
+              result: yamlResult,
+            },
+            "YAML 脚本执行完成"
+          )
+
+          return yamlResult
+        } catch (error: any) {
+          // 先不急着上报错误，由外层决定是否兜底和上报
+          if (error.message?.includes("ai")) {
+            throw new AppError(`AI 执行失败: ${error.message}`, 500)
+          }
+          throw new AppError(`脚本执行失败: ${error.message}`, 500)
+        }
+      })
+      return result
     } catch (error: any) {
       // 如果提供了 originalCmd，则先尝试兜底执行
       if (originalCmd) {
@@ -884,7 +1043,7 @@ export class WebOperateService extends EventEmitter {
             { prompt, originalCmd, originalError: error?.message },
             "YAML 执行失败，但兜底执行成功，忽略原错误"
           )
-          return
+          return undefined // 兜底执行没有返回值
         } catch (fallbackErr: any) {
           // 兜底失败，同时上报两个错误
           serviceLogger.error(
@@ -901,34 +1060,6 @@ export class WebOperateService extends EventEmitter {
       }
       // 未提供 originalCmd，按原逻辑抛错
       throw error
-    }
-  }
-
-  private async executeScriptWithRetry(
-    prompt: string,
-    _originalCmd: string | undefined,
-    _attempt: number,
-    _maxRetries: number
-  ): Promise<void> {
-    // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
-    if (!this.agent) {
-      throw new AppError("服务启动失败，无法执行脚本", 503)
-    }
-
-    try {
-      await this.agent.runYaml(prompt)
-      serviceLogger.info(
-        {
-          prompt,
-        },
-        "YAML 脚本执行完成"
-      )
-    } catch (error: any) {
-      // 先不急着上报错误，由外层决定是否兜底和上报
-      if (error.message?.includes("ai")) {
-        throw new AppError(`AI 执行失败: ${error.message}`, 500)
-      }
-      throw new AppError(`脚本执行失败: ${error.message}`, 500)
     }
   }
 
