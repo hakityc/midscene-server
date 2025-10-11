@@ -5,11 +5,10 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx watch src/index.ts | pino-pretty",
     "build": "npm run build:staging",
-    "build:prod": "NODE_ENV=prod npm run clean && npm run compile && npm run fix-imports && npm run prepare-deployment:prod",
-    "build:staging": "NODE_ENV=staging npm run clean && npm run compile && npm run fix-imports && npm run prepare-deployment:staging",
+    "build:prod": "NODE_ENV=prod npm run clean && npm run compile && npm run prepare-deployment:prod",
+    "build:staging": "NODE_ENV=staging npm run clean && npm run compile && npm run prepare-deployment:staging",
     "clean": "rm -rf dist",
-    "compile": "tsc",
-    "fix-imports": "node scripts/fix-imports.js",
+    "compile": "tsup",
     "prepare-deployment:prod": "npm run copy-files:prod && npm run create-package-json:prod && npm run create-deployment-docs && npm run create-start-script:prod",
     "prepare-deployment:staging": "npm run copy-files:staging && npm run create-package-json:staging && npm run create-deployment-docs && npm run create-start-script:staging",
     "copy-files:prod": "npm run create-env:prod && cp README.md dist/server/ && (cp .npmrc dist/server/ 2>/dev/null || true)",
@@ -69,6 +68,7 @@
     "@vitest/coverage-v8": "3.2.4",
     "@vitest/ui": "3.2.4",
     "happy-dom": "20.0.0",
+    "tsup": "8.5.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "3.2.4"
