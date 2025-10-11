@@ -1,173 +1,356 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-
-type WebSocketStatus = "idle" | "connecting" | "open" | "closing" | "closed" | "error"
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ActionSelector } from '@/components/debug/ActionSelector';
+import { AiScriptForm } from '@/components/debug/AiScriptForm';
+import { HistoryPanel } from '@/components/debug/HistoryPanel';
+import { JsonPreview } from '@/components/debug/JsonPreview';
+import { MessageMonitor } from '@/components/debug/MessageMonitor';
+import { MetaForm } from '@/components/debug/MetaForm';
+import {
+  AiForm,
+  DownloadVideoForm,
+  GenericForm,
+  SiteScriptForm,
+} from '@/components/debug/SimpleActionForms';
+import { TemplatePanel } from '@/components/debug/TemplatePanel';
+import { useMessageHistory } from '@/hooks/useMessageHistory';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import type {
+  HistoryItem,
+  MessageMeta,
+  Task,
+  Template,
+  WebSocketAction,
+  WsInboundMessage,
+} from '@/types/debug';
+import {
+  buildAiMessage,
+  buildAiScriptMessage,
+  buildSiteScriptMessage,
+  generateMeta,
+} from '@/utils/messageBuilder';
+import { getAllTemplates } from '@/utils/templates';
+import { History, Send } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function MidsceneDebugPage() {
-  const [status, setStatus] = useState<WebSocketStatus>("idle")
-  const [input, setInput] = useState<string>('{\n  "type": "ping"\n}')
-  const [error, setError] = useState<string>("")
-  const socketRef = useRef<WebSocket | null>(null)
+  const endpoint = 'ws://localhost:3000/ws';
+  const { status, error, messages, connect, send, clearMessages } = useWebSocket(endpoint);
+  const { history, addHistory, removeHistory, clearHistory } = useMessageHistory();
 
-  const endpoint = useMemo(() => {
-    return "ws://localhost:3000/ws"
-  }, [])
+  // 状态管理
+  const [action, setAction] = useState<WebSocketAction>('aiScript');
+  const [meta, setMeta] = useState<MessageMeta>(generateMeta());
+  const [showHistory, setShowHistory] = useState(false);
 
-  const { parsed, isValid } = useMemo(() => {
-    try {
-      const data = JSON.parse(input)
-      return { parsed: data as unknown, isValid: true }
-    } catch {
-      return { parsed: null as unknown, isValid: false }
-    }
-  }, [input])
+  // AI Script 状态
+  const [tasks, setTasks] = useState<Task[]>([
+    {
+      id: uuidv4(),
+      name: '示例任务',
+      continueOnError: false,
+      flow: [
+        {
+          type: 'aiTap',
+          locate: '搜索图标',
+        },
+      ],
+    },
+  ]);
+  const [enableLoadingShade, setEnableLoadingShade] = useState(true);
 
-  const init = useCallback(() => {
-    // Close previous socket if any
-    if (
-      socketRef.current &&
-      (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING)
-    ) {
-      try {
-        socketRef.current.close(1000, "reconnect")
-      } catch {}
-    }
+  // 其他 Action 状态
+  const [aiPrompt, setAiPrompt] = useState('点击搜索按钮');
+  const [siteScript, setSiteScript] = useState('console.log("Hello from Midscene");');
+  const [siteScriptCmd, setSiteScriptCmd] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoSavePath, setVideoSavePath] = useState('');
 
-    setError("")
-    setStatus("connecting")
+  // 模板
+  const templates = useMemo(() => getAllTemplates(), []);
 
-    try {
-      const ws = new WebSocket(endpoint)
-      socketRef.current = ws
-
-      ws.onopen = () => {
-        setStatus("open")
-      }
-      ws.onclose = () => {
-        setStatus("closed")
-      }
-      ws.onerror = () => {
-        setStatus("error")
-        setError("WebSocket 连接出错")
-      }
-      ws.onmessage = () => {
-        // 这里不展示消息内容，避免包含用户相关字段
-      }
-    } catch (e) {
-      setStatus("error")
-      setError(e instanceof Error ? e.message : "WebSocket 初始化失败")
-    }
-  }, [endpoint])
-
-  const send = useCallback(() => {
-    setError("")
-    const ws = socketRef.current
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      setError("WebSocket 未连接")
-      return
-    }
-
-    try {
-      // 不包含用户字段，仅发送提供的 JSON
-      ws.send(JSON.stringify(parsed))
-    } catch (e) {
-      setError("JSON 解析失败，请检查格式是否正确")
-    }
-  }, [parsed])
-
+  // 自动连接
   useEffect(() => {
-    return () => {
-      if (socketRef.current) {
-        try {
-          socketRef.current.close(1000, "page unmount")
-        } catch {}
-      }
+    if (status === 'idle' || status === 'closed') {
+      connect();
     }
-  }, [])
+  }, [status, connect]);
+
+  // 刷新 Message ID
+  const refreshMessageId = useCallback(() => {
+    setMeta((prev) => ({ ...prev, messageId: uuidv4(), timestamp: Date.now() }));
+  }, []);
+
+  // 构建消息
+  const buildMessage = useCallback((): WsInboundMessage | null => {
+    const option = enableLoadingShade ? 'LOADING_SHADE' : undefined;
+
+    switch (action) {
+      case 'aiScript':
+        return buildAiScriptMessage(tasks, meta, option);
+      case 'ai':
+        return buildAiMessage(aiPrompt, meta, option);
+      case 'siteScript':
+        return buildSiteScriptMessage(siteScript, siteScriptCmd, meta);
+      case 'downloadVideo':
+        return {
+          meta,
+          payload: {
+            action: 'downloadVideo',
+            params: { url: videoUrl, savePath: videoSavePath },
+          },
+        };
+      default:
+        return {
+          meta,
+          payload: {
+            action,
+            params: '',
+          },
+        };
+    }
+  }, [
+    action,
+    meta,
+    tasks,
+    enableLoadingShade,
+    aiPrompt,
+    siteScript,
+    siteScriptCmd,
+    videoUrl,
+    videoSavePath,
+  ]);
+
+  // 发送消息
+  const handleSend = useCallback(() => {
+    const message = buildMessage();
+    if (!message) return;
+
+    send(message);
+    addHistory(message);
+    refreshMessageId();
+  }, [buildMessage, send, addHistory, refreshMessageId]);
+
+  // 加载历史记录
+  const handleLoadHistory = useCallback(
+    (item: HistoryItem) => {
+      const msg = item.message;
+      setAction(msg.payload.action as WebSocketAction);
+      setMeta(msg.meta);
+
+      // 根据 action 类型恢复状态
+      if (msg.payload.action === 'aiScript') {
+        const params = msg.payload.params as { tasks: Task[] };
+        if (params.tasks) {
+          setTasks(
+            params.tasks.map((t) => ({
+              ...t,
+              id: uuidv4(),
+            })),
+          );
+        }
+        setEnableLoadingShade(msg.payload.option?.includes('LOADING_SHADE') || false);
+      } else if (msg.payload.action === 'ai') {
+        setAiPrompt(msg.payload.params as string);
+      } else if (msg.payload.action === 'siteScript') {
+        setSiteScript(msg.payload.params as string);
+        setSiteScriptCmd(msg.payload.originalCmd || '');
+      }
+
+      setShowHistory(false);
+    },
+    [],
+  );
+
+  // 加载模板
+  const handleLoadTemplate = useCallback((template: Template) => {
+    const msg = template.message;
+    setAction(msg.payload.action as WebSocketAction);
+    setMeta(generateMeta());
+
+    if (msg.payload.action === 'aiScript') {
+      const params = msg.payload.params as { tasks: Task[] };
+      if (params.tasks) {
+        setTasks(
+          params.tasks.map((t) => ({
+            ...t,
+            id: uuidv4(),
+          })),
+        );
+      }
+      setEnableLoadingShade(msg.payload.option?.includes('LOADING_SHADE') || false);
+    }
+  }, []);
+
+  // 当前消息预览
+  const currentMessage = useMemo(() => buildMessage(), [buildMessage]);
+
+  // 渲染表单
+  const renderForm = () => {
+    switch (action) {
+      case 'aiScript':
+        return (
+          <AiScriptForm
+            tasks={tasks}
+            enableLoadingShade={enableLoadingShade}
+            onTasksChange={setTasks}
+            onLoadingShadeChange={setEnableLoadingShade}
+          />
+        );
+      case 'ai':
+        return <AiForm prompt={aiPrompt} onChange={setAiPrompt} />;
+      case 'siteScript':
+        return (
+          <SiteScriptForm
+            script={siteScript}
+            originalCmd={siteScriptCmd}
+            onScriptChange={setSiteScript}
+            onOriginalCmdChange={setSiteScriptCmd}
+          />
+        );
+      case 'downloadVideo':
+        return (
+          <DownloadVideoForm
+            url={videoUrl}
+            savePath={videoSavePath}
+            onUrlChange={setVideoUrl}
+            onSavePathChange={setVideoSavePath}
+          />
+        );
+      default:
+        return <GenericForm actionType={action} />;
+    }
+  };
 
   return (
-    <div className="min-h-screen w-full bg-[repeating-linear-gradient(135deg,white,white_14px,#f2f2f2_14px,#f2f2f2_28px)] text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center p-6">
-        <Card className="w-4/5 rounded-none border-2 border-black bg-white shadow-[8px_8px_0_0_#000]">
-          <CardHeader className="pb-2 px-4">
-            <CardTitle className="text-2xl font-extrabold tracking-tight">
-              <span className="relative inline-block">
-                <span className="relative z-10">Midscene Debug</span>
-                <span className="absolute inset-x-0 bottom-0 z-0 h-2 translate-y-1 bg-amber-300"></span>
-              </span>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 max-w-[1600px]">
+        {/* 标题栏 */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-3xl font-bold">
+                Midscene Debug Tool
             </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-20">
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                onClick={init}
-                disabled={status === "connecting"}
-                className="rounded-none border-2 border-black bg-lime-300 px-4 py-2 font-bold text-black shadow-[4px_4px_0_0_#000] transition-transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000] disabled:opacity-60"
-              >
-                {status === "connecting" ? "连接中..." : status === "open" ? "已连接(重新初始化)" : "初始化"}
-              </Button>
-              <span className="inline-flex items-center gap-2 rounded-none border-2 border-black bg-white px-3 py-1 text-xs font-bold text-black shadow-[3px_3px_0_0_#000]">
-                <span
-                  className={
-                    "size-2.5 rounded-full border border-black " +
-                    (status === "open"
-                      ? "bg-green-400"
-                      : status === "connecting"
-                      ? "bg-amber-400"
-                      : status === "error"
-                      ? "bg-red-400"
-                      : "bg-gray-300")
-                  }
-                />
-                <span>状态：{status}</span>
-              </span>
-            </div>
-
-            <Separator className="h-2 rounded-none border-2 border-black bg-black" />
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label
-                  className="font-extrabold"
-                >
-                  JSON 内容
-                </Label>
-                <span className={"text-xs font-bold " + (isValid ? "text-green-700" : "text-red-700")}>
-                  {isValid ? "格式有效" : "格式无效"}
-                </span>
-              </div>
-              <Textarea
-                className="h-600 resize-none rounded-none border-2 border-black bg-white font-mono text-sm leading-tight shadow-[4px_4px_0_0_#000] focus-visible:ring-0"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="在此粘贴或编写 JSON"
-                spellCheck={false}
-                aria-invalid={!isValid}
-              />
-              <div className="flex justify-end">
+              <div className="flex items-center gap-3">
+                <ThemeToggle />
                 <Button
-                  onClick={send}
-                  variant="default"
-                  disabled={!isValid || status !== "open"}
-                  className="rounded-none border-2 border-black bg-cyan-300 px-4 py-2 font-extrabold text-black shadow-[4px_4px_0_0_#000] transition-transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000] disabled:opacity-60"
+                  variant="outline"
+                  onClick={() => setShowHistory(!showHistory)}
                 >
-                  发送
+                  <History className="h-4 w-4 mr-2" />
+                  {showHistory ? '隐藏历史' : '显示历史'}
                 </Button>
+                <div
+                  className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                    status === 'open'
+                      ? 'border-green-500 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400'
+                      : status === 'connecting'
+                        ? 'border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400'
+                        : status === 'error'
+                          ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400'
+                          : 'border-gray-300 bg-gray-50 text-gray-700 dark:bg-gray-900 dark:text-gray-400'
+                  }`}
+                >
+                  <span
+                    className={`size-2 rounded-full ${
+                      status === 'open'
+                        ? 'bg-green-500'
+                        : status === 'connecting'
+                          ? 'bg-yellow-500'
+                          : status === 'error'
+                            ? 'bg-red-500'
+                            : 'bg-gray-400'
+                    }`}
+                  />
+                  <span>
+                    {status === 'open'
+                      ? '已连接'
+                      : status === 'connecting'
+                        ? '连接中'
+                        : status === 'error'
+                          ? '连接失败'
+                          : '未连接'}
+                  </span>
+                </div>
               </div>
             </div>
-
-            {error ? (
-              <div className="rounded-none border-2 border-black bg-red-200 p-3 text-sm font-bold text-red-900 shadow-[3px_3px_0_0_#000]">
-                {error}
-              </div>
-            ) : null}
-          </CardContent>
+          </CardHeader>
         </Card>
+
+        {/* 主内容区 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 左侧：构建器 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>消息构建器</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Tabs defaultValue="builder">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="builder">表单模式</TabsTrigger>
+                  <TabsTrigger value="json">JSON 模式</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="builder" className="space-y-4">
+                  <ActionSelector value={action} onChange={setAction} />
+                  <Separator />
+                  {renderForm()}
+                  <Separator />
+                  <MetaForm meta={meta} onChange={setMeta} onRefreshMessageId={refreshMessageId} />
+                </TabsContent>
+
+                <TabsContent value="json" className="space-y-4">
+                  {currentMessage && <JsonPreview message={currentMessage} editable={false} />}
+                </TabsContent>
+              </Tabs>
+
+              {error && (
+                <div className="p-3 rounded-md border border-destructive bg-destructive/10 text-destructive text-sm font-medium">
+                  ❌ {error}
+                </div>
+              )}
+
+              <Button
+                onClick={handleSend}
+                disabled={status !== 'open'}
+                className="w-full h-11"
+                size="lg"
+              >
+                <Send className="h-5 w-5 mr-2" />
+                发送消息
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* 右侧：监控和历史 */}
+          <div className="space-y-6">
+            {showHistory ? (
+              <>
+                <div className="h-[calc(50vh-1rem)]">
+                  <TemplatePanel templates={templates} onLoad={handleLoadTemplate} />
+                </div>
+                <div className="h-[calc(50vh-1rem)]">
+                  <HistoryPanel
+                    history={history}
+                    onLoad={handleLoadHistory}
+                    onRemove={removeHistory}
+                    onClear={clearHistory}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="h-[calc(100vh-10rem)]">
+                <MessageMonitor messages={messages} onClear={clearMessages} />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
-  )
+  );
 }

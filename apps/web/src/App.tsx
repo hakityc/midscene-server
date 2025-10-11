@@ -1,5 +1,10 @@
 import MidsceneDebugPage from "@/pages/midsceneDebugPage";
+import { ThemeProvider } from "@/hooks/useTheme";
 
 export function App(){
-  return (<MidsceneDebugPage />);
+  return (
+    <ThemeProvider>
+      <MidsceneDebugPage />
+    </ThemeProvider>
+  );
 }
