@@ -22,11 +22,14 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
   const [messages, setMessages] = useState<MonitorMessage[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
   const messageIdRef = useRef<number>(0);
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  const reconnectAttemptsRef = useRef<number>(0);
+  const maxReconnectAttempts = 5;
 
   // 添加消息到监控
   const addMessage = useCallback(
     (
-      direction: 'sent' | 'received',
+      direction: 'sent' | 'received' | 'info',
       type: 'success' | 'error' | 'info',
       content: string,
       data?: unknown,
@@ -44,19 +47,16 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
     [],
   );
 
-  // 连接 WebSocket
-  const connect = useCallback(() => {
-    // 关闭已存在的连接
-    if (
-      socketRef.current &&
-      (socketRef.current.readyState === WebSocket.OPEN ||
-        socketRef.current.readyState === WebSocket.CONNECTING)
-    ) {
-      try {
-        socketRef.current.close(1000, 'reconnect');
-      } catch {}
+  // 清理重连定时器
+  const clearReconnectTimeout = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
+  }, []);
 
+  // 创建 WebSocket 连接的通用函数
+  const createWebSocketConnection = useCallback(() => {
     setError('');
     setStatus('connecting');
     addMessage('info', 'info', '正在连接 WebSocket...');
@@ -67,19 +67,36 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
 
       ws.onopen = () => {
         setStatus('open');
+        reconnectAttemptsRef.current = 0; // 重置重连计数
         addMessage('info', 'success', 'WebSocket 连接成功');
       };
 
       ws.onclose = (event) => {
         setStatus('closed');
         addMessage('info', 'info', `WebSocket 连接关闭 (code: ${event.code})`);
+        
+        // 如果不是主动关闭，则尝试重连
+        if (event.code !== 1000 && event.code !== 1001) {
+          if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
+            addMessage('info', 'info', `将在 ${delay / 1000} 秒后重连... (尝试 ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
+            
+            reconnectTimeoutRef.current = setTimeout(() => {
+              reconnectAttemptsRef.current++;
+              createWebSocketConnection(); // 直接递归调用
+            }, delay);
+          } else {
+            addMessage('info', 'error', '重连失败，已达到最大重试次数');
+          }
+        }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (event) => {
         setStatus('error');
         const errorMsg = 'WebSocket 连接出错';
         setError(errorMsg);
         addMessage('info', 'error', errorMsg);
+        console.error('WebSocket error:', event);
       };
 
       ws.onmessage = (event) => {
@@ -110,14 +127,35 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
     }
   }, [endpoint, addMessage]);
 
+  // 连接 WebSocket
+  const connect = useCallback(() => {
+    // 清除之前的重连定时器
+    clearReconnectTimeout();
+
+    // 关闭已存在的连接
+    if (
+      socketRef.current &&
+      (socketRef.current.readyState === WebSocket.OPEN ||
+        socketRef.current.readyState === WebSocket.CONNECTING)
+    ) {
+      try {
+        socketRef.current.close(1000, 'reconnect');
+      } catch {}
+    }
+
+    // 使用通用连接函数
+    createWebSocketConnection();
+  }, [clearReconnectTimeout, createWebSocketConnection]);
+
   // 断开连接
   const disconnect = useCallback(() => {
+    clearReconnectTimeout();
     if (socketRef.current) {
       try {
         socketRef.current.close(1000, 'manual disconnect');
       } catch {}
     }
-  }, []);
+  }, [clearReconnectTimeout]);
 
   // 发送消息
   const send = useCallback(
@@ -153,13 +191,14 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
   // 组件卸载时清理
   useEffect(() => {
     return () => {
+      clearReconnectTimeout();
       if (socketRef.current) {
         try {
           socketRef.current.close(1000, 'component unmount');
         } catch {}
       }
     };
-  }, []);
+  }, [clearReconnectTimeout]);
 
   return {
     status,

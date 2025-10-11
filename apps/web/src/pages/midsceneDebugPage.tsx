@@ -74,15 +74,43 @@ export default function MidsceneDebugPage() {
   const templates = useMemo(() => getAllTemplates(), []);
 
   // 自动连接
-  useEffect(() => {
-    if (status === 'idle' || status === 'closed') {
-      connect();
-    }
-  }, [status, connect]);
+  // useEffect(() => {
+  //   if (status === 'idle' || status === 'closed') {
+  //     console.log('status',status)
+  //     connect();
+  //   }
+  // }, []);
 
   // 刷新 Message ID
   const refreshMessageId = useCallback(() => {
     setMeta((prev) => ({ ...prev, messageId: uuidv4(), timestamp: Date.now() }));
+  }, []);
+
+  // 从 JSON 更新表单
+  const handleJsonToFormUpdate = useCallback((formData: any) => {
+    if (formData.action) setAction(formData.action);
+    if (formData.meta) setMeta(formData.meta);
+
+    // 根据 Action 类型更新相应的状态
+    switch (formData.action) {
+      case 'aiScript':
+        if (formData.tasks) setTasks(formData.tasks);
+        if (typeof formData.enableLoadingShade === 'boolean') {
+          setEnableLoadingShade(formData.enableLoadingShade);
+        }
+        break;
+      case 'ai':
+        if (formData.aiPrompt) setAiPrompt(formData.aiPrompt);
+        break;
+      case 'siteScript':
+        if (formData.siteScript) setSiteScript(formData.siteScript);
+        if (formData.siteScriptCmd) setSiteScriptCmd(formData.siteScriptCmd);
+        break;
+      case 'downloadVideo':
+        if (formData.videoUrl) setVideoUrl(formData.videoUrl);
+        if (formData.videoSavePath) setVideoSavePath(formData.videoSavePath);
+        break;
+    }
   }, []);
 
   // 构建消息
@@ -305,7 +333,16 @@ export default function MidsceneDebugPage() {
                 </TabsContent>
 
                 <TabsContent value="json" className="space-y-4">
-                  {currentMessage && <JsonPreview message={currentMessage} editable={false} />}
+                  {currentMessage && (
+                    <JsonPreview
+                      message={currentMessage}
+                      editable={true}
+                      onEdit={(message) => {
+                        // 可以在这里处理消息更新，如果需要的话
+                      }}
+                      onFormUpdate={handleJsonToFormUpdate}
+                    />
+                  )}
                 </TabsContent>
               </Tabs>
 
@@ -345,7 +382,12 @@ export default function MidsceneDebugPage() {
               </>
             ) : (
               <div className="h-[calc(100vh-10rem)]">
-                <MessageMonitor messages={messages} onClear={clearMessages} />
+                <MessageMonitor
+              messages={messages}
+              onClear={clearMessages}
+              status={status}
+              onConnect={connect}
+            />
               </div>
             )}
           </div>

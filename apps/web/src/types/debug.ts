@@ -35,7 +35,9 @@ export interface BaseFlowAction {
 export interface AiTapAction extends BaseFlowAction {
   type: 'aiTap';
   locate?: string; // 描述
-  xpath?: string;
+  xpath?: string; // XPath 路径
+  deepThink?: boolean; // 是否使用深度思考，默认 false
+  cacheable?: boolean; // 是否允许缓存，默认 true
 }
 
 // aiInput 动作
@@ -43,13 +45,17 @@ export interface AiInputAction extends BaseFlowAction {
   type: 'aiInput';
   value: string; // 输入内容
   locate: string; // 定位描述
-  xpath?: string;
+  xpath?: string; // XPath 路径
+  deepThink?: boolean; // 是否使用深度思考，默认 false
+  cacheable?: boolean; // 是否允许缓存，默认 true
 }
 
 // aiAssert 动作
 export interface AiAssertAction extends BaseFlowAction {
   type: 'aiAssert';
   assertion: string; // 断言描述
+  errorMessage?: string; // 断言失败时的错误信息
+  name?: string; // 断言名称，作为 JSON 输出的 key
 }
 
 // sleep 动作
@@ -61,34 +67,40 @@ export interface SleepAction extends BaseFlowAction {
 // aiHover 动作
 export interface AiHoverAction extends BaseFlowAction {
   type: 'aiHover';
-  locate: string;
-  xpath?: string;
+  locate: string; // 定位描述
+  xpath?: string; // XPath 路径
+  deepThink?: boolean; // 是否使用深度思考，默认 false
+  cacheable?: boolean; // 是否允许缓存，默认 true
 }
 
 // aiScroll 动作
 export interface AiScrollAction extends BaseFlowAction {
   type: 'aiScroll';
-  direction: 'up' | 'down' | 'left' | 'right';
-  scrollType: 'once' | 'untilBottom' | 'untilTop' | 'untilLeft' | 'untilRight';
-  distance?: number;
-  locate?: string;
-  deepThink?: boolean;
+  direction: 'up' | 'down' | 'left' | 'right'; // 滚动方向
+  scrollType: 'once' | 'untilBottom' | 'untilTop' | 'untilLeft' | 'untilRight'; // 滚动类型
+  distance?: number; // 滚动距离(像素)
+  locate?: string; // 执行滚动的元素
+  xpath?: string; // XPath 路径
+  deepThink?: boolean; // 是否使用深度思考，默认 false
+  cacheable?: boolean; // 是否允许缓存，默认 true
 }
 
 // aiWaitFor 动作
 export interface AiWaitForAction extends BaseFlowAction {
   type: 'aiWaitFor';
-  assertion: string;
-  timeoutMs?: number;
-  checkIntervalMs?: number;
+  assertion: string; // 等待条件描述
+  timeoutMs?: number; // 超时时间(ms)，默认 30000
+  checkIntervalMs?: number; // 检查间隔(ms)
 }
 
 // aiKeyboardPress 动作
 export interface AiKeyboardPressAction extends BaseFlowAction {
   type: 'aiKeyboardPress';
-  key: string;
-  locate?: string;
-  deepThink?: boolean;
+  key: string; // 按键名称
+  locate?: string; // 定位描述
+  xpath?: string; // XPath 路径
+  deepThink?: boolean; // 是否使用深度思考，默认 false
+  cacheable?: boolean; // 是否允许缓存，默认 true
 }
 
 // 联合类型
@@ -164,7 +176,7 @@ export interface HistoryItem {
 export interface MonitorMessage {
   id: string;
   timestamp: number;
-  direction: 'sent' | 'received';
+  direction: 'sent' | 'received' | 'info';
   type: 'success' | 'error' | 'info';
   content: string;
   data?: unknown;

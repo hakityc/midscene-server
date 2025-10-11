@@ -2,15 +2,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { MonitorMessage } from '@/types/debug';
 import { format } from 'date-fns';
-import { ArrowDown, ArrowUp, Download, Info, Trash2, XCircle } from 'lucide-react';
+import { ArrowDown, ArrowUp, Download, Info, RefreshCw, Trash2, Wifi, WifiOff, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface MessageMonitorProps {
   messages: MonitorMessage[];
   onClear: () => void;
+  status: 'idle' | 'connecting' | 'open' | 'closing' | 'closed' | 'error';
+  onConnect: () => void;
 }
 
-export function MessageMonitor({ messages, onClear }: MessageMonitorProps) {
+export function MessageMonitor({ messages, onClear, status, onConnect }: MessageMonitorProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const getIcon = (direction: MonitorMessage['direction'], type: MonitorMessage['type']) => {
@@ -46,8 +48,37 @@ export function MessageMonitor({ messages, onClear }: MessageMonitorProps) {
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">消息监控</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold">消息监控</CardTitle>
+            <div className="flex items-center gap-1">
+              {status === 'open' ? (
+                <div className="flex items-center gap-1 text-green-600">
+                  <Wifi className="h-4 w-4" />
+                  <span className="text-xs">已连接</span>
+                </div>
+              ) : status === 'connecting' ? (
+                <div className="flex items-center gap-1 text-yellow-600">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span className="text-xs">连接中</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-red-600">
+                  <WifiOff className="h-4 w-4" />
+                  <span className="text-xs">未连接</span>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onConnect}
+              disabled={status === 'connecting'}
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${status === 'connecting' ? 'animate-spin' : ''}`} />
+              重连
+            </Button>
             <Button
               size="sm"
               variant="outline"

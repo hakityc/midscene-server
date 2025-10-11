@@ -3,16 +3,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { WsInboundMessage } from '@/types/debug';
 import { validateJson } from '@/utils/messageBuilder';
-import { CheckCircle2, Copy, XCircle } from 'lucide-react';
+import { parseJsonString } from '@/utils/jsonParser';
+import { CheckCircle2, Copy, XCircle, Clipboard } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface JsonPreviewProps {
   message: WsInboundMessage;
   editable?: boolean;
   onEdit?: (message: WsInboundMessage) => void;
+  onFormUpdate?: (formData: any) => void;
 }
 
-export function JsonPreview({ message, editable = false, onEdit }: JsonPreviewProps) {
+export function JsonPreview({ message, editable = false, onEdit, onFormUpdate }: JsonPreviewProps) {
   const [jsonString, setJsonString] = useState('');
   const [isValid, setIsValid] = useState(true);
   const [error, setError] = useState('');
@@ -27,12 +29,26 @@ export function JsonPreview({ message, editable = false, onEdit }: JsonPreviewPr
 
   const handleChange = (value: string) => {
     setJsonString(value);
+    
+    if (!editable) return;
+    
     const validation = validateJson(value);
     setIsValid(validation.isValid);
     setError(validation.error || '');
 
-    if (validation.isValid && validation.parsed && onEdit) {
-      onEdit(validation.parsed as WsInboundMessage);
+    if (validation.isValid && validation.parsed) {
+      // 更新消息
+      if (onEdit) {
+        onEdit(validation.parsed as WsInboundMessage);
+      }
+      
+      // 解析并更新表单
+      if (onFormUpdate) {
+        const parseResult = parseJsonString(value);
+        if (parseResult.success && parseResult.data) {
+          onFormUpdate(parseResult.data);
+        }
+      }
     }
   };
 
@@ -46,11 +62,32 @@ export function JsonPreview({ message, editable = false, onEdit }: JsonPreviewPr
     }
   };
 
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) {
+        handleChange(text);
+      }
+    } catch (error) {
+      console.error('Failed to paste:', error);
+    }
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label className="text-sm font-semibold">JSON 预览</Label>
         <div className="flex items-center gap-2">
+          {editable && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePaste}
+            >
+              <Clipboard className="h-3 w-3 mr-1" />
+              粘贴 JSON
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -96,9 +133,14 @@ export function JsonPreview({ message, editable = false, onEdit }: JsonPreviewPr
       )}
 
       {editable && (
-        <p className="text-xs text-muted-foreground">
-          💡 编辑 JSON 会同步更新表单
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            💡 编辑 JSON 会同步更新表单
+          </p>
+          <p className="text-xs text-muted-foreground">
+            📋 点击"粘贴 JSON"按钮可以快速从剪贴板导入 JSON 并更新表单
+          </p>
+        </div>
       )}
     </div>
   );

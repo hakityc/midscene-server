@@ -19,48 +19,92 @@ export function generateMeta(conversationId?: string): MessageMeta {
 }
 
 /**
+ * 过滤对象中的 undefined 值
+ */
+function filterUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, value]) => value !== undefined)
+  ) as Partial<T>;
+}
+
+/**
  * 将 FlowAction 转换为 API 格式
+ * 根据官方文档支持所有可选配置参数
  */
 export function flowActionToApiFormat(action: FlowAction): Record<string, unknown> {
-  const { type, ...rest } = action;
-
-  switch (type) {
+  switch (action.type) {
     case 'aiTap':
-      return { aiTap: rest.locate || '', xpath: rest.xpath };
+      return filterUndefined({
+        aiTap: action.locate || '',
+        xpath: action.xpath,
+        deepThink: action.deepThink,
+        cacheable: action.cacheable,
+      });
+
     case 'aiInput':
-      return { aiInput: rest.value, locate: rest.locate, xpath: rest.xpath };
+      return filterUndefined({
+        aiInput: action.value,
+        locate: action.locate,
+        xpath: action.xpath,
+        deepThink: action.deepThink,
+        cacheable: action.cacheable,
+      });
+
     case 'aiAssert':
-      return { aiAssert: rest.assertion };
+      return filterUndefined({
+        aiAssert: action.assertion,
+        errorMessage: action.errorMessage,
+        name: action.name,
+      });
+
     case 'sleep':
-      return { sleep: rest.duration };
+      return { sleep: action.duration };
+
     case 'aiHover':
-      return { aiHover: rest.locate, xpath: rest.xpath };
+      return filterUndefined({
+        aiHover: action.locate,
+        xpath: action.xpath,
+        deepThink: action.deepThink,
+        cacheable: action.cacheable,
+      });
+
     case 'aiScroll':
       return {
-        aiScroll: {
-          direction: rest.direction,
-          scrollType: rest.scrollType,
-          distance: rest.distance,
-          locate: rest.locate,
-          deepThink: rest.deepThink,
-        },
+        aiScroll: filterUndefined({
+          direction: action.direction,
+          scrollType: action.scrollType,
+          distance: action.distance,
+          locate: action.locate,
+          xpath: action.xpath,
+          deepThink: action.deepThink,
+        }),
+        ...filterUndefined({
+          cacheable: action.cacheable,
+        }),
       };
+
     case 'aiWaitFor':
       return {
-        aiWaitFor: {
-          assertion: rest.assertion,
-          timeoutMs: rest.timeoutMs,
-          checkIntervalMs: rest.checkIntervalMs,
-        },
+        aiWaitFor: filterUndefined({
+          assertion: action.assertion,
+          timeoutMs: action.timeoutMs,
+          checkIntervalMs: action.checkIntervalMs,
+        }),
       };
+
     case 'aiKeyboardPress':
       return {
-        aiKeyboardPress: {
-          key: rest.key,
-          locate: rest.locate,
-          deepThink: rest.deepThink,
-        },
+        aiKeyboardPress: filterUndefined({
+          key: action.key,
+          locate: action.locate,
+          deepThink: action.deepThink,
+        }),
+        ...filterUndefined({
+          xpath: action.xpath,
+          cacheable: action.cacheable,
+        }),
       };
+
     default:
       return {};
   }
