@@ -408,13 +408,7 @@ Status: Ready
       console.log(`🔄 Scroll ${direction} at (${x}, ${y}) by ${distance}px`);
     }
 
-    // TODO: 实际实现
-    // 先移动鼠标到目标位置
-    // robotjs.moveMouse(x, y)
-    // 然后滚动鼠标滚轮
-    // const scrollAmount = direction === 'up' || direction === 'left' ? distance : -distance
-    // robotjs.scrollMouse(scrollAmount, 0) // 水平滚动
-    // robotjs.scrollMouse(0, scrollAmount) // 垂直滚动
+    windowsNative.scrollAt(x, y, direction, distance);
   }
 
   /**
@@ -430,10 +424,7 @@ Status: Ready
       console.log(`🔄 Global scroll ${direction} by ${distance}px`);
     }
 
-    // TODO: 实际实现
-    // 在当前鼠标位置滚动
-    // const scrollAmount = direction === 'up' || direction === 'left' ? distance : -distance
-    // robotjs.scrollMouse(0, scrollAmount)
+    windowsNative.scrollGlobal(direction, distance);
   }
 
   // ==================== 工具方法 ====================
@@ -460,7 +451,7 @@ Status: Ready
 
   /**
    * 获取窗口列表
-   * TODO: 实现窗口枚举功能
+   * 注意：需要安装 node-window-manager 才能使用此功能
    */
   async getWindowList(): Promise<
     Array<{
@@ -472,14 +463,29 @@ Status: Ready
   > {
     this.assertNotDestroyed();
 
-    // TODO: 实际实现
-    // 使用 node-window-manager 或 Windows API
+    if (this.options.debug) {
+      console.log('🪟 Get window list');
+    }
+
+    // TODO: 需要安装并集成 node-window-manager
+    // const { windowManager } = require('node-window-manager');
+    // const windows = windowManager.getWindows();
+    // return windows.map(w => ({
+    //   handle: w.getHWND().toString(),
+    //   title: w.getTitle(),
+    //   processId: w.processId,
+    //   isActive: w === windowManager.getActiveWindow()
+    // }));
+
+    console.warn(
+      '⚠️ getWindowList not implemented yet, requires node-window-manager',
+    );
     return [];
   }
 
   /**
    * 激活指定窗口
-   * TODO: 实现窗口切换功能
+   * 注意：需要安装 node-window-manager 才能使用此功能
    */
   async activateWindow(windowHandle: string): Promise<void> {
     this.assertNotDestroyed();
@@ -488,25 +494,34 @@ Status: Ready
       console.log(`🪟 Activate window: ${windowHandle}`);
     }
 
-    // TODO: 实际实现
-    // 使用 node-window-manager 切换窗口
+    // TODO: 需要安装并集成 node-window-manager
+    // const { windowManager } = require('node-window-manager');
+    // const windows = windowManager.getWindows();
+    // const targetWindow = windows.find(w => w.getHWND().toString() === windowHandle);
+    // if (targetWindow) {
+    //   targetWindow.bringToTop();
+    // }
+
+    console.warn(
+      '⚠️ activateWindow not implemented yet, requires node-window-manager',
+    );
   }
 
   /**
    * 获取剪贴板内容
-   * TODO: 实现剪贴板读取
    */
   async getClipboard(): Promise<string> {
     this.assertNotDestroyed();
 
-    // TODO: 实际实现
-    // 使用 clipboardy 或 Windows API
-    return '';
+    if (this.options.debug) {
+      console.log('📋 Get clipboard');
+    }
+
+    return windowsNative.getClipboard();
   }
 
   /**
    * 设置剪贴板内容
-   * TODO: 实现剪贴板写入
    */
   async setClipboard(text: string): Promise<void> {
     this.assertNotDestroyed();
@@ -515,7 +530,6 @@ Status: Ready
       console.log(`📋 Set clipboard: "${text}"`);
     }
 
-    // TODO: 实际实现
-    // 使用 clipboardy.writeSync(text)
+    windowsNative.setClipboard(text);
   }
 }

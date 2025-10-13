@@ -8,12 +8,12 @@ import {
 import AgentOverWindows, {
   type AgentOverWindowsOpt,
 } from './customMidsceneDevice/agentOverWindows';
-import { WindowsClientConnectionManager } from './windowsClientConnectionManager';
 
 /**
  * WindowsOperateService - Windows 应用操作服务
  *
  * 提供 Windows 桌面应用的 AI 自动化操作能力
+ * 使用本地 nut-js 实现，无需远程 Windows 客户端
  * 设计参考 WebOperateService，适配 Windows 平台特性
  */
 export class WindowsOperateService extends EventEmitter {
@@ -23,7 +23,6 @@ export class WindowsOperateService extends EventEmitter {
   // ==================== 核心属性 ====================
   public agent: AgentOverWindows | null = null;
   private isInitialized: boolean = false;
-  private connectionManager: WindowsClientConnectionManager;
 
   // ==================== 重连机制属性 ====================
   private reconnectAttempts: number = 0;
@@ -36,7 +35,6 @@ export class WindowsOperateService extends EventEmitter {
   // ==================== AgentOverWindows 默认配置 ====================
   private readonly defaultAgentConfig: AgentOverWindowsOpt = {
     closeAfterDisconnect: false,
-    cacheId: 'midscene-windows',
     generateReport: true,
     autoPrintReportMsg: true,
     deviceOptions: {
@@ -47,8 +45,6 @@ export class WindowsOperateService extends EventEmitter {
 
   private constructor() {
     super();
-    // 获取连接管理器实例
-    this.connectionManager = WindowsClientConnectionManager.getInstance();
     // 延迟初始化 agent
   }
 
@@ -172,10 +168,9 @@ export class WindowsOperateService extends EventEmitter {
 
     console.log('🔧 正在创建 AgentOverWindows，绑定 onTaskStartTip 回调...');
 
-    // 创建 Agent，传入连接管理器
+    // 创建 Agent（本地模式，无需连接管理器）
     this.agent = new AgentOverWindows({
       ...this.defaultAgentConfig,
-      connectionManager: this.connectionManager,
     });
 
     // 设置任务开始提示回调
@@ -192,16 +187,9 @@ export class WindowsOperateService extends EventEmitter {
       throw new Error('Agent 未创建，无法设置回调');
     }
 
-    // 保存原始回调
-    const originalCallback = this.agent.onTaskStartTip;
-
-    // 设置新的回调，同时保留原有功能
+    // 直接设置回调，不要包装已有的回调
+    // 避免形成递归调用链
     this.agent.onTaskStartTip = async (tip: string) => {
-      // 先调用原始的回调
-      if (originalCallback) {
-        await originalCallback(tip);
-      }
-      // 再调用我们的回调
       this.handleTaskStartTip(tip);
     };
   }

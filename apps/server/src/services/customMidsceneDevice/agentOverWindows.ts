@@ -1,31 +1,29 @@
 import { Agent, type AgentOpt } from '@midscene/core/agent';
-import { WindowsClientConnectionManager } from '../windowsClientConnectionManager';
-import WindowsDeviceProxy, {
-  type WindowsDeviceProxyOptions,
-} from './windowsDeviceProxy';
+import WindowsDevice, { type WindowsDeviceOptions } from './windowsDevice';
 
 /**
  * AgentOverWindows 构造函数选项
  */
 export interface AgentOverWindowsOpt extends AgentOpt {
-  /** Windows 设备代理选项 */
-  deviceOptions?: WindowsDeviceProxyOptions;
+  /** Windows 设备选项 */
+  deviceOptions?: WindowsDeviceOptions;
   /** 是否在销毁时清理资源 */
   closeAfterDisconnect?: boolean;
-  /** 连接管理器实例（可选，不提供则使用单例） */
-  connectionManager?: WindowsClientConnectionManager;
 }
 
 /**
  * AgentOverWindows - Windows 平台的 Midscene Agent 实现
  *
  * 继承自 Agent 基类，提供 Windows 桌面应用的 AI 自动化能力
+ * 使用 nut-js 直接在本地执行 Windows 操作
+ *
  * 设计参考：
  * - AndroidAgent: packages/android/src/agent.ts
  * - AgentOverChromeBridge: packages/web/src/bridge-mode/agent-cli-side.ts
  *
  * 核心特性：
  * - 完整的 AI 任务执行能力（继承自 Agent）
+ * - 本地 Windows 操作（通过 nut-js）
  * - Windows 特定的窗口管理
  * - 生命周期管理
  * - 错误处理和重试机制
@@ -89,24 +87,16 @@ export interface AgentOverWindowsOpt extends AgentOpt {
  * await agent.logScreenshot('测试截图', { content: '这是一个测试' })
  * ```
  */
-export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
+export default class AgentOverWindows extends Agent<WindowsDevice> {
   // ==================== 私有属性 ====================
   private destroyAfterDisconnectFlag?: boolean;
   private isLaunched = false;
-  private connectionManager: WindowsClientConnectionManager;
 
   // ==================== 构造函数 ====================
 
   constructor(opts?: AgentOverWindowsOpt) {
-    // 获取或创建连接管理器
-    const connectionManager =
-      opts?.connectionManager || WindowsClientConnectionManager.getInstance();
-
-    // 创建 WindowsDeviceProxy 实例
-    const windowsDeviceProxy = new WindowsDeviceProxy(
-      connectionManager,
-      opts?.deviceOptions,
-    );
+    // 创建 WindowsDevice 实例（本地模式，使用 nut-js）
+    const windowsDevice = new WindowsDevice(opts?.deviceOptions);
 
     // 调用父类构造函数
     // Agent 会自动初始化：
@@ -114,10 +104,9 @@ export default class AgentOverWindows extends Agent<WindowsDeviceProxy> {
     // - taskExecutor: 任务执行器
     // - dump: 执行记录
     // - modelConfigManager: 模型配置管理
-    super(windowsDeviceProxy, opts);
+    super(windowsDevice, opts);
 
-    // 保存引用
-    this.connectionManager = connectionManager;
+    // 保存配置
     this.destroyAfterDisconnectFlag = opts?.closeAfterDisconnect;
   }
 
