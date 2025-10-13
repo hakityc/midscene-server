@@ -15,7 +15,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useClientTypeFlowActions } from '@/hooks/useClientTypeFlowActions';
-import type { ClientType, FlowAction, FlowActionType } from '@/types/debug';
+import type { ClientType, FlowAction } from '@/types/debug';
 
 interface FlowActionItemProps {
   action: FlowAction;
@@ -32,12 +32,8 @@ export function FlowActionItem({
   onRemove,
   clientType,
 }: FlowActionItemProps) {
-  const {
-    loading,
-    error,
-    getFlowActionsByCategory,
-    getCategoryLabel,
-  } = useClientTypeFlowActions();
+  const { loading, error, getFlowActionsByCategory, getCategoryLabel } =
+    useClientTypeFlowActions();
 
   // 按类别分组
   const actionsByCategory = useMemo(
