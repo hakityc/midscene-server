@@ -314,6 +314,15 @@ export default function MidsceneDebugPage() {
               <CardTitle>消息构建器</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <Button
+                onClick={handleSend}
+                disabled={status !== 'open'}
+                className="w-full h-11"
+                size="lg"
+              >
+                <Send className="h-5 w-5 mr-2" />
+                发送消息
+              </Button>
               <Tabs defaultValue="builder">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="builder">表单模式</TabsTrigger>
@@ -355,16 +364,6 @@ export default function MidsceneDebugPage() {
                   ❌ {error}
                 </div>
               )}
-
-              <Button
-                onClick={handleSend}
-                disabled={status !== 'open'}
-                className="w-full h-11"
-                size="lg"
-              >
-                <Send className="h-5 w-5 mr-2" />
-                发送消息
-              </Button>
             </CardContent>
           </Card>
 
@@ -382,17 +381,17 @@ export default function MidsceneDebugPage() {
             ) : (
               <>
                 <div className="h-1/2">
-                  <TemplatePanel
-                    templates={templates}
-                    onLoad={handleLoadTemplate}
-                  />
-                </div>
-                <div className="h-1/2">
                   <MessageMonitor
                     messages={messages}
                     onClear={clearMessages}
                     status={status}
                     onConnect={connect}
+                  />
+                </div>
+                <div className="h-1/2">
+                  <TemplatePanel
+                    templates={templates}
+                    onLoad={handleLoadTemplate}
                   />
                 </div>
               </>
