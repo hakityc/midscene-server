@@ -1,3 +1,4 @@
+import { WindowsOperateService } from '../../../services/windowsOperateService';
 import type { MessageHandler } from '../../../types/websocket';
 import { wsLogger } from '../../../utils/logger';
 import {
@@ -20,7 +21,8 @@ export const createWindowsCommandHandler = (): MessageHandler => {
     try {
       const { meta, payload } = message;
       const command = payload.params as Command;
-      
+      const windowsOperateService = WindowsOperateService.getInstance();
+
       wsLogger.info(
         {
           ...meta,
@@ -30,34 +32,42 @@ export const createWindowsCommandHandler = (): MessageHandler => {
         '执行 Windows 服务命令',
       );
 
-      // TODO: 实现 Windows 特定的服务控制逻辑
-      // 这里应该调用 Windows 特定的服务而不是 WebOperateService
       switch (command) {
         case Command.START:
-          // await windowsOperateService.start();
-          wsLogger.info('Windows 服务启动（待实现）');
+          await windowsOperateService.start();
+          wsLogger.info('Windows 服务已启动');
           break;
         case Command.STOP:
-          // await windowsOperateService.stop();
-          wsLogger.info('Windows 服务停止（待实现）');
+          await windowsOperateService.stop();
+          wsLogger.info('Windows 服务已停止');
           break;
         case Command.RESTART:
-          // await windowsOperateService.restart();
-          wsLogger.info('Windows 服务重启（待实现）');
+          await windowsOperateService.stop();
+          await windowsOperateService.start();
+          wsLogger.info('Windows 服务已重启');
           break;
       }
 
-      wsLogger.info({ messageId: message.meta.messageId }, 'Windows 服务命令执行成功');
-      const response = createSuccessResponse(message, `Windows 服务命令执行成功`);
+      wsLogger.info(
+        { messageId: message.meta.messageId },
+        'Windows 服务命令执行成功',
+      );
+      const response = createSuccessResponse(
+        message,
+        `Windows 服务命令执行成功: ${command}`,
+      );
       send(response);
     } catch (error) {
       wsLogger.error(
         { error, messageId: message.meta.messageId },
         'Windows 服务命令执行失败',
       );
-      const response = createErrorResponse(message, error, 'Windows 服务命令执行失败');
+      const response = createErrorResponse(
+        message,
+        error,
+        'Windows 服务命令执行失败',
+      );
       send(response);
     }
   };
 };
-

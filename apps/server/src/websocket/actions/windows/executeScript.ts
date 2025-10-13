@@ -1,11 +1,10 @@
 import yaml from 'yaml';
+import { WindowsOperateService } from '../../../services/windowsOperateService';
 import type { MessageHandler } from '../../../types/websocket';
-import { WebSocketAction } from '../../../utils/enums';
 import { wsLogger } from '../../../utils/logger';
 import {
   createErrorResponse,
   createSuccessResponse,
-  createSuccessResponseWithMeta,
 } from '../../builders/messageBuilder';
 
 /**
@@ -25,6 +24,8 @@ export function executeWindowsScriptHandler(): MessageHandler {
       },
       '处理 Windows AI 脚本请求',
     );
+
+    const windowsOperateService = WindowsOperateService.getInstance();
 
     try {
       const rawParams = payload?.params as unknown;
@@ -51,52 +52,46 @@ export function executeWindowsScriptHandler(): MessageHandler {
         'Windows 脚本内容',
       );
 
-      // 发送处理进度
-      const progressResponse = createSuccessResponseWithMeta(
-        message,
-        {
-          stage: 'parsing',
-          tip: '正在解析 Windows 脚本...',
-        },
-        WebSocketAction.CALLBACK_AI_STEP,
-      );
-      send(progressResponse);
-
-      // TODO: 实现 Windows 特定的脚本执行逻辑
-      // const windowsOperateService = WindowsOperateService.getInstance();
-      // const scriptResult = await windowsOperateService.executeScript(script);
-
-      // 模拟脚本执行
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const scriptResult = {
-        result: {
-          message: 'Windows 脚本执行完成（待实现）',
+      let scriptResult: any;
+      try {
+        // 执行 Windows 脚本
+        scriptResult = await windowsOperateService.executeScript(
           script,
-        },
-        _hasErrors: false,
-        _taskErrors: [],
-      };
+          3,
+          payload.originalCmd,
+        );
+        console.log('🚀 Windows AI 脚本处理完成，返回结果:', scriptResult);
 
-      // 将执行结果返回给客户端
-      const hasErrors = scriptResult?._hasErrors || false;
-      const taskErrors = scriptResult?._taskErrors || [];
+        // 将执行结果返回给客户端，包含错误信息（如果有）
+        const hasErrors = scriptResult?._hasErrors || false;
+        const taskErrors = scriptResult?._taskErrors || [];
 
-      let responseMessage = `${payload.action} 处理完成`;
-      if (hasErrors && taskErrors.length > 0) {
-        const errorSummary = taskErrors
-          .map((err: any) => `${err.taskName}: ${err.error.message}`)
-          .join('; ');
-        responseMessage += ` (⚠️ 部分任务执行失败: ${errorSummary})`;
+        let responseMessage = `${payload.action} 处理完成`;
+        if (hasErrors && taskErrors.length > 0) {
+          const errorSummary = taskErrors
+            .map((err: any) => `${err.taskName}: ${err.error.message}`)
+            .join('; ');
+          responseMessage += ` (⚠️ 部分任务执行失败: ${errorSummary})`;
+        }
+
+        const response = createSuccessResponse(message, {
+          message: responseMessage,
+          result: scriptResult?.result,
+          hasErrors,
+          taskErrors: hasErrors ? taskErrors : undefined,
+        });
+        send(response);
+      } catch (error) {
+        wsLogger.error(
+          {
+            connectionId,
+            error,
+            messageId: meta.messageId,
+          },
+          'Windows AI 脚本执行失败',
+        );
+        throw error;
       }
-
-      const response = createSuccessResponse(message, {
-        message: responseMessage,
-        result: scriptResult?.result,
-        hasErrors,
-        taskErrors: hasErrors ? taskErrors : undefined,
-      });
-      send(response);
     } catch (error) {
       wsLogger.error(
         {

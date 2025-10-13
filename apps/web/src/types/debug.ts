@@ -7,11 +7,15 @@ export type WebSocketAction =
   | 'siteScript'
   | 'command';
 
+// 客户端类型
+export type ClientType = 'web' | 'windows';
+
 // 消息元数据
 export interface MessageMeta {
   messageId: string;
   conversationId: string;
   timestamp: number;
+  clientType?: ClientType; // 客户端类型：web 或 windows，不传默认为 web
 }
 
 // Flow 动作类型

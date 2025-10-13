@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import type {
+  ClientType,
   FlowAction,
   MessageMeta,
   Task,
@@ -8,13 +9,25 @@ import type {
 
 /**
  * 生成消息元数据
+ * @param conversationId - 会话 ID（可选）
+ * @param clientType - 客户端类型（可选，默认不设置，由服务端自动识别为 web）
  */
-export function generateMeta(conversationId?: string): MessageMeta {
-  return {
+export function generateMeta(
+  conversationId?: string,
+  clientType?: ClientType,
+): MessageMeta {
+  const meta: MessageMeta = {
     messageId: uuidv4(),
     conversationId: conversationId || uuidv4(),
     timestamp: Date.now(),
   };
+
+  // 只在明确指定时才添加 clientType
+  if (clientType) {
+    meta.clientType = clientType;
+  }
+
+  return meta;
 }
 
 /**

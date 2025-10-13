@@ -1,5 +1,6 @@
 import { createNodeWebSocket } from '@hono/node-ws';
 import type { Hono } from 'hono';
+import { validateMessageAction } from '../config/clientTypeActions';
 import type { WebSocketClient, WebSocketMessage } from '../types/websocket';
 import { WebSocketAction } from '../utils/enums';
 import { setLogContextFromMessage, wsLogger } from '../utils/logger';
@@ -141,6 +142,31 @@ export const setupWebSocket = (app: Hono) => {
       handleUnknownAction(ws, message as any, String(action));
       return;
     }
+
+    // 验证 action 是否被 clientType 支持
+    const clientType = (message as any).meta?.clientType || 'web';
+    const validation = validateMessageAction(
+      clientType,
+      action as WebSocketAction,
+    );
+    if (!validation.valid) {
+      wsLogger.warn(
+        {
+          connectionId,
+          clientType,
+          action,
+          error: validation.error,
+        },
+        'Action 验证失败',
+      );
+      const errorMessage = MessageBuilder.createErrorResponse(
+        message as any,
+        validation.error || 'Action 不支持',
+      );
+      sendMessage(ws, errorMessage);
+      return;
+    }
+
     const handler = handlers[action as WebSocketAction];
     if (!handler) {
       handleUnknownAction(ws, message as any, String(action));

@@ -321,7 +321,11 @@ export default function MidsceneDebugPage() {
                 </TabsList>
 
                 <TabsContent value="builder" className="space-y-4">
-                  <ActionSelector value={action} onChange={setAction} />
+                  <ActionSelector
+                    value={action}
+                    onChange={setAction}
+                    clientType={meta.clientType || 'web'}
+                  />
                   <Separator />
                   {renderForm()}
                   <Separator />
@@ -367,31 +371,31 @@ export default function MidsceneDebugPage() {
           {/* 右侧：监控和历史 */}
           <div className="space-y-6">
             {showHistory ? (
+              <div className="h-[calc(100vh-10rem)]">
+                <HistoryPanel
+                  history={history}
+                  onLoad={handleLoadHistory}
+                  onRemove={removeHistory}
+                  onClear={clearHistory}
+                />
+              </div>
+            ) : (
               <>
-                <div className="h-[calc(50vh-1rem)]">
+                <div className="h-1/2">
                   <TemplatePanel
                     templates={templates}
                     onLoad={handleLoadTemplate}
                   />
                 </div>
-                <div className="h-[calc(50vh-1rem)]">
-                  <HistoryPanel
-                    history={history}
-                    onLoad={handleLoadHistory}
-                    onRemove={removeHistory}
-                    onClear={clearHistory}
+                <div className="h-1/2">
+                  <MessageMonitor
+                    messages={messages}
+                    onClear={clearMessages}
+                    status={status}
+                    onConnect={connect}
                   />
                 </div>
               </>
-            ) : (
-              <div className="h-[calc(100vh-10rem)]">
-                <MessageMonitor
-                  messages={messages}
-                  onClear={clearMessages}
-                  status={status}
-                  onConnect={connect}
-                />
-              </div>
             )}
           </div>
         </div>

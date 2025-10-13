@@ -240,7 +240,6 @@ try {
 
 记录关键信息用于调试和监控：
 
-
 ```typescript
 wsLogger.info({
   connectionId,
@@ -330,4 +329,3 @@ A: Windows 处理器当前是占位实现，需要等待 Windows 操作服务开
 **Q: 如何添加进度回调？**
 
 A: 使用 `createSuccessResponseWithMeta` 发送进度信息，action 使用 `CALLBACK_AI_STEP`。
-
