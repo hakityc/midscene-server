@@ -9,7 +9,7 @@ import { MessageMonitor } from '@/components/debug/MessageMonitor';
 import { MetaForm } from '@/components/debug/MetaForm';
 import {
   AiForm,
-  DownloadVideoForm,
+  CommandForm,
   GenericForm,
   SiteScriptForm,
 } from '@/components/debug/SimpleActionForms';
@@ -32,6 +32,7 @@ import type {
 import {
   buildAiMessage,
   buildAiScriptMessage,
+  buildCommandScriptMessage,
   buildSiteScriptMessage,
   generateMeta,
 } from '@/utils/messageBuilder';
@@ -71,8 +72,7 @@ export default function MidsceneDebugPage() {
     'console.log("Hello from Midscene");',
   );
   const [siteScriptCmd, setSiteScriptCmd] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [videoSavePath, setVideoSavePath] = useState('');
+  const [command, setCommand] = useState('start');
 
   // 模板
   const templates = useMemo(() => getAllTemplates(), []);
@@ -114,9 +114,8 @@ export default function MidsceneDebugPage() {
         if (formData.siteScript) setSiteScript(formData.siteScript);
         if (formData.siteScriptCmd) setSiteScriptCmd(formData.siteScriptCmd);
         break;
-      case 'downloadVideo':
-        if (formData.videoUrl) setVideoUrl(formData.videoUrl);
-        if (formData.videoSavePath) setVideoSavePath(formData.videoSavePath);
+      case 'command':
+        if (formData.params) setCommand(formData.params as string);
         break;
     }
   }, []);
@@ -132,14 +131,8 @@ export default function MidsceneDebugPage() {
         return buildAiMessage(aiPrompt, meta, option);
       case 'siteScript':
         return buildSiteScriptMessage(siteScript, siteScriptCmd, meta);
-      case 'downloadVideo':
-        return {
-          meta,
-          payload: {
-            action: 'downloadVideo',
-            params: { url: videoUrl, savePath: videoSavePath },
-          },
-        };
+      case 'command':
+        return buildCommandScriptMessage(command, meta);
       default:
         return {
           meta,
@@ -157,8 +150,7 @@ export default function MidsceneDebugPage() {
     aiPrompt,
     siteScript,
     siteScriptCmd,
-    videoUrl,
-    videoSavePath,
+    command,
   ]);
 
   // 发送消息
@@ -196,6 +188,8 @@ export default function MidsceneDebugPage() {
     } else if (msg.payload.action === 'siteScript') {
       setSiteScript(msg.payload.params as string);
       setSiteScriptCmd(msg.payload.originalCmd || '');
+    } else if (msg.payload.action === 'command') {
+      setCommand(msg.payload.params as string);
     }
 
     setShowHistory(false);
@@ -249,15 +243,8 @@ export default function MidsceneDebugPage() {
             onOriginalCmdChange={setSiteScriptCmd}
           />
         );
-      case 'downloadVideo':
-        return (
-          <DownloadVideoForm
-            url={videoUrl}
-            savePath={videoSavePath}
-            onUrlChange={setVideoUrl}
-            onSavePathChange={setVideoSavePath}
-          />
-        );
+      case 'command':
+        return <CommandForm command={command} onChange={setCommand} />;
       default:
         return <GenericForm actionType={action} />;
     }

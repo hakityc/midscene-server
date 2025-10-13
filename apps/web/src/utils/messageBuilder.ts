@@ -176,6 +176,22 @@ export function buildSiteScriptMessage(
 }
 
 /**
+ * 构建命令脚本信息
+ */
+export function buildCommandScriptMessage(
+  command: string,
+  meta: MessageMeta,
+): WsInboundMessage {
+  return {
+    meta,
+    payload: {
+      action: 'command',
+      params: command,
+    },
+  };
+}
+
+/**
  * 格式化 JSON（用于显示）
  */
 export function formatJson(obj: unknown): string {

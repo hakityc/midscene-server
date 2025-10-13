@@ -34,9 +34,9 @@ const actionOptions: Array<{
     description: '在网站上执行 JavaScript 代码',
   },
   {
-    value: 'downloadVideo',
-    label: 'Download Video',
-    description: '下载视频文件',
+    value: 'command',
+    label: 'Command',
+    description: '执行控制命令 (start, stop 等)',
   },
   {
     value: 'connectTab',
@@ -47,11 +47,6 @@ const actionOptions: Array<{
     value: 'agent',
     label: 'Agent',
     description: '执行 Agent 任务',
-  },
-  {
-    value: 'command',
-    label: 'Command',
-    description: '执行系统命令',
   },
 ];
 

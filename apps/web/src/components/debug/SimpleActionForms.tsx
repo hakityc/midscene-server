@@ -65,42 +65,41 @@ export function SiteScriptForm({
   );
 }
 
-interface DownloadVideoFormProps {
-  url: string;
-  savePath?: string;
-  onUrlChange: (url: string) => void;
-  onSavePathChange: (path: string) => void;
+interface CommandFormProps {
+  command: string;
+  onChange: (command: string) => void;
 }
 
-export function DownloadVideoForm({
-  url,
-  savePath,
-  onUrlChange,
-  onSavePathChange,
-}: DownloadVideoFormProps) {
+export function CommandForm({ command, onChange }: CommandFormProps) {
   return (
     <div className="space-y-3">
       <div>
-        <Label className="text-sm font-semibold">视频 URL *</Label>
+        <Label className="text-sm font-semibold">命令 *</Label>
         <Input
-          value={url}
-          onChange={(e) => onUrlChange(e.target.value)}
-          placeholder="https://example.com/video.mp4"
-          className="text-xs"
-        />
-      </div>
-
-      <div>
-        <Label className="text-sm font-semibold">保存路径 (可选)</Label>
-        <Input
-          value={savePath || ''}
-          onChange={(e) => onSavePathChange(e.target.value)}
-          placeholder="/path/to/save/video.mp4"
+          value={command}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="start 或 stop"
           className="text-xs"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          💡 留空则使用默认路径
+          💡 目前支持: start (启动), stop (停止)
         </p>
+      </div>
+      <div className="p-3 bg-muted/50 rounded-lg">
+        <p className="text-xs font-semibold mb-2">可用命令：</p>
+        <ul className="text-xs text-muted-foreground space-y-1">
+          <li>
+            • <code className="px-1 py-0.5 bg-background rounded">start</code> -
+            启动服务
+          </li>
+          <li>
+            • <code className="px-1 py-0.5 bg-background rounded">stop</code> -
+            停止服务
+          </li>
+          <li className="text-amber-600 dark:text-amber-400">
+            • 更多命令即将支持...
+          </li>
+        </ul>
       </div>
     </div>
   );

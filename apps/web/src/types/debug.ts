@@ -5,7 +5,6 @@ export type WebSocketAction =
   | 'aiScript'
   | 'agent'
   | 'siteScript'
-  | 'downloadVideo'
   | 'command';
 
 // 消息元数据
@@ -137,9 +136,8 @@ export interface SiteScriptParams {
   originalCmd?: string;
 }
 
-export interface DownloadVideoParams {
-  url: string;
-  savePath?: string;
+export interface CommandParams {
+  command: 'start' | 'stop' | string; // 支持 start, stop 及后续扩展
 }
 
 // WebSocket 消息结构

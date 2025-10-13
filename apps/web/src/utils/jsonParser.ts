@@ -32,8 +32,7 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
     aiPrompt?: string;
     siteScript?: string;
     siteScriptCmd?: string;
-    videoUrl?: string;
-    videoSavePath?: string;
+    params?: string;
   } = {
     action,
     meta: parsedMeta,
@@ -61,10 +60,8 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
       break;
     }
 
-    case 'downloadVideo': {
-      const { url, savePath } = payload.params as any;
-      result.videoUrl = url;
-      result.videoSavePath = savePath;
+    case 'command': {
+      result.params = payload.params as string;
       break;
     }
   }
