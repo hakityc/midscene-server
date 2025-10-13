@@ -134,7 +134,7 @@ export class WindowsNativeImpl {
       return `data:image/png;base64,${buffer.toString('base64')}`;
     } catch (error) {
       console.error('截图失败:', error);
-      return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      throw error;
     }
   }
 
