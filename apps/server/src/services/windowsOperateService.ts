@@ -24,6 +24,11 @@ export class WindowsOperateService extends EventEmitter {
   public agent: AgentOverWindows | null = null;
   private isInitialized: boolean = false;
 
+  // ==================== 回调机制属性 ====================
+  private taskTipCallbacks: Array<
+    (tip: string, bridgeError?: Error | null) => void
+  > = [];
+
   // ==================== AgentOverWindows 默认配置 ====================
   // 注意：不要在这里使用箭头函数引用 this，会导致上下文问题
   // onTaskStartTip 回调会在 createAgent() 方法中动态创建
@@ -235,8 +240,158 @@ export class WindowsOperateService extends EventEmitter {
       'Windows AI 任务开始执行',
     );
 
+    // 触发所有注册的回调
+    for (const callback of this.taskTipCallbacks) {
+      try {
+        callback(tip);
+      } catch (error) {
+        console.warn('taskTipCallback 执行出错:', error);
+      }
+    }
+
     // 发射事件，让其他地方可以监听到
     this.emit('taskStartTip', tip);
+  }
+
+  // ==================== 回调机制方法 ====================
+
+  /**
+   * 注册任务提示回调
+   * @param callback 任务提示回调函数
+   */
+  public onTaskTip(
+    callback: (tip: string, bridgeError?: Error | null) => void,
+  ): void {
+    this.taskTipCallbacks.push(callback);
+  }
+
+  /**
+   * 移除任务提示回调
+   * @param callback 要移除的回调函数
+   */
+  public offTaskTip(
+    callback: (tip: string, bridgeError?: Error | null) => void,
+  ): void {
+    const index = this.taskTipCallbacks.indexOf(callback);
+    if (index > -1) {
+      this.taskTipCallbacks.splice(index, 1);
+    }
+  }
+
+  /**
+   * 清空所有任务提示回调
+   */
+  public clearTaskTipCallbacks(): void {
+    this.taskTipCallbacks = [];
+  }
+
+  /**
+   * 创建任务提示回调（封装通用逻辑，供 WebSocket handler 使用）
+   * @param config 配置对象
+   * @returns 配置好的任务提示回调函数
+   */
+  public createTaskTipCallback<T>(config: {
+    send: (response: any) => boolean;
+    message: T;
+    connectionId: string;
+    wsLogger: any;
+    createSuccessResponseWithMeta: (
+      message: T,
+      data: any,
+      meta: any,
+      action?: any,
+    ) => any;
+    createErrorResponse: (
+      message: T,
+      error: Error,
+      errorMessage: string,
+    ) => any;
+    formatTaskTip: (tip: string) => {
+      formatted: string;
+      icon: string;
+      category: string;
+    };
+    getTaskStageDescription: (category: string) => string;
+    WebSocketAction: any;
+  }): (tip: string, bridgeError?: Error | null) => void {
+    const {
+      send,
+      message,
+      connectionId,
+      wsLogger,
+      createSuccessResponseWithMeta,
+      createErrorResponse,
+      formatTaskTip,
+      getTaskStageDescription,
+      WebSocketAction,
+    } = config;
+
+    return (tip: string, bridgeError?: Error | null) => {
+      try {
+        // 格式化任务提示
+        const { formatted, icon, category } = formatTaskTip(tip);
+        const timestamp = new Date().toLocaleTimeString('zh-CN', {
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+
+        console.log(`🎯 WebSocket 监听到 Windows 任务提示: ${tip}`);
+
+        // 如果有错误，先发送警告消息
+        if (bridgeError) {
+          const errorMessage = `⚠️ 任务执行异常: ${bridgeError.message}`;
+          const errorResponse = createErrorResponse(
+            message,
+            bridgeError,
+            errorMessage,
+          );
+          send(errorResponse);
+
+          wsLogger.warn(
+            {
+              connectionId,
+              tip,
+              error: bridgeError.message,
+              stack: bridgeError.stack,
+            },
+            'Windows 任务执行出现异常，但任务继续执行',
+          );
+        }
+
+        // 发送格式化后的用户友好消息
+        const response = createSuccessResponseWithMeta(
+          message,
+          formatted,
+          {
+            originalTip: tip,
+            category,
+            icon,
+            timestamp,
+            stage: getTaskStageDescription(category),
+            bridgeError: bridgeError
+              ? {
+                  message: bridgeError.message,
+                  type: 'task_error',
+                }
+              : undefined,
+          },
+          WebSocketAction.CALLBACK_AI_STEP,
+        );
+        send(response);
+      } catch (error) {
+        // 捕获回调执行过程中的任何错误，避免影响主流程
+        wsLogger.warn(
+          {
+            connectionId,
+            tip,
+            error,
+          },
+          'Windows 任务提示回调执行失败，但不影响主任务',
+        );
+      }
+    };
   }
 
   // ==================== 执行相关方法 ====================

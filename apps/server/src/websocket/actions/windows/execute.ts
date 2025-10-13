@@ -6,8 +6,13 @@ import type {
 import { WebSocketAction } from '../../../utils/enums';
 import { wsLogger } from '../../../utils/logger';
 import {
+  formatTaskTip,
+  getTaskStageDescription,
+} from '../../../utils/taskTipFormatter';
+import {
   createErrorResponse,
   createSuccessResponse,
+  createSuccessResponseWithMeta,
 } from '../../builders/messageBuilder';
 
 /**
@@ -29,19 +34,49 @@ export function createWindowsAiHandler(): MessageHandler {
 
     const windowsOperateService = WindowsOperateService.getInstance();
 
+    // 使用封装好的方法创建任务提示回调
+    const taskTipCallback = windowsOperateService.createTaskTipCallback({
+      send,
+      message: message as WebSocketMessage,
+      connectionId,
+      wsLogger,
+      createSuccessResponseWithMeta: createSuccessResponseWithMeta as any,
+      createErrorResponse: createErrorResponse as any,
+      formatTaskTip,
+      getTaskStageDescription,
+      WebSocketAction,
+    });
+
     try {
       const params = payload.params;
 
-      // 执行 Windows AI 任务
-      await windowsOperateService.execute(params);
+      // 注册任务提示回调
+      windowsOperateService.onTaskTip(taskTipCallback);
 
-      const response = createSuccessResponse(
-        message as WebSocketMessage,
-        `Windows AI 处理完成`,
-        WebSocketAction.AI,
-      );
-      send(response);
+      try {
+        // 执行 Windows AI 任务
+        await windowsOperateService.execute(params);
+
+        const response = createSuccessResponse(
+          message as WebSocketMessage,
+          `Windows AI 处理完成`,
+          WebSocketAction.AI,
+        );
+        send(response);
+      } finally {
+        // 清理回调，避免内存泄漏
+        windowsOperateService.offTaskTip(taskTipCallback);
+      }
     } catch (error) {
+      // 清理回调，避免内存泄漏
+      try {
+        const windowsOperateService = WindowsOperateService.getInstance();
+        windowsOperateService.offTaskTip(taskTipCallback);
+      } catch (cleanupError) {
+        // 忽略清理错误
+        console.warn('清理回调时出错:', cleanupError);
+      }
+
       wsLogger.error(
         {
           connectionId,
