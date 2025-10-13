@@ -230,6 +230,7 @@ export default function MidsceneDebugPage() {
             enableLoadingShade={enableLoadingShade}
             onTasksChange={setTasks}
             onLoadingShadeChange={setEnableLoadingShade}
+            clientType={meta.clientType || 'web'}
           />
         );
       case 'ai':

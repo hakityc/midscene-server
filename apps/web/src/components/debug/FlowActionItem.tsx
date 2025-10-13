@@ -1,42 +1,50 @@
-import { GripVertical, Trash2 } from 'lucide-react';
+import { AlertCircle, GripVertical, Loader2, Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import type { FlowAction, FlowActionType } from '@/types/debug';
+import { useClientTypeFlowActions } from '@/hooks/useClientTypeFlowActions';
+import type { ClientType, FlowAction, FlowActionType } from '@/types/debug';
 
 interface FlowActionItemProps {
   action: FlowAction;
   index: number;
   onChange: (action: FlowAction) => void;
   onRemove: () => void;
+  clientType: ClientType;
 }
-
-const actionTypeOptions: Array<{ value: FlowActionType; label: string }> = [
-  { value: 'aiTap', label: 'AI 点击 (aiTap)' },
-  { value: 'aiInput', label: 'AI 输入 (aiInput)' },
-  { value: 'aiAssert', label: 'AI 断言 (aiAssert)' },
-  { value: 'sleep', label: '等待 (sleep)' },
-  { value: 'aiHover', label: 'AI 悬停 (aiHover)' },
-  { value: 'aiScroll', label: 'AI 滚动 (aiScroll)' },
-  { value: 'aiWaitFor', label: 'AI 等待条件 (aiWaitFor)' },
-  { value: 'aiKeyboardPress', label: 'AI 按键 (aiKeyboardPress)' },
-];
 
 export function FlowActionItem({
   action,
   index,
   onChange,
   onRemove,
+  clientType,
 }: FlowActionItemProps) {
+  const {
+    loading,
+    error,
+    getFlowActionsByCategory,
+    getCategoryLabel,
+  } = useClientTypeFlowActions();
+
+  // 按类别分组
+  const actionsByCategory = useMemo(
+    () => getFlowActionsByCategory(clientType),
+    [clientType, getFlowActionsByCategory],
+  );
+
   const updateField = (field: string, value: unknown) => {
     onChange({ ...action, [field]: value } as FlowAction);
   };
@@ -313,11 +321,37 @@ export function FlowActionItem({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {actionTypeOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
+            {loading ? (
+              <div className="flex items-center justify-center p-2">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-xs">加载中...</span>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center p-2 text-destructive">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                <span className="text-xs">加载失败</span>
+              </div>
+            ) : (
+              <>
+                {Object.entries(actionsByCategory).map(
+                  ([category, actions]) => {
+                    if (actions.length === 0) return null;
+                    return (
+                      <SelectGroup key={category}>
+                        <SelectLabel>
+                          {getCategoryLabel(category as any)}
+                        </SelectLabel>
+                        {actions.map((cfg) => (
+                          <SelectItem key={cfg.type} value={cfg.type}>
+                            {cfg.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    );
+                  },
+                )}
+              </>
+            )}
           </SelectContent>
         </Select>
         <Button

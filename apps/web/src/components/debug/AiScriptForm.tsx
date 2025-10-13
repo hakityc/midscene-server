@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import type { Task } from '@/types/debug';
+import type { Task, ClientType } from '@/types/debug';
 import { TaskItem } from './TaskItem';
 
 interface AiScriptFormProps {
@@ -11,6 +11,7 @@ interface AiScriptFormProps {
   enableLoadingShade: boolean;
   onTasksChange: (tasks: Task[]) => void;
   onLoadingShadeChange: (enabled: boolean) => void;
+  clientType: ClientType;
 }
 
 export function AiScriptForm({
@@ -18,6 +19,7 @@ export function AiScriptForm({
   enableLoadingShade,
   onTasksChange,
   onLoadingShadeChange,
+  clientType,
 }: AiScriptFormProps) {
   const addTask = () => {
     const newTask: Task = {
@@ -58,6 +60,7 @@ export function AiScriptForm({
               index={taskIndex}
               onChange={(updatedTask) => updateTask(taskIndex, updatedTask)}
               onRemove={() => removeTask(taskIndex)}
+              clientType={clientType}
             />
           ))}
         </div>

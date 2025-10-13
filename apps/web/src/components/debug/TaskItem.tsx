@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import type { FlowAction, Task } from '@/types/debug';
+import type { ClientType, FlowAction, Task } from '@/types/debug';
 import { FlowActionItem } from './FlowActionItem';
 
 interface TaskItemProps {
@@ -12,9 +12,16 @@ interface TaskItemProps {
   index: number;
   onChange: (task: Task) => void;
   onRemove: () => void;
+  clientType: ClientType;
 }
 
-export function TaskItem({ task, index, onChange, onRemove }: TaskItemProps) {
+export function TaskItem({
+  task,
+  index,
+  onChange,
+  onRemove,
+  clientType,
+}: TaskItemProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const updateTask = (field: keyof Task, value: unknown) => {
@@ -113,6 +120,7 @@ export function TaskItem({ task, index, onChange, onRemove }: TaskItemProps) {
                         updateAction(actionIndex, updatedAction)
                       }
                       onRemove={() => removeAction(actionIndex)}
+                      clientType={clientType}
                     />
                   ))}
                 </div>
