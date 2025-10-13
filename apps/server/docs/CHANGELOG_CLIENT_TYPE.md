@@ -174,11 +174,11 @@ export const setupWebSocket = (app: Hono) => {
 
 | 操作 | Action | 实现状态 |
 |------|--------|---------|
-| AI 执行 | `AI` | ⚠️ 接口预留 |
-| AI 脚本 | `AI_SCRIPT` | ⚠️ 接口预留 |
-| 命令 | `COMMAND` | ⚠️ 接口预留 |
+| AI 执行 | `AI` | ✅ 完全实现 |
+| AI 脚本 | `AI_SCRIPT` | ✅ 完全实现 |
+| 命令 | `COMMAND` | ✅ 完全实现 |
 
-**注意：** Windows 端处理器当前为接口预留，等待 Windows 操作服务实现。
+**注意：** Windows 端处理器已完全接入 `WindowsOperateService`，支持完整的 Windows 桌面自动化。
 
 ## 向后兼容性
 
@@ -329,13 +329,45 @@ describe('WebSocket Integration', () => {
 });
 ```
 
+## 最新更新（2025-10-13）
+
+### ✅ Windows Service 接入完成
+
+所有 Windows actions 已成功接入 `WindowsOperateService`：
+
+1. **`windows/command.ts`**
+   - ✅ 接入 WindowsOperateService
+   - ✅ 支持 START、STOP、RESTART 命令
+   - ✅ 完整的错误处理
+
+2. **`windows/execute.ts`**
+   - ✅ 接入 WindowsOperateService.execute()
+   - ✅ 支持连接状态检查和自动重连
+   - ✅ 监听重连事件并通知客户端
+   - ✅ 区分连接错误和业务错误
+
+3. **`windows/executeScript.ts`**
+   - ✅ 接入 WindowsOperateService.executeScript()
+   - ✅ 支持 YAML 脚本执行
+   - ✅ 支持兜底命令
+   - ✅ 处理部分任务失败情况
+   - ✅ 返回结构化执行结果
+
+### Windows 端功能特性
+
+- ✅ **连接管理**：自动检测连接状态，支持断线重连
+- ✅ **事件通知**：通过 EventEmitter 通知重连状态
+- ✅ **错误处理**：区分连接错误和业务错误，提供友好的错误提示
+- ✅ **资源清理**：正确清理事件监听器，避免内存泄漏
+- ✅ **兜底机制**：脚本执行失败时支持兜底命令
+
 ## 未来计划
 
 ### 短期（1-2 周）
-- [ ] 实现 `WindowsOperateService`
-- [ ] 完善 Windows 端处理器实现
 - [ ] 添加单元测试覆盖
-- [ ] 优化错误处理
+- [ ] 添加集成测试
+- [ ] 优化重连机制
+- [ ] 性能监控和优化
 
 ### 中期（1-2 月）
 - [ ] 添加更多 Windows 操作

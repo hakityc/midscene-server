@@ -41,11 +41,11 @@ export function createMessageHandlers() {
       return async (ctx: any, message: any) => {
         // 获取客户端类型，默认为 web
         const clientType: ClientType = message?.meta?.clientType || 'web';
-        
+
         // 根据客户端类型选择对应的 handlers
         const handlers = clientType === 'windows' ? windowsHandlers : webHandlers;
         const handler = handlers[action as WebSocketAction];
-        
+
         if (handler) {
           await handler(ctx, message);
         }
@@ -206,7 +206,7 @@ export function createMessageHandlers() {
     get(_target, action: string | symbol) {
       return async (ctx: any, message: any) => {
         const clientType: ClientType = message?.meta?.clientType || 'web';
-        
+
         let handlers;
         switch (clientType) {
           case 'windows':
@@ -221,7 +221,7 @@ export function createMessageHandlers() {
           default:
             handlers = webHandlers;
         }
-        
+
         const handler = handlers[action as WebSocketAction];
         if (handler) {
           await handler(ctx, message);

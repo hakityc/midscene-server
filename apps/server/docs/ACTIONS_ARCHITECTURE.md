@@ -121,11 +121,11 @@ export function createMessageHandlers() {
 
 | 操作 | Action | 描述 | 状态 |
 |------|--------|------|------|
-| AI 执行 | `AI` | 执行 AI 指令 | ⚠️ 待实现 |
-| AI 脚本 | `AI_SCRIPT` | 执行 AI YAML 脚本 | ⚠️ 待实现 |
-| 命令 | `COMMAND` | 服务控制命令 | ⚠️ 待实现 |
+| AI 执行 | `AI` | 执行 AI 指令 | ✅ 已实现 |
+| AI 脚本 | `AI_SCRIPT` | 执行 AI YAML 脚本 | ✅ 已实现 |
+| 命令 | `COMMAND` | 服务控制命令 | ✅ 已实现 |
 
-**注意：** Windows 端操作当前为占位实现，需要集成 Windows 特定的操作服务。
+**注意：** Windows 端操作已接入 `WindowsOperateService`，支持完整的 Windows 桌面自动化功能。
 
 ## Windows 端实现指南
 
@@ -136,29 +136,37 @@ export const createWindowsCommandHandler = (): MessageHandler => {
   return async ({ send }, message) => {
     const { meta, payload } = message;
     const command = payload.params as Command;
+    const windowsOperateService = WindowsOperateService.getInstance();
     
     wsLogger.info({ ...meta, clientType: 'windows' }, '执行 Windows 服务命令');
 
-    // TODO: 实现 Windows 特定的服务控制逻辑
     switch (command) {
       case Command.START:
-        // await windowsOperateService.start();
+        await windowsOperateService.start();
+        wsLogger.info('Windows 服务已启动');
         break;
       case Command.STOP:
-        // await windowsOperateService.stop();
+        await windowsOperateService.stop();
+        wsLogger.info('Windows 服务已停止');
+        break;
+      case Command.RESTART:
+        await windowsOperateService.stop();
+        await windowsOperateService.start();
+        wsLogger.info('Windows 服务已重启');
         break;
     }
 
-    const response = createSuccessResponse(message, `Windows 服务命令执行成功`);
+    const response = createSuccessResponse(message, `Windows 服务命令执行成功: ${command}`);
     send(response);
   };
 };
 ```
 
 **实现要点：**
-- 使用独立的 Windows 操作服务（待创建）
-- 记录 `clientType: 'windows'` 用于日志跟踪
-- 错误处理与 Web 端保持一致
+- ✅ 使用 `WindowsOperateService` 单例
+- ✅ 支持 START、STOP、RESTART 命令
+- ✅ 记录 `clientType: 'windows'` 用于日志跟踪
+- ✅ 错误处理与 Web 端保持一致
 
 ### 2. Windows AI 处理器 (`windows/execute.ts`)
 
@@ -166,6 +174,7 @@ export const createWindowsCommandHandler = (): MessageHandler => {
 export function createWindowsAiHandler(): MessageHandler {
   return async ({ connectionId, send }, message) => {
     const { meta, payload } = message;
+    const windowsOperateService = WindowsOperateService.getInstance();
     
     wsLogger.info({
       connectionId,
@@ -177,37 +186,63 @@ export function createWindowsAiHandler(): MessageHandler {
     try {
       const params = payload.params;
       
-      // TODO: 实现 Windows 特定的 AI 处理逻辑
-      // const windowsOperateService = WindowsOperateService.getInstance();
-      // await windowsOperateService.execute(params);
-      
-      // 发送进度回调
-      const progressResponse = createSuccessResponseWithMeta(
-        message,
-        { stage: 'processing', tip: '正在处理...' },
-        WebSocketAction.CALLBACK_AI_STEP,
-      );
-      send(progressResponse);
+      // 检查连接状态
+      const isConnected = await windowsOperateService.checkAndReconnect();
+      if (!isConnected) {
+        const response = createErrorResponse(
+          message,
+          new Error('Windows 设备连接已断开，正在尝试重连中，请稍后重试'),
+          'Windows 设备连接断开',
+        );
+        send(response);
+        return;
+      }
 
-      // 返回成功响应
-      const response = createSuccessResponse(
-        message,
-        `Windows AI 处理完成`,
-        WebSocketAction.AI,
-      );
-      send(response);
+      // 监听重连事件
+      const onReconnected = () => {
+        const response = createSuccessResponse(
+          message,
+          'Windows 设备重连成功，可以继续操作',
+          WebSocketAction.CALLBACK_AI_STEP,
+        );
+        send(response);
+      };
+      windowsOperateService.once('reconnected', onReconnected);
+
+      try {
+        // 执行 Windows AI 任务
+        await windowsOperateService.execute(params);
+        
+        const response = createSuccessResponse(
+          message,
+          `Windows AI 处理完成`,
+          WebSocketAction.AI,
+        );
+        send(response);
+      } finally {
+        // 清理事件监听器
+        windowsOperateService.off('reconnected', onReconnected);
+      }
     } catch (error) {
-      const response = createErrorResponse(message, error, 'Windows AI 处理失败');
-      send(response);
+      const errorMessage = (error as Error).message || '';
+      if (errorMessage.includes('连接') || errorMessage.includes('connect')) {
+        const response = createErrorResponse(message, error, '连接错误，正在尝试重连');
+        send(response);
+      } else {
+        const response = createErrorResponse(message, error, 'Windows AI 处理失败');
+        send(response);
+      }
     }
   };
 }
 ```
 
 **实现要点：**
-- 支持进度回调机制
-- 使用与 Web 端一致的消息格式
-- 错误处理和日志记录
+- ✅ 使用 `WindowsOperateService` 执行 AI 任务
+- ✅ 支持连接状态检查和自动重连
+- ✅ 监听重连事件并通知客户端
+- ✅ 区分连接错误和业务错误
+- ✅ 使用与 Web 端一致的消息格式
 
 ### 3. Windows 脚本处理器 (`windows/executeScript.ts`)
 
@@ -215,6 +250,7 @@ export function createWindowsAiHandler(): MessageHandler {
 export function executeWindowsScriptHandler(): MessageHandler {
   return async ({ connectionId, send }, message) => {
     const { meta, payload } = message;
+    const windowsOperateService = WindowsOperateService.getInstance();
 
     try {
       // 解析参数
@@ -231,13 +267,30 @@ export function executeWindowsScriptHandler(): MessageHandler {
 
       const script = yaml.stringify(parsedParams);
 
-      // TODO: 执行 Windows 脚本
-      // const windowsOperateService = WindowsOperateService.getInstance();
-      // const scriptResult = await windowsOperateService.executeScript(script);
+      // 执行 Windows 脚本
+      const scriptResult = await windowsOperateService.executeScript(
+        script,
+        3,
+        payload.originalCmd,
+      );
+
+      // 处理执行结果
+      const hasErrors = scriptResult?._hasErrors || false;
+      const taskErrors = scriptResult?._taskErrors || [];
+
+      let responseMessage = `${payload.action} 处理完成`;
+      if (hasErrors && taskErrors.length > 0) {
+        const errorSummary = taskErrors
+          .map((err: any) => `${err.taskName}: ${err.error.message}`)
+          .join('; ');
+        responseMessage += ` (⚠️ 部分任务执行失败: ${errorSummary})`;
+      }
 
       const response = createSuccessResponse(message, {
-        message: 'Windows 脚本执行完成',
-        result: { script },
+        message: responseMessage,
+        result: scriptResult?.result,
+        hasErrors,
+        taskErrors: hasErrors ? taskErrors : undefined,
       });
       send(response);
     } catch (error) {
@@ -249,9 +302,12 @@ export function executeWindowsScriptHandler(): MessageHandler {
 ```
 
 **实现要点：**
-- 支持 JSON 和 YAML 格式的脚本
-- 解析逻辑与 Web 端保持一致
-- 返回结构化的执行结果
+- ✅ 使用 `WindowsOperateService.executeScript()` 执行脚本
+- ✅ 支持 JSON 和 YAML 格式的脚本
+- ✅ 支持兜底命令 (`originalCmd`)
+- ✅ 处理部分任务失败的情况
+- ✅ 返回结构化的执行结果（包含错误信息）
+- ✅ 解析逻辑与 Web 端保持一致
 
 ## 使用示例
 
