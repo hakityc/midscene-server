@@ -174,50 +174,19 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
 
   // ==================== AI 任务方法 ====================
 
-  /**
-   * 执行 AI 动作
-   *
-   * 这是一个高级方法，支持自然语言描述的任务
-   * 内部会自动处理截图、AI 分析、动作执行等流程
-   *
-   * @param prompt - 任务描述，如 "点击开始菜单"、"打开记事本"
-   * @param options - 执行选项
-   * @returns 执行结果或 YAML 流程
-   *
-   * @example
-   * ```ts
-   * // 简单任务
-   * await agent.aiAction('点击确定按钮')
-   *
-   * // 复杂任务
-   * await agent.aiAction('在搜索框输入"Hello"并点击搜索')
-   *
-   * // 带返回值的任务
-   * const result = await agent.aiAction('提取表格数据')
-   * console.log(result?.result)
-   * ```
-   */
-  async aiAction(
-    prompt: string,
-    options?: any,
-  ): Promise<
-    | {
-        result: Record<string, any>;
-      }
-    | {
-        yamlFlow?: import('@midscene/core').MidsceneYamlFlowItem[];
-      }
-    | undefined
-  > {
-    // 使用基类的 ai 方法执行任务
-    // ai 方法会：
-    // 1. 调用 taskExecutor 分析任务
-    // 2. 生成执行计划
-    // 3. 通过 interface (WindowsDevice) 执行动作（WindowsDevice 内部会检查状态）
-    // 4. 记录执行过程到 dump
-    // 5. 生成报告
-    return await this.ai(prompt, options?.type);
-  }
+  // 注意：不需要重写 aiAction 方法
+  // Agent 基类已经提供了完整的实现，包括：
+  // 1. 调用 taskExecutor 分析任务
+  // 2. 生成执行计划
+  // 3. 通过 interface (WindowsDevice) 执行动作
+  // 4. 记录执行过程到 dump
+  // 5. 生成报告
+  //
+  // 重写 aiAction 并调用 this.ai() 会导致无限递归：
+  // aiAction() → this.ai() → this.aiAction() → 无限循环
+  //
+  // 如果需要自定义行为，应该在 WindowsDevice 中实现
+  // beforeInvokeAction() 或 afterInvokeAction() 钩子
 
   // ==================== Windows 特定方法 ====================
 
@@ -343,23 +312,11 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
 
   // ==================== 便捷方法 ====================
 
-  /**
-   * 快速执行任务（aiAction 的简写）
-   *
-   * @param prompt - 任务描述
-   */
-  async execute(prompt: string): Promise<void> {
-    await this.aiAction(prompt);
-  }
-
-  /**
-   * 快速执行断言（aiAssert 的简写）
-   *
-   * @param assertion - 断言描述
-   */
-  async expect(assertion: string): Promise<void> {
-    await this.aiAssert(assertion);
-  }
+  // 注意：execute 和 expect 方法已由 Agent 基类提供
+  // 不需要在这里重写
+  //
+  // 如果重写并调用 this.aiAction() 或 this.aiAssert()
+  // 可能会导致意外的行为或循环调用
 
   // ==================== 工具方法 ====================
 
