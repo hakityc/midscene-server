@@ -1,6 +1,7 @@
 import type { Context, Hono } from 'hono';
 import { requestLogger } from '../middleware/logger';
 import clientTypeActionsRouter from './clientTypeActions';
+import clientTypeFlowActionsRouter from './clientTypeFlowActions';
 import { setupHealthRoutes } from './health';
 import { operateRouter } from './modules/operate';
 
@@ -13,6 +14,7 @@ const initAppRoute = (c: Context) => {
       operate: '/operate',
       ws: '/ws',
       clientTypeActions: '/api/client-type-actions',
+      clientTypeFlowActions: '/api/client-type-flow-actions',
     },
   });
 };
@@ -25,6 +27,9 @@ export const setupRouter = (app: Hono) => {
 
   // 客户端类型和 Actions 配置路由
   app.route('/api/client-type-actions', clientTypeActionsRouter);
+
+  // 客户端类型和 Flow Actions 配置路由
+  app.route('/api/client-type-flow-actions', clientTypeFlowActionsRouter);
 
   // 设置健康检查路由
   setupHealthRoutes(app);

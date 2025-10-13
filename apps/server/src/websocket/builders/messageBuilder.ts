@@ -6,7 +6,30 @@ import type {
 import { WebSocketAction } from '../../utils/enums';
 
 /**
- * 构建出站消息（服务端 -> 客户端）
+ * 构建出站消息（服务端 -> 客户端）- 基于原始消息的 meta
+ */
+function buildOutboundFromMeta<R = unknown>(
+  originalMeta: WsInboundMessage['meta'],
+  action: WebSocketAction,
+  status: 'success' | 'failed',
+  data?: { result?: R; error?: string },
+): WsOutboundMessage<R> {
+  return {
+    meta: {
+      ...originalMeta,
+      timestamp: Math.floor(Date.now() / 1000),
+    },
+    payload: {
+      action,
+      status,
+      ...(status === 'success' ? { result: data?.result as R } : {}),
+      ...(status === 'failed' ? { error: data?.error ?? 'UNKNOWN_ERROR' } : {}),
+    },
+  };
+}
+
+/**
+ * 构建出站消息（服务端 -> 客户端）- 手动指定 meta 字段
  */
 function buildOutbound<R = unknown>(
   messageId: string,
@@ -38,9 +61,7 @@ export function createSuccessResponse<R = string>(
   result: R,
   action: WebSocketAction = WebSocketAction.CALLBACK,
 ): WsOutboundMessage<R> {
-  const messageId = originalMessage.meta.messageId;
-  const conversationId = originalMessage.meta.conversationId;
-  return buildOutbound<R>(messageId, conversationId, action, 'success', {
+  return buildOutboundFromMeta<R>(originalMessage.meta, action, 'success', {
     result,
   });
 }
@@ -57,11 +78,8 @@ export function createSuccessResponseWithMeta<
   metadata?: M,
   action: WebSocketAction = WebSocketAction.CALLBACK,
 ): WsOutboundMessage<{ data: R; meta?: M }> {
-  const messageId = originalMessage.meta.messageId;
-  const conversationId = originalMessage.meta.conversationId;
-  return buildOutbound<{ data: R; meta?: M }>(
-    messageId,
-    conversationId,
+  return buildOutboundFromMeta<{ data: R; meta?: M }>(
+    originalMessage.meta,
     action,
     'success',
     {
@@ -79,11 +97,8 @@ export function createErrorResponse(
   prefix: string = '操作失败',
 ): WsOutboundMessage<string> {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  const messageId = originalMessage.meta.messageId;
-  const conversationId = originalMessage.meta.conversationId;
-  return buildOutbound<string>(
-    messageId,
-    conversationId,
+  return buildOutboundFromMeta<string>(
+    originalMessage.meta,
     // 使用原始消息的 action
     originalMessage.payload.action as any,
     'failed',
@@ -150,11 +165,8 @@ export function createUnknownActionResponse(
   originalMessage: WebSocketMessage,
   action: string,
 ): WsOutboundMessage<string> {
-  const messageId = originalMessage.meta.messageId;
-  const conversationId = originalMessage.meta.conversationId;
-  return buildOutbound<string>(
-    messageId,
-    conversationId,
+  return buildOutboundFromMeta<string>(
+    originalMessage.meta,
     // 沿用传入的未知 action 字符串
     action as any,
     'failed',
@@ -187,11 +199,8 @@ export function createProcessingErrorResponse(
   error: unknown,
 ): WsOutboundMessage<string> {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  const messageId = originalMessage.meta.messageId;
-  const conversationId = originalMessage.meta.conversationId;
-  return buildOutbound<string>(
-    messageId,
-    conversationId,
+  return buildOutboundFromMeta<string>(
+    originalMessage.meta,
     // 使用原始消息的 action
     originalMessage.payload.action as any,
     'failed',
@@ -206,9 +215,8 @@ export function createCommandMessage(
   originalMessage: WebSocketMessage,
   result: string,
 ): WsOutboundMessage<string> {
-  return buildOutbound<string>(
-    originalMessage.meta.messageId,
-    originalMessage.meta.conversationId,
+  return buildOutboundFromMeta<string>(
+    originalMessage.meta,
     WebSocketAction.COMMAND,
     'success',
     {
