@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { WindowsOperateService } from '../../../services/windowsOperateService';
 import type { MessageHandler } from '../../../types/websocket';
 import { wsLogger } from '../../../utils/logger';
@@ -12,7 +14,7 @@ import {
  */
 export function executeTestHandler(): MessageHandler {
   return async ({ connectionId, send }, message) => {
-    const { meta, payload } = message;
+    const { meta } = message;
 
     wsLogger.info(
       {
@@ -25,31 +27,39 @@ export function executeTestHandler(): MessageHandler {
     );
 
     const windowsOperateService = WindowsOperateService.getInstance();
-
+    windowsOperateService.start();
     try {
-      let scriptResult: any;
+      let scriptResult: string;
       try {
         // 执行 Windows 脚本
         scriptResult = await windowsOperateService.screenshot();
-        wsLogger.info(scriptResult, 'Windows 脚本内容');
 
-        // 将执行结果返回给客户端，包含错误信息（如果有）
-        const hasErrors = scriptResult?._hasErrors || false;
-        const taskErrors = scriptResult?._taskErrors || [];
+        // 将截图保存到临时文件夹以便验证
+        if (scriptResult) {
+          const tempDir = path.join(process.cwd(), 'midscene_run', 'output');
+          if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+          }
 
-        let responseMessage = `${payload.action} 处理完成`;
-        if (hasErrors && taskErrors.length > 0) {
-          const errorSummary = taskErrors
-            .map((err: any) => `${err.taskName}: ${err.error.message}`)
-            .join('; ');
-          responseMessage += ` (⚠️ 部分任务执行失败: ${errorSummary})`;
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const screenshotPath = path.join(
+            tempDir,
+            `windows-screenshot-${timestamp}.png`,
+          );
+
+          // 从 base64 保存为图片文件
+          const base64Data = scriptResult.replace(
+            /^data:image\/\w+;base64,/,
+            '',
+          );
+          fs.writeFileSync(screenshotPath, Buffer.from(base64Data, 'base64'));
+
+          wsLogger.info({ screenshotPath }, 'Windows 截图已保存');
         }
 
         const response = createSuccessResponse(message, {
-          message: responseMessage,
-          result: scriptResult?.result,
-          hasErrors,
-          taskErrors: hasErrors ? taskErrors : undefined,
+          message: '截图处理完成',
+          screenshotSaved: true,
         });
         send(response);
       } catch (error) {
