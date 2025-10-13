@@ -49,12 +49,17 @@ export class ClientCommandHelper {
     action: () => Promise<T>,
     options: { enabled?: boolean } = {},
   ): Promise<T> {
-    const { enabled = false } = options;
-    if (enabled) this.showFullMask();
-    const result = await action();
-    // 只有成功时才隐藏遮罩
-    if (enabled) this.hideFullMask();
-    return result;
+    try {
+      const { enabled = false } = options;
+      if (enabled) this.showFullMask();
+      const result = await action();
+      // 只有成功时才隐藏遮罩
+      if (enabled) this.hideFullMask();
+      return result;
+    } catch (error) {
+      console.error('executeWithMask error', error);
+      throw error;
+    }
   }
 }
 

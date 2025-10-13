@@ -77,6 +77,12 @@ export const CLIENT_TYPE_ACTIONS: Record<ClientType, ActionConfig[]> = {
       description: '控制 Windows 服务（启动/停止）',
       category: 'system',
     },
+    {
+      action: WebSocketAction.TEST,
+      name: '测试',
+      description: '测试 Windows 服务',
+      category: 'basic',
+    },
   ],
 };
 
@@ -138,4 +144,3 @@ export function validateMessageAction(
   }
   return { valid: true };
 }
-

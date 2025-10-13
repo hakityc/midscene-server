@@ -16,6 +16,7 @@ import {
   createWindowsAiHandler,
   createWindowsCommandHandler,
   executeWindowsScriptHandler,
+  executeTestHandler
 } from '../actions/windows';
 
 /**
@@ -47,6 +48,7 @@ export function createWindowsMessageHandlers(): Partial<
     [WebSocketAction.AI]: createWindowsAiHandler(),
     [WebSocketAction.AI_SCRIPT]: executeWindowsScriptHandler(),
     [WebSocketAction.COMMAND]: createWindowsCommandHandler(),
+    [WebSocketAction.TEST]: executeTestHandler(),
   };
 }
 

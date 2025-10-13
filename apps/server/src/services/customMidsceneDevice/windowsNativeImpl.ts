@@ -10,7 +10,17 @@
  * - 活跃维护
  */
 
-import { Button, Key, keyboard, mouse, Point, screen } from '@nut-tree/nut-js';
+import { readFileSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import {
+  Button,
+  FileType,
+  Key,
+  keyboard,
+  mouse,
+  Point,
+  screen,
+} from '@nut-tree/nut-js';
 
 /**
  * 屏幕信息接口
@@ -88,28 +98,30 @@ export class WindowsNativeImpl {
 
       return (
         this.runSync(async () => {
-          // 捕获屏幕
-          const image = await screen.grab();
+          // 使用临时文件来保存截图
+          const tempFileName = `screenshot_${Date.now()}`;
+          const tempFilePath = tmpdir();
 
-          // 使用 jimp 将图像数据转换为 PNG
-          const Jimp = require('jimp');
-          const jimpImage = new Jimp(image.width, image.height);
+          // 使用 nut-js 的 capture 方法直接保存为 PNG
+          const savedPath = await screen.capture(
+            tempFileName,
+            FileType.PNG,
+            tempFilePath,
+          );
 
-          // 将 nut-js Image 的数据复制到 jimp
-          // nut-js 返回 BGRA 格式
-          const imageData = await image.toRGB();
-          jimpImage.bitmap.data = Buffer.from(imageData.data);
+          // 读取文件并转换为 base64
+          const buffer = readFileSync(savedPath);
+          const base64 = buffer.toString('base64');
 
-          // 转换为 PNG Buffer
-          const buffer = await jimpImage.getBufferAsync(Jimp.MIME_PNG);
-          return `data:image/png;base64,${buffer.toString('base64')}`;
-        }) ||
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+          // 删除临时文件
+          unlinkSync(savedPath);
+
+          return `data:image/png;base64,${base64}`;
+        }) || ''
       );
     } catch (error) {
       console.error('截图失败:', error);
-      // 返回一个 1x1 透明 PNG 作为后备
-      return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      throw error;
     }
   }
 
@@ -118,20 +130,25 @@ export class WindowsNativeImpl {
    */
   async captureScreenAsync(): Promise<string> {
     try {
-      // 捕获屏幕
-      const image = await screen.grab();
+      // 使用临时文件来保存截图
+      const tempFileName = `screenshot_${Date.now()}`;
+      const tempFilePath = tmpdir();
 
-      // 使用 jimp 将图像数据转换为 PNG
-      const Jimp = require('jimp');
-      const jimpImage = new Jimp(image.width, image.height);
+      // 使用 nut-js 的 capture 方法直接保存为 PNG
+      const savedPath = await screen.capture(
+        tempFileName,
+        FileType.PNG,
+        tempFilePath,
+      );
 
-      // 将 nut-js Image 的数据复制到 jimp
-      const imageData = await image.toRGB();
-      jimpImage.bitmap.data = Buffer.from(imageData.data);
+      // 读取文件并转换为 base64
+      const buffer = readFileSync(savedPath);
+      const base64 = buffer.toString('base64');
 
-      // 转换为 PNG Buffer
-      const buffer = await jimpImage.getBufferAsync(Jimp.MIME_PNG);
-      return `data:image/png;base64,${buffer.toString('base64')}`;
+      // 删除临时文件
+      unlinkSync(savedPath);
+
+      return `data:image/png;base64,${base64}`;
     } catch (error) {
       console.error('截图失败:', error);
       throw error;

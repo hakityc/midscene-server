@@ -279,16 +279,21 @@ Status: Ready
    * 获取屏幕截图（Base64 格式）
    */
   async screenshotBase64(): Promise<string> {
-    this.assertNotDestroyed();
+    try {
+      this.assertNotDestroyed();
 
-    // 使用 robotjs 捕获真实的屏幕截图
-    this.cachedScreenshot = windowsNative.captureScreen();
+      // 使用 robotjs 捕获真实的屏幕截图
+      this.cachedScreenshot = await windowsNative.captureScreenAsync();
 
-    if (this.options.debug) {
-      console.log('📸 Screenshot captured');
+      if (this.options.debug) {
+        console.log('📸 Screenshot captured');
+      }
+
+      return this.cachedScreenshot;
+    } catch (error) {
+      console.error('截图失败:', error);
+      throw error;
     }
-
-    return this.cachedScreenshot;
   }
 
   // ==================== 鼠标操作方法 ====================
