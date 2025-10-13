@@ -94,10 +94,22 @@ export function MessageMonitor({
               onClick={onConnect}
               disabled={status === 'connecting'}
             >
-              <RefreshCw
-                className={`h-3 w-3 mr-1 ${status === 'connecting' ? 'animate-spin' : ''}`}
-              />
-              重连
+              {status === 'open' ? (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  重连
+                </>
+              ) : status === 'connecting' ? (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  连接中
+                </>
+              ) : (
+                <>
+                  <Wifi className="h-3 w-3 mr-1" />
+                  连接
+                </>
+              )}
             </Button>
             <Button
               size="sm"

@@ -90,7 +90,6 @@ export interface AgentOverWindowsOpt extends AgentOpt {
 export default class AgentOverWindows extends Agent<WindowsDevice> {
   // ==================== 私有属性 ====================
   private destroyAfterDisconnectFlag?: boolean;
-  private isLaunched = false;
 
   // ==================== 构造函数 ====================
 
@@ -104,6 +103,9 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
     // - taskExecutor: 任务执行器
     // - dump: 执行记录
     // - modelConfigManager: 模型配置管理
+    //
+    // 直接传递 opts，不做额外的回调包装
+    // 这样可以避免多层嵌套和 this 上下文问题
     super(windowsDevice, opts);
 
     // 保存配置
@@ -119,15 +121,9 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
    * 相当于 Android 的 launch() 方法
    */
   async launch(): Promise<void> {
-    if (this.isLaunched) {
-      console.log('⚠️ WindowsDevice already launched, skipping');
-      return;
-    }
-
     try {
-      // 启动 Windows 设备
+      // 启动 Windows 设备（WindowsDevice 内部会处理重复启动的情况）
       await this.interface.launch();
-      this.isLaunched = true;
 
       console.log('✅ WindowsDevice launched successfully');
     } catch (error) {
@@ -160,7 +156,7 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
     const shouldClose = closeAfterDisconnect ?? this.destroyAfterDisconnectFlag;
 
     try {
-      if (shouldClose && this.isLaunched) {
+      if (shouldClose) {
         // 销毁 Windows 设备
         await this.interface.destroy();
         console.log('✅ WindowsDevice destroyed');
@@ -168,7 +164,6 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
 
       // 标记为已销毁
       this.destroyed = true;
-      this.isLaunched = false;
 
       console.log('✅ AgentOverWindows destroyed');
     } catch (error) {
@@ -214,13 +209,11 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
       }
     | undefined
   > {
-    this.assertLaunched();
-
     // 使用基类的 ai 方法执行任务
     // ai 方法会：
     // 1. 调用 taskExecutor 分析任务
     // 2. 生成执行计划
-    // 3. 通过 interface (WindowsDevice) 执行动作
+    // 3. 通过 interface (WindowsDevice) 执行动作（WindowsDevice 内部会检查状态）
     // 4. 记录执行过程到 dump
     // 5. 生成报告
     return await this.ai(prompt, options?.type);
@@ -251,7 +244,7 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
       isActive: boolean;
     }>
   > {
-    this.assertLaunched();
+    // WindowsDevice 内部会检查状态
     return await this.interface.getWindowList();
   }
 
@@ -270,7 +263,7 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
    * ```
    */
   async activateWindow(windowHandle: string): Promise<void> {
-    this.assertLaunched();
+    // WindowsDevice 内部会检查状态
     await this.interface.activateWindow(windowHandle);
   }
 
@@ -286,7 +279,7 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
    * ```
    */
   async getClipboard(): Promise<string> {
-    this.assertLaunched();
+    // WindowsDevice 内部会检查状态
     return await this.interface.getClipboard();
   }
 
@@ -303,7 +296,7 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
    * ```
    */
   async setClipboard(text: string): Promise<void> {
-    this.assertLaunched();
+    // WindowsDevice 内部会检查状态
     await this.interface.setClipboard(text);
   }
 
@@ -323,7 +316,7 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
     height: number;
     dpr?: number;
   }> {
-    this.assertLaunched();
+    // WindowsDevice 内部会检查状态
     return await this.interface.size();
   }
 
@@ -344,7 +337,7 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
    * ```
    */
   async screenshot(): Promise<string> {
-    this.assertLaunched();
+    // WindowsDevice 内部会检查状态
     return await this.interface.screenshotBase64();
   }
 
@@ -371,33 +364,16 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
   // ==================== 工具方法 ====================
 
   /**
-   * 断言设备已启动
-   */
-  private assertLaunched(): void {
-    if (!this.isLaunched) {
-      throw new Error(
-        'WindowsDevice not launched. Please call agent.launch() or agent.setDestroyOptionsAfterConnect() first.',
-      );
-    }
-
-    if (this.destroyed) {
-      throw new Error('Agent has been destroyed and cannot execute operations');
-    }
-  }
-
-  /**
    * 获取 Agent 状态信息
    *
    * @returns 状态信息对象
    */
   getStatus(): {
-    isLaunched: boolean;
     isDestroyed: boolean;
     deviceName: string;
     interfaceType: string;
   } {
     return {
-      isLaunched: this.isLaunched,
       isDestroyed: this.destroyed,
       deviceName: this.interface.options.deviceName || 'Unknown',
       interfaceType: this.interface.interfaceType,

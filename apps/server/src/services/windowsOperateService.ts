@@ -25,7 +25,12 @@ export class WindowsOperateService extends EventEmitter {
   private isInitialized: boolean = false;
 
   // ==================== AgentOverWindows 默认配置 ====================
-  private readonly defaultAgentConfig: AgentOverWindowsOpt = {
+  // 注意：不要在这里使用箭头函数引用 this，会导致上下文问题
+  // onTaskStartTip 回调会在 createAgent() 方法中动态创建
+  private readonly defaultAgentConfig: Omit<
+    AgentOverWindowsOpt,
+    'onTaskStartTip'
+  > = {
     closeAfterDisconnect: false,
     generateReport: true,
     autoPrintReportMsg: true,
@@ -65,7 +70,7 @@ export class WindowsOperateService extends EventEmitter {
   // ==================== 生命周期方法 ====================
 
   /**
-   * 启动服务 - 初始化 AgentOverWindows
+   * 启动服务 - 创建并初始化 AgentOverWindows
    */
   public async start(): Promise<void> {
     if (this.isInitialized && this.agent) {
@@ -76,11 +81,8 @@ export class WindowsOperateService extends EventEmitter {
     console.log('🚀 启动 WindowsOperateService...');
 
     try {
-      // 创建 AgentOverWindows 实例
+      // 创建并初始化 AgentOverWindows（合并了创建和初始化流程）
       await this.createAgent();
-
-      // 初始化连接
-      await this.initialize();
 
       console.log('✅ WindowsOperateService 启动成功');
     } catch (error) {
@@ -136,9 +138,17 @@ export class WindowsOperateService extends EventEmitter {
   // ==================== AgentOverWindows 管理 ====================
 
   /**
-   * 创建 AgentOverWindows 实例
+   * 创建并初始化 AgentOverWindows 实例
+   * 合并了创建和初始化流程，简化代码
    */
   private async createAgent(): Promise<void> {
+    // 如果已经初始化，直接返回
+    if (this.isInitialized && this.agent) {
+      console.log('🔄 AgentOverWindows 已初始化，跳过重复创建');
+      return;
+    }
+
+    // 销毁旧实例
     if (this.agent) {
       console.log('🔄 AgentOverWindows 已存在，先销毁旧实例');
       try {
@@ -148,32 +158,60 @@ export class WindowsOperateService extends EventEmitter {
       }
     }
 
-    console.log('🔧 正在创建 AgentOverWindows，绑定 onTaskStartTip 回调...');
+    console.log('🔧 正在创建并初始化 AgentOverWindows...');
 
-    // 创建 Agent（本地模式，无需连接管理器）
-    this.agent = new AgentOverWindows({
-      ...this.defaultAgentConfig,
-    });
+    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-    // 设置任务开始提示回调
-    this.setupTaskStartTipCallback();
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 尝试创建 Agent (${attempt}/${maxRetries})...`);
 
-    console.log('✅ AgentOverWindows 创建完成，onTaskStartTip 已绑定');
-  }
+        // 创建 Agent（本地模式）
+        // onTaskStartTip 在这里动态传入，确保 this 正确绑定
+        this.agent = new AgentOverWindows({
+          ...this.defaultAgentConfig,
+          onTaskStartTip: (tip: string) => {
+            this.handleTaskStartTip(tip);
+          },
+        });
 
-  /**
-   * 设置任务开始提示回调
-   */
-  private setupTaskStartTipCallback(): void {
-    if (!this.agent) {
-      throw new Error('Agent 未创建，无法设置回调');
+        // 立即启动 Agent
+        await this.agent.launch();
+
+        this.isInitialized = true;
+        console.log('✅ AgentOverWindows 创建并初始化成功');
+        return;
+      } catch (error) {
+        lastError = error as Error;
+        console.error(
+          `❌ AgentOverWindows 创建失败 (尝试 ${attempt}/${maxRetries}):`,
+          error,
+        );
+
+        // 清理失败的 agent
+        if (this.agent) {
+          try {
+            await this.agent.destroy(true);
+          } catch {
+            // 忽略清理错误
+          }
+          this.agent = null;
+        }
+
+        if (attempt < maxRetries) {
+          const delay = attempt * 2000; // 递增延迟：2s, 4s
+          console.log(`⏳ ${delay / 1000}秒后重试...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
     }
 
-    // 直接设置回调，不要包装已有的回调
-    // 避免形成递归调用链
-    this.agent.onTaskStartTip = async (tip: string) => {
-      this.handleTaskStartTip(tip);
-    };
+    // 所有重试都失败了
+    console.error('❌ AgentOverWindows 创建最终失败，所有重试已用尽');
+    throw new Error(
+      `创建失败，已重试 ${maxRetries} 次。最后错误: ${lastError?.message}`,
+    );
   }
 
   /**
@@ -199,58 +237,6 @@ export class WindowsOperateService extends EventEmitter {
 
     // 发射事件，让其他地方可以监听到
     this.emit('taskStartTip', tip);
-  }
-
-  // ==================== 连接管理相关方法 ====================
-
-  /**
-   * 初始化连接（确保只初始化一次）
-   */
-  private async initialize(): Promise<void> {
-    if (this.isInitialized) {
-      console.log('🔄 AgentOverWindows 已经初始化，跳过重复初始化');
-      return;
-    }
-
-    if (!this.agent) {
-      throw new Error('Agent 未创建，请先调用 createAgent()');
-    }
-
-    const maxRetries = 3;
-    let lastError: Error | null = null;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(
-          `🔄 尝试初始化 Windows 设备连接 (${attempt}/${maxRetries})...`,
-        );
-
-        // 设置 Windows 设备的销毁选项并启动
-        await this.agent.setDestroyOptionsAfterConnect();
-
-        this.isInitialized = true;
-        console.log('✅ AgentOverWindows 初始化成功');
-        return;
-      } catch (error) {
-        lastError = error as Error;
-        console.error(
-          `❌ AgentOverWindows 初始化失败 (尝试 ${attempt}/${maxRetries}):`,
-          error,
-        );
-
-        if (attempt < maxRetries) {
-          const delay = attempt * 2000; // 递增延迟：2s, 4s
-          console.log(`⏳ ${delay / 1000}秒后重试...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-
-    // 所有重试都失败了
-    console.error('❌ AgentOverWindows 初始化最终失败，所有重试已用尽');
-    throw new Error(
-      `初始化失败，已重试${maxRetries}次。最后错误: ${lastError?.message}`,
-    );
   }
 
   // ==================== 执行相关方法 ====================

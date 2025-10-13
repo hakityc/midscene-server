@@ -32,44 +32,15 @@ export function createWindowsAiHandler(): MessageHandler {
     try {
       const params = payload.params;
 
-      // 检查连接状态
-      const isConnected = await windowsOperateService.checkAndReconnect();
-      if (!isConnected) {
-        const response = createErrorResponse(
-          message as WebSocketMessage,
-          new Error('Windows 设备连接已断开，正在尝试重连中，请稍后重试'),
-          'Windows 设备连接断开',
-        );
-        send(response);
-        return;
-      }
+      // 执行 Windows AI 任务
+      await windowsOperateService.execute(params);
 
-      // 监听重连事件
-      const onReconnected = () => {
-        const response = createSuccessResponse(
-          message as WebSocketMessage,
-          'Windows 设备重连成功，可以继续操作',
-          WebSocketAction.CALLBACK_AI_STEP,
-        );
-        send(response);
-      };
-
-      windowsOperateService.once('reconnected', onReconnected);
-
-      try {
-        // 执行 Windows AI 任务
-        await windowsOperateService.execute(params);
-
-        const response = createSuccessResponse(
-          message as WebSocketMessage,
-          `Windows AI 处理完成`,
-          WebSocketAction.AI,
-        );
-        send(response);
-      } finally {
-        // 清理事件监听器
-        windowsOperateService.off('reconnected', onReconnected);
-      }
+      const response = createSuccessResponse(
+        message as WebSocketMessage,
+        `Windows AI 处理完成`,
+        WebSocketAction.AI,
+      );
+      send(response);
     } catch (error) {
       wsLogger.error(
         {

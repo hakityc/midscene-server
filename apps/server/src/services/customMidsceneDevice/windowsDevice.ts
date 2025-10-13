@@ -8,11 +8,13 @@ import {
 } from '@midscene/core';
 import {
   type AbstractInterface,
+  type ActionInputParam,
   type ActionKeyboardPressParam,
   type ActionTapParam,
   defineAction,
   defineActionDoubleClick,
   defineActionHover,
+  defineActionInput,
   defineActionKeyboardPress,
   defineActionRightClick,
   defineActionScroll,
@@ -62,6 +64,7 @@ export default class WindowsDevice implements AbstractInterface {
   private cachedScreenshot: string | null = null;
   private cachedSize: Size | null = null;
   private destroyed = false;
+  private isLaunched = false;
   private description: string | undefined;
   private customActions?: DeviceAction<any>[];
 
@@ -94,9 +97,20 @@ export default class WindowsDevice implements AbstractInterface {
       );
     }
 
+    if (this.isLaunched) {
+      if (this.options.debug) {
+        console.log('⚠️ WindowsDevice already launched, skipping');
+      }
+      return;
+    }
+
     if (this.options.debug) {
       console.log(`🚀 Windows device launched: ${this.options.deviceName}`);
     }
+
+    // 设置启动状态，必须在 initializeDeviceInfo 之前
+    // 因为 initializeDeviceInfo 会调用 size() 等方法，这些方法需要检查 isLaunched 状态
+    this.isLaunched = true;
 
     // 初始化设备信息
     await this.initializeDeviceInfo();
@@ -134,8 +148,26 @@ Status: Ready
     }
 
     this.destroyed = true;
+    this.isLaunched = false;
     this.cachedScreenshot = null;
     this.cachedSize = null;
+  }
+
+  /**
+   * 检查设备状态
+   * 统一的状态检查点，在所有操作方法前调用
+   */
+  private checkState(): void {
+    if (this.destroyed) {
+      throw new Error(
+        `WindowsDevice "${this.options.deviceName}" has been destroyed and cannot execute operations`,
+      );
+    }
+    if (!this.isLaunched) {
+      throw new Error(
+        `WindowsDevice "${this.options.deviceName}" not launched. Call launch() first.`,
+      );
+    }
   }
 
   // ==================== 设备能力方法 ====================
@@ -175,22 +207,15 @@ Status: Ready
       }),
 
       // 输入文本
-      defineAction({
-        name: 'Input',
-        description: 'Type text into an element',
-        paramSchema: z.object({
-          value: z.string(),
-          locate: getMidsceneLocationSchema(),
-        }),
-        call: async ({ value, locate }: { value: string; locate: any }) => {
-          assert(locate, 'Element not found, cannot input');
-          // 先点击元素获取焦点
-          await this.mouseClick(locate.center[0], locate.center[1]);
-          // 等待焦点切换
-          await this.sleep(100);
-          // 输入文本
-          await this.typeText(value);
-        },
+      defineActionInput(async (param: ActionInputParam) => {
+        const element = param.locate;
+        assert(element, 'Element not found, cannot input');
+        // 先点击元素获取焦点
+        await this.mouseClick(element.center[0], element.center[1]);
+        // 等待焦点切换
+        await this.sleep(100);
+        // 输入文本
+        await this.typeText(param.value);
       }),
 
       // 键盘按键
@@ -443,13 +468,10 @@ Status: Ready
 
   /**
    * 断言设备未销毁
+   * @deprecated 使用 checkState() 代替
    */
   private assertNotDestroyed(): void {
-    if (this.destroyed) {
-      throw new Error(
-        `WindowsDevice ${this.options.deviceName} has been destroyed and cannot execute operations`,
-      );
-    }
+    this.checkState();
   }
 
   // ==================== 高级功能（可选实现） ====================
