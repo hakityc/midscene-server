@@ -3,10 +3,13 @@ import type { WebSocketAction } from '../utils/enums';
 export type WebSocketClient = any;
 
 // 入站消息（客户端 -> 服务端）
+export type ClientType = 'web' | 'windows';
+
 export interface WsInboundMeta {
   messageId: string;
   conversationId: string;
   timestamp: number;
+  clientType?: ClientType; // 客户端类型：web 或 windows，不传默认为 web
 }
 
 export interface WsInboundMessage<P = unknown> {
