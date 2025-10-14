@@ -391,51 +391,105 @@ export class WebOperateService extends EventEmitter {
       throw new Error('Agent 未创建，无法设置回调');
     }
 
-    // 保存原始回调
+    // 保存原始回调（来自 @midscene/web 的 showStatusMessage）
     const originalCallback = this.agent.onTaskStartTip;
 
     // 设置新的回调，同时保留原有功能
     // 注意：这个回调会被 Midscene 内部调用，需要确保永远不抛出未捕获的错误
-    this.agent.onTaskStartTip = async (tip: string) => {
-      try {
-        const bridgeError: Error | null = null;
+    this.agent.onTaskStartTip = (tip: string) => {
+      // 使用立即执行的包装器来捕获所有可能的错误
+      // 包括同步错误、异步错误、以及延迟的 Promise rejection
+      const safeCall = async () => {
+        let bridgeError: Error | null = null;
 
-        // 先调用原始的回调（showStatusMessage），但不 await
-        // 因为 BridgeServer 可能会在内部产生延迟的 Promise 拒绝
-        // 这些拒绝发生在回调返回之后，无法通过 try-catch 捕获
+        // 调用原始回调（showStatusMessage），捕获所有错误
         if (originalCallback) {
-          // 使用 Promise.resolve 包装并立即添加 .catch
-          // 这样可以捕获所有同步和异步的错误，避免未处理的 Promise 拒绝
-          Promise.resolve(originalCallback(tip)).catch((error: any) => {
-            // 捕获所有错误（包括延迟的错误）
-            console.warn(
-              `⚠️ showStatusMessage 调用失败 (可能是 bridge 连接断开):`,
-              error?.message,
+          try {
+            // 尝试调用原始回调，但不 await 结果
+            // 使用 Promise.resolve 包装以处理可能的同步返回值
+            const callPromise = Promise.resolve(
+              originalCallback.call(this.agent, tip),
             );
+
+            // 立即为这个 Promise 添加错误处理，避免未捕获的 rejection
+            callPromise.catch((error: any) => {
+              // 判断是否是连接断开错误（内部错误，不影响任务执行）
+              const isConnectionError =
+                error?.message?.includes('Connection lost') ||
+                error?.message?.includes('client namespace disconnect') ||
+                error?.message?.includes('bridge client') ||
+                error?.message?.includes('timeout');
+
+              if (isConnectionError) {
+                // 这是预期的内部错误，只记录 warn 级别日志，不上报
+                serviceLogger.debug(
+                  {
+                    tip,
+                    errorType: 'bridge_connection_lost',
+                    error: error?.message,
+                  },
+                  'Bridge 连接已断开，无法显示状态消息（不影响任务执行）',
+                );
+
+                // 保存错误供内部追踪，但标记为非关键错误
+                bridgeError =
+                  error instanceof Error ? error : new Error(String(error));
+              } else {
+                // 非连接错误，可能需要关注
+                console.warn(`⚠️ 显示状态消息失败:`, error?.message);
+                serviceLogger.warn(
+                  {
+                    tip,
+                    error: error?.message,
+                    stack: error?.stack,
+                  },
+                  '显示状态消息失败',
+                );
+
+                // 记录到错误跟踪中
+                this.taskErrors.push({
+                  taskName: tip,
+                  error:
+                    error instanceof Error ? error : new Error(String(error)),
+                  timestamp: Date.now(),
+                });
+              }
+            });
+          } catch (syncError: any) {
+            // 捕获调用时的同步错误
+            console.warn('⚠️ 调用原始回调时发生同步错误:', syncError?.message);
             serviceLogger.warn(
               {
                 tip,
-                error: error?.message,
-                stack: error?.stack,
+                error: syncError?.message,
+                stack: syncError?.stack,
               },
-              'showStatusMessage 调用失败（延迟错误）',
+              '调用原始回调时发生同步错误',
             );
-
-            // 记录到错误跟踪中
-            this.taskErrors.push({
-              taskName: tip,
-              error: error instanceof Error ? error : new Error(String(error)),
-              timestamp: Date.now(),
-            });
-          });
+          }
         }
 
         // 立即调用我们的回调，不等待 showStatusMessage 完成
         // 这样即使 bridge 连接有问题，我们的处理逻辑也能正常执行
-        this.handleTaskStartTip(tip, bridgeError);
-      } catch (error: any) {
-        // 最外层的 try-catch，确保任何未预期的错误都被捕获
-        // 防止 Promise 拒绝变成未处理的拒绝
+        try {
+          this.handleTaskStartTip(tip, bridgeError);
+        } catch (handlerError: any) {
+          // 如果我们自己的处理逻辑失败，记录错误
+          console.error('❌ handleTaskStartTip 执行失败:', handlerError);
+          serviceLogger.error(
+            {
+              tip,
+              error: handlerError?.message,
+              stack: handlerError?.stack,
+            },
+            'handleTaskStartTip 执行失败',
+          );
+        }
+      };
+
+      // 执行安全调用包装器，并捕获任何顶层错误
+      safeCall().catch((error: any) => {
+        // 最后的安全网：确保任何未预期的错误都被捕获
         console.error('❌ onTaskStartTip 回调执行失败:', error);
         serviceLogger.error(
           {
@@ -443,7 +497,7 @@ export class WebOperateService extends EventEmitter {
             error: error?.message,
             stack: error?.stack,
           },
-          'onTaskStartTip 回调执行失败',
+          'onTaskStartTip 回调执行失败（最外层捕获）',
         );
 
         // 尝试通知客户端发生了严重错误
@@ -456,9 +510,10 @@ export class WebOperateService extends EventEmitter {
           // 如果通知也失败了，只记录日志，不再抛出
           console.error('❌ 无法通知客户端错误:', notifyError);
         }
+      });
 
-        // 不再抛出错误，避免未处理的 Promise 拒绝
-      }
+      // 注意：这里不返回 Promise，避免外部等待
+      // 所有错误都在内部处理，不会向外传播
     };
   }
 
