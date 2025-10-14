@@ -74,7 +74,7 @@ export function executeScriptHandler(): MessageHandler {
           },
           {
             enabled: payload.option?.includes('LOADING_SHADE'),
-          },
+          }
         );
 
         // 将执行结果返回给客户端，包含错误信息（如果有）

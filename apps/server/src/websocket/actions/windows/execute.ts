@@ -14,6 +14,7 @@ import {
   createSuccessResponse,
   createSuccessResponseWithMeta,
 } from '../../builders/messageBuilder';
+import { ClientCommandHelper } from '../../helpers/clientCommandHelper';
 
 /**
  * Windows 端 AI 请求处理器
@@ -22,6 +23,7 @@ import {
 export function createWindowsAiHandler(): MessageHandler {
   return async ({ connectionId, send }, message) => {
     const { meta, payload } = message;
+    const maskController = new ClientCommandHelper(message, send);
     wsLogger.info(
       {
         connectionId,
@@ -55,7 +57,14 @@ export function createWindowsAiHandler(): MessageHandler {
 
       try {
         // 执行 Windows AI 任务
-        await windowsOperateService.execute(params);
+        await maskController.executeWithMask(
+          async () => {
+            await windowsOperateService.execute(params);
+          },
+          {
+            enabled: payload.option?.includes('LOADING_SHADE'),
+          }
+        );
 
         const response = createSuccessResponse(
           message as WebSocketMessage,
