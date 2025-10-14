@@ -4,6 +4,7 @@ import clientTypeActionsRouter from './clientTypeActions';
 import clientTypeFlowActionsRouter from './clientTypeFlowActions';
 import { setupHealthRoutes } from './health';
 import { operateRouter } from './modules/operate';
+import { promptOptimizeRouter } from './modules/prompt-optimize';
 
 const initAppRoute = (c: Context) => {
   return c.json({
@@ -24,6 +25,7 @@ export const setupRouter = (app: Hono) => {
   app.use('/operate', requestLogger);
 
   app.route('/operate', operateRouter);
+  app.route('/api/prompt-optimize', promptOptimizeRouter);
 
   // 客户端类型和 Actions 配置路由
   app.route('/api/client-type-actions', clientTypeActionsRouter);

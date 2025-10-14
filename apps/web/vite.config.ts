@@ -18,6 +18,12 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   },
   // 确保不会包含 Node.js polyfills
   define: {

@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useMessageHistory } from '@/hooks/useMessageHistory';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import type {
@@ -252,7 +251,7 @@ export default function MidsceneDebugPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-full overflow-y-auto bg-background">
       <div className="container mx-auto p-6 max-w-[1600px]">
         {/* 标题栏 */}
         <Card className="mb-6">
@@ -262,7 +261,6 @@ export default function MidsceneDebugPage() {
                 Midscene Debug Tool
               </CardTitle>
               <div className="flex items-center gap-3">
-                <ThemeToggle />
                 <Button
                   variant="outline"
                   onClick={() => setShowHistory(!showHistory)}
