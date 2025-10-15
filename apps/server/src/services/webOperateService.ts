@@ -174,7 +174,7 @@ export class WebOperateService extends EventEmitter {
     return (tip: string, bridgeError?: Error | null) => {
       try {
         // 格式化任务提示
-        const { formatted, icon, category } = formatTaskTip(tip);
+        const { formatted, category } = formatTaskTip(tip);
         const timestamp = new Date().toLocaleTimeString('zh-CN', {
           hour12: false,
           hour: '2-digit',
@@ -217,14 +217,15 @@ export class WebOperateService extends EventEmitter {
           );
         }
 
-        // 发送格式化后的用户友好消息
+        // 发送格式化后的用户友好消息（移除 emoji）
         const response = createSuccessResponseWithMeta(
           message,
-          formatted,
+          formatted
+            .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+            .trim(),
           {
             originalTip: tip,
             category,
-            icon,
             timestamp,
             stage: getTaskStageDescription(category),
             bridgeError: bridgeError

@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import 'dotenv/config';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { setupHealthRoutes } from './routes/health';
 import { setupRouter } from './routes/index';
 import { setupError } from './utils/error';
@@ -10,6 +11,21 @@ import { setupWebSocket } from './websocket';
 
 const initApp = () => {
   const app = new Hono();
+
+  // 全局 CORS 配置
+  app.use(
+    '*',
+    cors({
+      origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:3001',
+      ],
+      allowHeaders: ['Content-Type', 'Authorization'],
+      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    }),
+  );
+
   setupRouter(app);
   setupError(app);
   setupHealthRoutes(app); // 添加健康检查路由

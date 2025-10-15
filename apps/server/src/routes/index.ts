@@ -5,6 +5,7 @@ import clientTypeFlowActionsRouter from './clientTypeFlowActions';
 import { setupHealthRoutes } from './health';
 import { operateRouter } from './modules/operate';
 import { promptOptimizeRouter } from './modules/prompt-optimize';
+import { reportRouter } from './modules/report';
 
 const initAppRoute = (c: Context) => {
   return c.json({
@@ -32,6 +33,8 @@ export const setupRouter = (app: Hono) => {
 
   // 客户端类型和 Flow Actions 配置路由
   app.route('/api/client-type-flow-actions', clientTypeFlowActionsRouter);
+
+  app.route('/api/report', reportRouter);
 
   // 设置健康检查路由
   setupHealthRoutes(app);

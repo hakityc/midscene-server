@@ -1,4 +1,5 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { ToastContainer } from '@/components/ui/toast';
 import { ThemeProvider } from '@/hooks/useTheme';
 import HomePage from '@/pages/homePage';
 import MidsceneDebugPage from '@/pages/midsceneDebugPage';
@@ -22,6 +23,7 @@ export function App() {
             </Route>
           </Routes>
         </HashRouter>
+        <ToastContainer />
       </ThemeProvider>
     </QueryProvider>
   );

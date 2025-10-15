@@ -3,6 +3,7 @@ import {
   ArrowDown,
   ArrowUp,
   Download,
+  ExternalLink,
   Info,
   RefreshCw,
   Trash2,
@@ -13,7 +14,9 @@ import {
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from '@/components/ui/toast';
 import type { MonitorMessage } from '@/types/debug';
+import { getLatestReport, getReportFileUrl } from '@/utils/api';
 
 interface MessageMonitorProps {
   messages: MonitorMessage[];
@@ -51,6 +54,8 @@ export function MessageMonitor({
     }
   };
 
+  const [isLoadingReport, setIsLoadingReport] = useState(false);
+
   const exportMessages = () => {
     const dataStr = JSON.stringify(messages, null, 2);
     const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
@@ -60,6 +65,21 @@ export function MessageMonitor({
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
+  };
+
+  const openLatestReport = async () => {
+    setIsLoadingReport(true);
+    try {
+      const reportInfo = await getLatestReport();
+      const reportUrl = getReportFileUrl(reportInfo.fileName);
+      window.open(reportUrl, '_blank');
+      toast.success('报告已打开', '报告已在新的标签页中打开');
+    } catch (error) {
+      console.error('打开报告失败:', error);
+      toast.error('打开报告失败', '请确保后端服务正常运行');
+    } finally {
+      setIsLoadingReport(false);
+    }
   };
 
   return (
@@ -114,8 +134,28 @@ export function MessageMonitor({
             <Button
               size="sm"
               variant="outline"
+              onClick={openLatestReport}
+              disabled={isLoadingReport}
+              title="打开最新的 Midscene 报告"
+            >
+              {isLoadingReport ? (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  加载中
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  报告
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={exportMessages}
               disabled={messages.length === 0}
+              title="导出消息记录为 JSON"
             >
               <Download className="h-3 w-3 mr-1" />
               导出
