@@ -305,9 +305,8 @@ export default function PromptOptimizePage() {
                   上传截图辅助优化{' '}
                   <span className="text-muted-foreground text-xs">(可选)</span>
                 </Label>
-                <p className="text-xs text-amber-600 font-medium">
-                  ⚠️ 当前版本：请在提示词中描述图片内容，AI
-                  将根据您的描述优化提示词。完整视觉支持即将推出！
+                <p className="text-xs text-blue-600 font-medium">
+                  ✨ AI 将直接分析截图内容，结合您的描述生成更精确的提示词
                 </p>
 
                 {/* 上传按钮和预览 */}
@@ -377,16 +376,13 @@ export default function PromptOptimizePage() {
                       <CardContent className="flex flex-col items-center justify-center py-6 text-center">
                         <ImageIcon className="h-10 w-10 text-muted-foreground/50 mb-2" />
                         <p className="text-sm text-muted-foreground">
-                          上传页面截图作为参考
+                          上传页面截图，让 AI 直接观察页面元素
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           支持 JPG、PNG、GIF 等格式
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1 font-medium">
-                          💡 也可以在下方输入框中直接粘贴图片
-                        </p>
-                        <p className="text-xs text-amber-600 mt-2 font-medium">
-                          请在提示词中描述截图中的元素（位置、颜色、文字等）
+                        <p className="text-xs text-blue-600 mt-2 font-medium">
+                          💡 也可以在下方输入框中直接粘贴图片（Ctrl+V）
                         </p>
                       </CardContent>
                     </Card>
@@ -406,7 +402,7 @@ export default function PromptOptimizePage() {
                 </Label>
                 <Textarea
                   id={inputPromptId}
-                  placeholder="例如：点击搜索按钮&#10;&#10;如果上传了截图，可以这样描述：&#10;点击登录按钮。截图中显示页面右上角有一个蓝色的登录按钮。&#10;&#10;💡 提示：可以直接 Ctrl+V 粘贴截图"
+                  placeholder="例如：点击登录按钮&#10;&#10;💡 提示：&#10;- 可以直接 Ctrl+V 粘贴截图&#10;- AI 会自动分析图片内容，无需详细描述&#10;- 简单说明想要点击/操作的元素即可"
                   value={inputPrompt}
                   onChange={(e) => setInputPrompt(e.target.value)}
                   onPaste={handlePaste}

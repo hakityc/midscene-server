@@ -1,21 +1,27 @@
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createOpenAI, openai } from '@ai-sdk/openai';
 import 'dotenv/config';
 
 // 根据环境变量动态创建模型实例
 export const createModel = () => {
-  const name = process.env.MIDSCENE_MODEL_NAME || '';
+  const modelName = process.env.MIDSCENE_MODEL_NAME || 'gpt-4o-mini';
   const apiKey = process.env.OPENAI_API_KEY || '';
-  const baseUrl = process.env.OPENAI_BASE_URL || '';
+  const baseUrl = process.env.OPENAI_BASE_URL;
 
   console.log('Model config:', {
-    name,
+    modelName,
     apiKey: apiKey ? 'Set' : 'Not set',
-    baseUrl,
+    baseUrl: baseUrl || 'default (OpenAI)',
   });
 
-  return createOpenAICompatible({
-    name: name,
-    baseURL: baseUrl,
-    apiKey: apiKey,
-  })(name);
+  // 如果设置了自定义 baseURL，使用 createOpenAI
+  if (baseUrl) {
+    const customOpenAI = createOpenAI({
+      apiKey,
+      baseURL: baseUrl,
+    });
+    return customOpenAI(modelName);
+  }
+
+  // 否则使用标准 OpenAI（自动从 OPENAI_API_KEY 环境变量读取）
+  return openai(modelName);
 };

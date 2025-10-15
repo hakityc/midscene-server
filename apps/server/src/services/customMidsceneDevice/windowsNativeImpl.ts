@@ -36,6 +36,7 @@ export interface ScreenInfo {
  */
 export class WindowsNativeImpl {
   private static instance: WindowsNativeImpl;
+  private cachedScreenInfo: ScreenInfo | null = null;
 
   private constructor() {
     // 初始化 nut-js 配置
@@ -62,26 +63,61 @@ export class WindowsNativeImpl {
   /**
    * 获取屏幕尺寸
    * 实现 API 文档 1.1
+   *
+   * 修复 DPI 缩放问题：
+   * - 通过比较截图分辨率和逻辑分辨率来计算真实 DPR
+   * - 返回物理分辨率（截图的分辨率）
+   * - AI 会基于物理分辨率返回坐标
    */
   getScreenSize(): ScreenInfo {
+    // 使用缓存避免频繁计算
+    if (this.cachedScreenInfo) {
+      return this.cachedScreenInfo;
+    }
+
     // nut-js 的 screen.width/height 是异步的
     // 使用同步包装
-    return (
-      this.runSync(async () => {
-        const width = await screen.width();
-        const height = await screen.height();
+    const result = this.runSync(async () => {
+      const logicalWidth = await screen.width();
+      const logicalHeight = await screen.height();
 
-        // TODO: 获取真实的 DPI 缩放比例
-        // Windows 上可以通过 Windows API 获取，这里暂时默认为 1
-        const dpr = 1;
+      // 通过临时截图获取物理分辨率
+      // screen.grab() 返回的图片尺寸是实际的物理分辨率
+      const screenshot = await screen.grab();
+      const physicalWidth = screenshot.width;
+      const physicalHeight = screenshot.height;
 
-        return {
-          width,
-          height,
-          dpr,
-        };
-      }) || { width: 1920, height: 1080, dpr: 1 }
-    );
+      // 计算 DPR (Device Pixel Ratio)
+      const dpr = physicalWidth / logicalWidth;
+
+      console.log('[WindowsNative] 屏幕信息检测:');
+      console.log(`  逻辑分辨率: ${logicalWidth}x${logicalHeight}`);
+      console.log(`  物理分辨率: ${physicalWidth}x${physicalHeight}`);
+      console.log(`  DPR: ${dpr.toFixed(4)}`);
+
+      if (Math.abs(dpr - 1.0) > 0.01) {
+        console.log(`  ⚠️ 检测到 DPI 缩放: ${Math.round(dpr * 100)}%`);
+        console.log(`  坐标转换已启用: 物理坐标 → 逻辑坐标`);
+      }
+
+      return {
+        width: physicalWidth, // 返回物理分辨率（截图分辨率）
+        height: physicalHeight,
+        dpr,
+      };
+    });
+
+    this.cachedScreenInfo = result || { width: 1920, height: 1080, dpr: 1 };
+    return this.cachedScreenInfo;
+  }
+
+  /**
+   * 清除屏幕信息缓存
+   * 当系统分辨率或缩放比例改变时调用
+   */
+  clearScreenInfoCache(): void {
+    this.cachedScreenInfo = null;
+    console.log('[WindowsNative] 屏幕信息缓存已清除');
   }
 
   /**
@@ -158,15 +194,53 @@ export class WindowsNativeImpl {
   // ==================== 2. 鼠标操作 ====================
 
   /**
+   * 将物理坐标转换为逻辑坐标
+   * @param x 物理 X 坐标（基于截图分辨率）
+   * @param y 物理 Y 坐标（基于截图分辨率）
+   * @returns 逻辑坐标（用于 nut-js mouse.move）
+   */
+  private convertToLogicalCoordinates(
+    x: number,
+    y: number,
+  ): { x: number; y: number } {
+    const screenInfo = this.getScreenSize();
+    const dpr = screenInfo.dpr;
+
+    // 如果 DPR 接近 1.0，不需要转换
+    if (Math.abs(dpr - 1.0) < 0.01) {
+      return { x: Math.round(x), y: Math.round(y) };
+    }
+
+    // 物理坐标转换为逻辑坐标
+    const logicalX = Math.round(x / dpr);
+    const logicalY = Math.round(y / dpr);
+
+    return { x: logicalX, y: logicalY };
+  }
+
+  /**
    * 移动鼠标
    * 实现 API 文档 2.1
+   *
+   * @param x 物理 X 坐标（基于截图分辨率，来自 AI）
+   * @param y 物理 Y 坐标（基于截图分辨率，来自 AI）
    */
   moveMouse(x: number, y: number): void {
     try {
       // nut-js 的 mouse.move 是异步的
       // 使用同步包装
       this.runSync(async () => {
-        await mouse.move([new Point(Math.round(x), Math.round(y))]);
+        const logical = this.convertToLogicalCoordinates(x, y);
+
+        if (process.env.DEBUG_DPI === 'true') {
+          const screenInfo = this.getScreenSize();
+          console.log('[WindowsNative] 移动鼠标:');
+          console.log(`  物理坐标: (${x}, ${y})`);
+          console.log(`  逻辑坐标: (${logical.x}, ${logical.y})`);
+          console.log(`  DPR: ${screenInfo.dpr.toFixed(4)}`);
+        }
+
+        await mouse.move([new Point(logical.x, logical.y)]);
       });
     } catch (error) {
       console.error('移动鼠标失败:', error);
@@ -176,12 +250,25 @@ export class WindowsNativeImpl {
   /**
    * 鼠标单击
    * 实现 API 文档 2.2
+   *
+   * @param x 物理 X 坐标（基于截图分辨率，来自 AI）
+   * @param y 物理 Y 坐标（基于截图分辨率，来自 AI）
    */
   mouseClick(x: number, y: number): void {
     try {
       this.runSync(async () => {
+        const logical = this.convertToLogicalCoordinates(x, y);
+
+        if (process.env.DEBUG_DPI === 'true') {
+          const screenInfo = this.getScreenSize();
+          console.log('[WindowsNative] 鼠标点击:');
+          console.log(`  物理坐标: (${x}, ${y})`);
+          console.log(`  逻辑坐标: (${logical.x}, ${logical.y})`);
+          console.log(`  DPR: ${screenInfo.dpr.toFixed(4)}`);
+        }
+
         // 1. 移动鼠标到目标位置
-        await mouse.move([new Point(Math.round(x), Math.round(y))]);
+        await mouse.move([new Point(logical.x, logical.y)]);
 
         // 2. 执行单击
         await mouse.click(Button.LEFT);
@@ -194,12 +281,17 @@ export class WindowsNativeImpl {
   /**
    * 鼠标双击
    * 实现 API 文档 2.3
+   *
+   * @param x 物理 X 坐标（基于截图分辨率，来自 AI）
+   * @param y 物理 Y 坐标（基于截图分辨率，来自 AI）
    */
   mouseDoubleClick(x: number, y: number): void {
     try {
       this.runSync(async () => {
+        const logical = this.convertToLogicalCoordinates(x, y);
+
         // 1. 移动鼠标到目标位置
-        await mouse.move([new Point(Math.round(x), Math.round(y))]);
+        await mouse.move([new Point(logical.x, logical.y)]);
 
         // 2. 执行双击
         await mouse.doubleClick(Button.LEFT);
@@ -212,12 +304,17 @@ export class WindowsNativeImpl {
   /**
    * 鼠标右键点击
    * 实现 API 文档 2.4
+   *
+   * @param x 物理 X 坐标（基于截图分辨率，来自 AI）
+   * @param y 物理 Y 坐标（基于截图分辨率，来自 AI）
    */
   mouseRightClick(x: number, y: number): void {
     try {
       this.runSync(async () => {
+        const logical = this.convertToLogicalCoordinates(x, y);
+
         // 1. 移动鼠标到目标位置
-        await mouse.move([new Point(Math.round(x), Math.round(y))]);
+        await mouse.move([new Point(logical.x, logical.y)]);
 
         // 2. 执行右键点击
         await mouse.click(Button.RIGHT);
@@ -239,18 +336,26 @@ export class WindowsNativeImpl {
   /**
    * 拖放操作
    * 实现 API 文档 2.6
+   *
+   * @param fromX 起始物理 X 坐标
+   * @param fromY 起始物理 Y 坐标
+   * @param toX 目标物理 X 坐标
+   * @param toY 目标物理 Y 坐标
    */
   dragAndDrop(fromX: number, fromY: number, toX: number, toY: number): void {
     try {
       this.runSync(async () => {
+        const logicalFrom = this.convertToLogicalCoordinates(fromX, fromY);
+        const logicalTo = this.convertToLogicalCoordinates(toX, toY);
+
         // 1. 移动鼠标到起始位置
-        await mouse.move([new Point(Math.round(fromX), Math.round(fromY))]);
+        await mouse.move([new Point(logicalFrom.x, logicalFrom.y)]);
 
         // 2. 按下鼠标左键
         await mouse.pressButton(Button.LEFT);
 
         // 3. 平滑拖动到目标位置
-        await mouse.drag([new Point(Math.round(toX), Math.round(toY))]);
+        await mouse.drag([new Point(logicalTo.x, logicalTo.y)]);
 
         // 4. 释放鼠标左键
         await mouse.releaseButton(Button.LEFT);
@@ -443,6 +548,9 @@ export class WindowsNativeImpl {
   /**
    * 指定位置滚动
    * 实现 API 文档 4.1
+   *
+   * @param x 物理 X 坐标
+   * @param y 物理 Y 坐标
    */
   scrollAt(
     x: number,
@@ -452,8 +560,10 @@ export class WindowsNativeImpl {
   ): void {
     try {
       this.runSync(async () => {
+        const logical = this.convertToLogicalCoordinates(x, y);
+
         // 1. 移动鼠标到目标位置
-        await mouse.move([new Point(Math.round(x), Math.round(y))]);
+        await mouse.move([new Point(logical.x, logical.y)]);
 
         // 2. 执行滚动
         await this.scrollAsync(direction, distance);
@@ -578,37 +688,53 @@ export class WindowsNativeImpl {
 
   /**
    * 异步：移动鼠标
+   * @param x 物理 X 坐标
+   * @param y 物理 Y 坐标
    */
   async moveMouseAsync(x: number, y: number): Promise<void> {
-    await mouse.move([new Point(Math.round(x), Math.round(y))]);
+    const logical = this.convertToLogicalCoordinates(x, y);
+    await mouse.move([new Point(logical.x, logical.y)]);
   }
 
   /**
    * 异步：鼠标单击
+   * @param x 物理 X 坐标
+   * @param y 物理 Y 坐标
    */
   async mouseClickAsync(x: number, y: number): Promise<void> {
-    await mouse.move([new Point(Math.round(x), Math.round(y))]);
+    const logical = this.convertToLogicalCoordinates(x, y);
+    await mouse.move([new Point(logical.x, logical.y)]);
     await mouse.click(Button.LEFT);
   }
 
   /**
    * 异步：鼠标双击
+   * @param x 物理 X 坐标
+   * @param y 物理 Y 坐标
    */
   async mouseDoubleClickAsync(x: number, y: number): Promise<void> {
-    await mouse.move([new Point(Math.round(x), Math.round(y))]);
+    const logical = this.convertToLogicalCoordinates(x, y);
+    await mouse.move([new Point(logical.x, logical.y)]);
     await mouse.doubleClick(Button.LEFT);
   }
 
   /**
    * 异步：鼠标右键点击
+   * @param x 物理 X 坐标
+   * @param y 物理 Y 坐标
    */
   async mouseRightClickAsync(x: number, y: number): Promise<void> {
-    await mouse.move([new Point(Math.round(x), Math.round(y))]);
+    const logical = this.convertToLogicalCoordinates(x, y);
+    await mouse.move([new Point(logical.x, logical.y)]);
     await mouse.click(Button.RIGHT);
   }
 
   /**
    * 异步：拖放操作
+   * @param fromX 起始物理 X 坐标
+   * @param fromY 起始物理 Y 坐标
+   * @param toX 目标物理 X 坐标
+   * @param toY 目标物理 Y 坐标
    */
   async dragAndDropAsync(
     fromX: number,
@@ -616,9 +742,11 @@ export class WindowsNativeImpl {
     toX: number,
     toY: number,
   ): Promise<void> {
-    await mouse.move([new Point(Math.round(fromX), Math.round(fromY))]);
+    const logicalFrom = this.convertToLogicalCoordinates(fromX, fromY);
+    const logicalTo = this.convertToLogicalCoordinates(toX, toY);
+    await mouse.move([new Point(logicalFrom.x, logicalFrom.y)]);
     await mouse.pressButton(Button.LEFT);
-    await mouse.drag([new Point(Math.round(toX), Math.round(toY))]);
+    await mouse.drag([new Point(logicalTo.x, logicalTo.y)]);
     await mouse.releaseButton(Button.LEFT);
   }
 
@@ -647,6 +775,8 @@ export class WindowsNativeImpl {
 
   /**
    * 异步：指定位置滚动
+   * @param x 物理 X 坐标
+   * @param y 物理 Y 坐标
    */
   async scrollAtAsync(
     x: number,
@@ -654,7 +784,8 @@ export class WindowsNativeImpl {
     direction: 'up' | 'down' | 'left' | 'right',
     distance: number,
   ): Promise<void> {
-    await mouse.move([new Point(Math.round(x), Math.round(y))]);
+    const logical = this.convertToLogicalCoordinates(x, y);
+    await mouse.move([new Point(logical.x, logical.y)]);
     await this.scrollAsync(direction, distance);
   }
 

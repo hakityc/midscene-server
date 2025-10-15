@@ -222,35 +222,79 @@ export class WindowsOperateService extends EventEmitter {
   /**
    * 处理任务开始提示的统一方法
    */
-  private handleTaskStartTip(tip: string): void {
-    const { formatted, category, icon } = formatTaskTip(tip);
-    const stageDescription = getTaskStageDescription(category);
+  private handleTaskStartTip(tip: string, error?: Error | null): void {
+    try {
+      const { formatted, category, icon } = formatTaskTip(tip);
+      const stageDescription = getTaskStageDescription(category);
 
-    console.log(`🤖 AI 任务开始: ${tip}`);
-    console.log(`${icon} ${formatted} (${stageDescription})`);
+      console.log(`🤖 AI 任务开始: ${tip}`);
+      console.log(`${icon} ${formatted} (${stageDescription})`);
 
-    serviceLogger.info(
-      {
-        tip,
-        formatted,
-        category,
-        icon,
-        stage: stageDescription,
-      },
-      'Windows AI 任务开始执行',
-    );
+      serviceLogger.info(
+        {
+          tip,
+          formatted,
+          category,
+          icon,
+          stage: stageDescription,
+          error: error
+            ? {
+                message: error.message,
+                type: 'task_error',
+              }
+            : undefined,
+        },
+        'Windows AI 任务开始执行',
+      );
 
-    // 触发所有注册的回调
-    for (const callback of this.taskTipCallbacks) {
+      // 发射事件，让其他地方可以监听到
+      this.emit('taskStartTip', tip, error);
+
+      // 触发注册的回调，并传递错误信息
+      this.triggerTaskTipCallbacks(tip, error);
+    } catch (handlerError: any) {
+      // 捕获任何错误，防止影响主流程
+      console.error('❌ handleTaskStartTip 执行失败:', handlerError);
+      serviceLogger.error(
+        {
+          tip,
+          error: handlerError?.message,
+          stack: handlerError?.stack,
+        },
+        'handleTaskStartTip 执行失败',
+      );
+
+      // 尝试通知客户端发生了错误
       try {
-        callback(tip);
-      } catch (error) {
-        console.warn('taskTipCallback 执行出错:', error);
+        this.triggerTaskTipCallbacks(
+          tip || '未知任务',
+          handlerError instanceof Error
+            ? handlerError
+            : new Error(String(handlerError)),
+        );
+      } catch (notifyError) {
+        // 如果通知也失败了，只记录日志
+        console.error(
+          '❌ 无法通知客户端 handleTaskStartTip 错误:',
+          notifyError,
+        );
       }
     }
+  }
 
-    // 发射事件，让其他地方可以监听到
-    this.emit('taskStartTip', tip);
+  /**
+   * 触发任务提示回调
+   * @param tip 任务提示内容
+   * @param error 任务错误（如果有）
+   */
+  private triggerTaskTipCallbacks(tip: string, error?: Error | null): void {
+    this.taskTipCallbacks.forEach((callback) => {
+      try {
+        callback(tip, error);
+      } catch (callbackError) {
+        console.error('任务提示回调执行失败:', callbackError);
+      }
+    });
   }
 
   // ==================== 回调机制方法 ====================
