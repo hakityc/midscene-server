@@ -1,4 +1,4 @@
-import type { WsOutboundMessage } from '@/types/debug';
+import type { WebSocketAction, WsOutboundMessage } from '@/types/debug';
 
 /**
  * 根据 WebSocket 消息的 action 类型格式化消息内容
@@ -9,19 +9,20 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
   icon?: string;
 } {
   const { action, status, result, error } = data.payload;
+  const actionType = action as WebSocketAction;
   const isSuccess = status === 'success';
 
   // 错误消息统一处理
   if (!isSuccess) {
     return {
-      title: getActionName(action),
+      title: getActionName(actionType),
       description: error || '执行失败',
       icon: '❌',
     };
   }
 
   // 根据 action 类型返回不同的格式化内容
-  switch (action) {
+  switch (actionType) {
     case 'aiCallbackStep':
       // AI 任务的步骤回调
       if (result && typeof result === 'object' && 'data' in result) {
@@ -41,7 +42,7 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
         icon: '🔄',
       };
 
-    case 'callback':
+    case 'callback': {
       // 总任务完成回调
       let callbackDesc = '任务已完成';
       if (typeof result === 'string') {
@@ -50,9 +51,10 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
         // 尝试提取有用信息
         if ('data' in result) {
           const callbackResult = result as { data: any; meta?: any };
-          callbackDesc = typeof callbackResult.data === 'string' 
-            ? callbackResult.data 
-            : JSON.stringify(callbackResult.data);
+          callbackDesc =
+            typeof callbackResult.data === 'string'
+              ? callbackResult.data
+              : JSON.stringify(callbackResult.data);
         } else {
           callbackDesc = '任务已成功完成';
         }
@@ -62,16 +64,17 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
         description: callbackDesc,
         icon: '✅',
       };
+    }
 
     case 'downloadVideoCallback':
       // 视频下载回调
       return {
-        title: '视频下载进度',
+        title: '📹 视频下载进度',
         description: typeof result === 'string' ? result : '视频下载处理中...',
         icon: '📹',
       };
 
-    case 'ai':
+    case 'ai': {
       // AI 查询完成
       let aiDesc = 'AI 查询成功';
       if (typeof result === 'string') {
@@ -79,18 +82,20 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
       } else if (result && typeof result === 'object') {
         // 可能是复杂的 AI 响应
         const resultStr = JSON.stringify(result);
-        aiDesc = resultStr.slice(0, 100) + (resultStr.length > 100 ? '...' : '');
+        aiDesc =
+          resultStr.slice(0, 100) + (resultStr.length > 100 ? '...' : '');
       }
       return {
         title: '🤖 AI 查询完成',
         description: aiDesc,
         icon: '🤖',
       };
+    }
 
     case 'aiScript':
       // AI 脚本执行完成
       return {
-        title: 'AI 脚本执行完成',
+        title: '📝 AI 脚本执行完成',
         description: typeof result === 'string' ? result : 'AI 脚本执行成功',
         icon: '📝',
       };
@@ -98,7 +103,7 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
     case 'siteScript':
       // 站点脚本执行完成
       return {
-        title: '站点脚本执行完成',
+        title: '🌐 站点脚本执行完成',
         description: typeof result === 'string' ? result : '站点脚本执行成功',
         icon: '🌐',
       };
@@ -106,7 +111,7 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
     case 'command':
       // 命令执行完成
       return {
-        title: '命令执行完成',
+        title: '⚡ 命令执行完成',
         description: typeof result === 'string' ? result : '命令执行成功',
         icon: '⚡',
       };
@@ -114,7 +119,7 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
     case 'connectTab':
       // 连接标签页成功
       return {
-        title: '标签页连接成功',
+        title: '🔗 标签页连接成功',
         description:
           typeof result === 'string' ? result : '已成功连接到目标标签页',
         icon: '🔗',
@@ -123,7 +128,7 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
     case 'downloadVideo':
       // 视频下载开始
       return {
-        title: '视频下载已启动',
+        title: '⬇️ 视频下载已启动',
         description: typeof result === 'string' ? result : '开始下载视频...',
         icon: '⬇️',
       };
@@ -131,7 +136,7 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
     case 'agent':
       // Agent 执行完成
       return {
-        title: 'Agent 执行完成',
+        title: '🤖 Agent 执行完成',
         description: typeof result === 'string' ? result : 'Agent 任务执行成功',
         icon: '🤖',
       };
@@ -139,7 +144,7 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
     case 'error':
       // 错误消息
       return {
-        title: '错误',
+        title: '⚠️ 错误',
         description: error || '发生未知错误',
         icon: '⚠️',
       };
@@ -147,7 +152,7 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
     case 'test':
       // 测试消息
       return {
-        title: '测试消息',
+        title: '🧪 测试消息',
         description: typeof result === 'string' ? result : '测试消息接收成功',
         icon: '🧪',
       };
@@ -155,7 +160,7 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
     default:
       // 未知类型
       return {
-        title: getActionName(action),
+        title: getActionName(actionType),
         description:
           typeof result === 'string'
             ? result

@@ -2,10 +2,16 @@
 export type WebSocketAction =
   | 'connectTab'
   | 'ai'
-  | 'aiScript'
+  | 'aiCallbackStep'
   | 'agent'
+  | 'aiScript'
+  | 'callback'
+  | 'error'
+  | 'downloadVideo'
+  | 'downloadVideoCallback'
   | 'siteScript'
-  | 'command';
+  | 'command'
+  | 'test';
 
 // 客户端类型
 export type ClientType = 'web' | 'windows';
