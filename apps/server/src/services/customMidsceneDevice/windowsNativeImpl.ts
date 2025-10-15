@@ -72,8 +72,11 @@ export class WindowsNativeImpl {
   getScreenSize(): ScreenInfo {
     // 使用缓存避免频繁计算
     if (this.cachedScreenInfo) {
+      console.log('[WindowsNative] 使用缓存的屏幕信息:', this.cachedScreenInfo);
       return this.cachedScreenInfo;
     }
+
+    console.log('[WindowsNative] 开始检测屏幕信息...');
 
     // nut-js 的 screen.width/height 是异步的
     // 使用同步包装
@@ -81,11 +84,20 @@ export class WindowsNativeImpl {
       const logicalWidth = await screen.width();
       const logicalHeight = await screen.height();
 
+      console.log(
+        `[WindowsNative] 逻辑分辨率检测: ${logicalWidth}x${logicalHeight}`,
+      );
+
       // 通过临时截图获取物理分辨率
       // screen.grab() 返回的图片尺寸是实际的物理分辨率
+      console.log('[WindowsNative] 正在捕获截图以检测物理分辨率...');
       const screenshot = await screen.grab();
       const physicalWidth = screenshot.width;
       const physicalHeight = screenshot.height;
+
+      console.log(
+        `[WindowsNative] 物理分辨率检测: ${physicalWidth}x${physicalHeight}`,
+      );
 
       // 计算 DPR (Device Pixel Ratio)
       const dpr = physicalWidth / logicalWidth;
@@ -107,8 +119,51 @@ export class WindowsNativeImpl {
       };
     });
 
-    this.cachedScreenInfo = result || { width: 1920, height: 1080, dpr: 1 };
+    if (!result) {
+      console.error('[WindowsNative] ❌ 检测失败，使用默认值');
+      this.cachedScreenInfo = { width: 1920, height: 1080, dpr: 1 };
+    } else {
+      console.log('[WindowsNative] ✅ 检测成功，缓存结果:', result);
+      this.cachedScreenInfo = result;
+    }
+
     return this.cachedScreenInfo;
+  }
+
+  /**
+   * 异步：获取屏幕尺寸（首选）
+   * - 纯异步实现，避免 runSync 超时与错误回退缓存
+   */
+  async getScreenSizeAsync(): Promise<ScreenInfo> {
+    if (this.cachedScreenInfo) {
+      return this.cachedScreenInfo;
+    }
+
+    // 逻辑分辨率
+    const logicalWidth = await screen.width();
+    const logicalHeight = await screen.height();
+    console.log(
+      `[WindowsNative] Async 逻辑分辨率: ${logicalWidth}x${logicalHeight}`,
+    );
+
+    // 物理分辨率（通过抓图）
+    const shot = await screen.grab();
+    const physicalWidth = shot.width;
+    const physicalHeight = shot.height;
+    console.log(
+      `[WindowsNative] Async 物理分辨率: ${physicalWidth}x${physicalHeight}`,
+    );
+
+    const dpr = physicalWidth / logicalWidth; // logicalHeight reserved for completeness
+
+    const result: ScreenInfo = {
+      width: physicalWidth,
+      height: physicalHeight,
+      dpr,
+    };
+
+    this.cachedScreenInfo = result;
+    return result;
   }
 
   /**
@@ -257,15 +312,16 @@ export class WindowsNativeImpl {
   mouseClick(x: number, y: number): void {
     try {
       this.runSync(async () => {
+        const screenInfo = this.getScreenSize();
         const logical = this.convertToLogicalCoordinates(x, y);
 
-        if (process.env.DEBUG_DPI === 'true') {
-          const screenInfo = this.getScreenSize();
-          console.log('[WindowsNative] 鼠标点击:');
-          console.log(`  物理坐标: (${x}, ${y})`);
-          console.log(`  逻辑坐标: (${logical.x}, ${logical.y})`);
-          console.log(`  DPR: ${screenInfo.dpr.toFixed(4)}`);
-        }
+        // 始终输出调试信息
+        console.log('[WindowsNative] 鼠标点击:');
+        console.log(`  接收到的坐标: (${x}, ${y})`);
+        console.log(
+          `  屏幕信息: ${screenInfo.width}x${screenInfo.height}, DPR: ${screenInfo.dpr.toFixed(4)}`,
+        );
+        console.log(`  转换后逻辑坐标: (${logical.x}, ${logical.y})`);
 
         // 1. 移动鼠标到目标位置
         await mouse.move([new Point(logical.x, logical.y)]);
@@ -646,13 +702,27 @@ export class WindowsNativeImpl {
         done = true;
       });
 
-    // 等待异步操作完成（最多 5 秒）
+    // 等待异步操作完成（最多 10 秒）
     const startTime = Date.now();
-    while (!done && Date.now() - startTime < 5000) {
+    const timeout = 10000; // 增加超时时间
+    while (!done && Date.now() - startTime < timeout) {
       // 忙等待
+      // 添加一个小延迟避免 CPU 占用过高
+      const now = Date.now();
+      while (Date.now() - now < 10) {
+        // 忙等待 10ms
+      }
+    }
+
+    if (!done) {
+      console.error(
+        `[WindowsNative] runSync 超时！操作未在 ${timeout}ms 内完成`,
+      );
+      return undefined;
     }
 
     if (error) {
+      console.error('[WindowsNative] runSync 执行出错:', error);
       throw error;
     }
 

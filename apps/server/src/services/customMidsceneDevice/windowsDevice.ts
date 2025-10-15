@@ -120,7 +120,20 @@ export default class WindowsDevice implements AbstractInterface {
    * 初始化设备信息
    */
   private async initializeDeviceInfo(): Promise<void> {
+    console.log('[WindowsDevice] 开始初始化设备信息...');
+
+    // 清除可能存在的旧缓存
+    this.cachedSize = null;
+    windowsNative.clearScreenInfoCache();
+
+    console.log('[WindowsDevice] 缓存已清除，准备获取屏幕尺寸...');
+
+    // 添加延迟确保缓存清除生效
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const size = await this.size();
+
+    console.log('[WindowsDevice] 屏幕尺寸获取完成:', size);
 
     this.description = `
 Windows Device: ${this.options.deviceName}
@@ -282,21 +295,24 @@ Status: Ready
   async size(): Promise<Size> {
     this.assertNotDestroyed();
 
-    if (!this.cachedSize) {
-      // 使用 robotjs 获取真实的屏幕尺寸
-      const screenInfo = windowsNative.getScreenSize();
-      this.cachedSize = {
-        width: screenInfo.width,
-        height: screenInfo.height,
-        dpr: screenInfo.dpr,
-      };
+    // 每次都重新获取，不使用缓存
+    // 因为 getScreenSize 内部已经有缓存了
+    const screenInfo = await windowsNative.getScreenSizeAsync();
+    this.cachedSize = {
+      width: screenInfo.width,
+      height: screenInfo.height,
+      dpr: screenInfo.dpr,
+    };
 
-      if (this.options.debug) {
-        console.log(
-          `📐 Windows device size: ${this.cachedSize.width}x${this.cachedSize.height} (dpr: ${this.cachedSize.dpr})`,
-        );
-      }
+    if (this.options.debug) {
+      console.log(
+        `📐 Windows device size: ${this.cachedSize.width}x${this.cachedSize.height} (dpr: ${this.cachedSize.dpr})`,
+      );
     }
+
+    // 添加调试日志
+    console.log('[DEBUG] windowsDevice.size() 返回:', this.cachedSize);
+
     return this.cachedSize;
   }
 
@@ -312,6 +328,43 @@ Status: Ready
 
       if (this.options.debug) {
         console.log('📸 Screenshot captured');
+      }
+
+      // 添加调试日志：解析截图实际尺寸
+      try {
+        const base64Data = this.cachedScreenshot.replace(
+          /^data:image\/\w+;base64,/,
+          '',
+        );
+        const buffer = Buffer.from(base64Data, 'base64');
+        // PNG 文件头包含尺寸信息（偏移 16 和 20 字节）
+        const width = buffer.readUInt32BE(16);
+        const height = buffer.readUInt32BE(20);
+        console.log(`[DEBUG] screenshot 实际尺寸: ${width}x${height}`);
+        console.log(
+          `[DEBUG] cachedSize: ${this.cachedSize?.width}x${this.cachedSize?.height}`,
+        );
+
+        if (
+          this.cachedSize &&
+          (width !== this.cachedSize.width || height !== this.cachedSize.height)
+        ) {
+          console.warn(
+            `⚠️ 警告：截图尺寸 (${width}x${height}) 与 size() 返回的尺寸 (${this.cachedSize.width}x${this.cachedSize.height}) 不一致！`,
+          );
+          // 主动刷新 size，与截图保持一致
+          const screenInfo = await windowsNative.getScreenSizeAsync();
+          this.cachedSize = {
+            width: screenInfo.width,
+            height: screenInfo.height,
+            dpr: screenInfo.dpr,
+          };
+          console.log('[DEBUG] size 已按截图刷新为:', this.cachedSize);
+        } else {
+          console.log('✓ 截图尺寸与 size() 一致');
+        }
+      } catch (parseError) {
+        console.warn('无法解析截图尺寸:', parseError);
       }
 
       return this.cachedScreenshot;
