@@ -1,4 +1,4 @@
-import { History, Send } from 'lucide-react';
+import { History, Play, Send, Square } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { ActionSelector } from '@/components/debug/ActionSelector';
 import { AiScriptForm } from '@/components/debug/AiScriptForm';
@@ -233,6 +233,42 @@ export default function MidsceneDebugPage() {
               <CardTitle>消息构建器</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* 服务控制按钮 */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => {
+                    const startMessage = buildCommandScriptMessage(
+                      'start',
+                      meta,
+                    );
+                    send(startMessage);
+                    addHistory(startMessage, '启动服务');
+                  }}
+                  disabled={status !== 'open'}
+                  variant="outline"
+                  className="h-11"
+                  size="lg"
+                >
+                  <Play className="h-5 w-5 mr-2" />
+                  启动服务
+                </Button>
+                <Button
+                  onClick={() => {
+                    const stopMessage = buildCommandScriptMessage('stop', meta);
+                    send(stopMessage);
+                    addHistory(stopMessage, '停止服务');
+                  }}
+                  disabled={status !== 'open'}
+                  variant="outline"
+                  className="h-11"
+                  size="lg"
+                >
+                  <Square className="h-5 w-5 mr-2" />
+                  停止服务
+                </Button>
+              </div>
+
+              {/* 发送消息按钮 */}
               <Button
                 onClick={handleSend}
                 disabled={status !== 'open'}
