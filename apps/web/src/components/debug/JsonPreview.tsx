@@ -6,6 +6,63 @@ import { Textarea } from '@/components/ui/textarea';
 import type { WsInboundMessage } from '@/types/debug';
 import { validateJson } from '@/utils/messageBuilder';
 
+/**
+ * 格式化 JSON，将未启用的动作注释掉
+ */
+function formatJsonWithDisabledActions(params: any): string {
+  if (!params || typeof params !== 'object') {
+    return JSON.stringify(params, null, 2);
+  }
+
+  // 如果有 tasks 数组，处理每个 task 中的 flow
+  if (Array.isArray(params.tasks)) {
+    const formattedTasks = params.tasks.map((task: any) => {
+      if (!task.flow || !Array.isArray(task.flow)) {
+        return task;
+      }
+
+      const lines: string[] = [];
+      lines.push(`    {`);
+      lines.push(`      "name": ${JSON.stringify(task.name)},`);
+      lines.push(`      "continueOnError": ${task.continueOnError},`);
+      lines.push(`      "flow": [`);
+
+      task.flow.forEach((action: any, index: number) => {
+        const isEnabled = action.enabled !== false;
+        // 移除前端专用字段（id, enabled）
+        // biome-ignore lint/correctness/noUnusedVariables: 解构是为了移除字段
+        const { id, enabled, ...cleanAction } = action;
+        const actionStr = JSON.stringify(cleanAction, null, 2);
+        const indentedAction = actionStr
+          .split('\n')
+          .map((line) => '        ' + line)
+          .join('\n');
+
+        if (!isEnabled) {
+          // 将未启用的动作注释掉
+          const commented = indentedAction
+            .split('\n')
+            .map((line) => '// ' + line)
+            .join('\n');
+          lines.push(commented + (index < task.flow.length - 1 ? ',' : ''));
+        } else {
+          lines.push(
+            indentedAction + (index < task.flow.length - 1 ? ',' : ''),
+          );
+        }
+      });
+
+      lines.push(`      ]`);
+      lines.push(`    }`);
+      return lines.join('\n');
+    });
+
+    return `{\n  "tasks": [\n${formattedTasks.join(',\n')}\n  ]\n}`;
+  }
+
+  return JSON.stringify(params, null, 2);
+}
+
 interface JsonPreviewProps {
   message: WsInboundMessage;
   editable?: boolean;
@@ -27,7 +84,7 @@ export function JsonPreview({
   useEffect(() => {
     // 只展示 payload.params 部分
     const params = message.payload?.params || {};
-    const formatted = JSON.stringify(params, null, 2);
+    const formatted = formatJsonWithDisabledActions(params);
     setJsonString(formatted);
     setIsValid(true);
     setError('');
@@ -149,6 +206,15 @@ export function JsonPreview({
           <p className="text-xs text-muted-foreground">
             📋 点击"粘贴"按钮可以快速从剪贴板导入参数并更新表单
           </p>
+          <p className="text-xs text-amber-600 font-medium">
+            ⚠️ 被注释掉的动作（以 {'//'} 开头）不会被执行
+          </p>
+        </div>
+      )}
+
+      {!editable && jsonString.includes('//') && (
+        <div className="p-2 rounded-md border border-amber-500 bg-amber-50 text-amber-700 text-xs font-medium">
+          ℹ️ 注意：被注释掉的动作（以 {'//'} 开头）已被禁用，不会被执行
         </div>
       )}
     </div>

@@ -16,6 +16,10 @@ export interface FlowActionConfig {
     required: boolean;
     placeholder?: string;
     description?: string;
+    /** 是否属于 options 对象 */
+    isOption?: boolean;
+    /** 参数默认值 */
+    defaultValue?: any;
   }>;
   example?: string;
 }
@@ -142,6 +146,44 @@ export function useClientTypeFlowActions(
     return labels[category];
   };
 
+  /**
+   * 获取 action 的主要参数（非 options）
+   */
+  const getMainParams = (
+    clientType: ClientType,
+    actionType: string,
+  ): FlowActionConfig['params'] => {
+    const actionConfig = getFlowActionConfig(clientType, actionType);
+    if (!actionConfig) return [];
+    return actionConfig.params.filter((p) => !p.isOption);
+  };
+
+  /**
+   * 获取 action 的 options 参数
+   */
+  const getOptionParams = (
+    clientType: ClientType,
+    actionType: string,
+  ): FlowActionConfig['params'] => {
+    const actionConfig = getFlowActionConfig(clientType, actionType);
+    if (!actionConfig) return [];
+    return actionConfig.params.filter((p) => p.isOption);
+  };
+
+  /**
+   * 检查 action 是否有 options 参数
+   */
+  const hasOptions = (clientType: ClientType, actionType: string): boolean => {
+    return getOptionParams(clientType, actionType).length > 0;
+  };
+
+  /**
+   * 检查客户端类型是否支持 xpath
+   */
+  const supportsXPath = (clientType: ClientType): boolean => {
+    return clientType === 'web';
+  };
+
   return {
     config,
     loading,
@@ -152,5 +194,9 @@ export function useClientTypeFlowActions(
     getFlowActionConfig,
     isFlowActionSupported,
     getCategoryLabel,
+    getMainParams,
+    getOptionParams,
+    hasOptions,
+    supportsXPath,
   };
 }

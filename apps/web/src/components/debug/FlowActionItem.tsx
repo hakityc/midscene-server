@@ -1,7 +1,13 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { AlertCircle, GripVertical, Loader2, Trash2 } from 'lucide-react';
-import { useMemo } from 'react';
+import {
+  AlertCircle,
+  ChevronDown,
+  GripVertical,
+  Loader2,
+  Trash2,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useClientTypeFlowActions } from '@/hooks/useClientTypeFlowActions';
 import type { ClientType, FlowAction } from '@/types/debug';
+import type { FlowActionConfig } from '@/types/flowAction';
 
 interface FlowActionItemProps {
   action: FlowAction;
@@ -34,8 +41,16 @@ export function FlowActionItem({
   onRemove,
   clientType,
 }: FlowActionItemProps) {
-  const { loading, error, getFlowActionsByCategory, getCategoryLabel } =
-    useClientTypeFlowActions();
+  const {
+    loading,
+    error,
+    getFlowActionsByCategory,
+    getCategoryLabel,
+    getFlowActionConfig,
+    getMainParams,
+    getOptionParams,
+    hasOptions: checkHasOptions,
+  } = useClientTypeFlowActions();
 
   // 使用 useSortable hook
   const {
@@ -59,260 +74,109 @@ export function FlowActionItem({
     [clientType, getFlowActionsByCategory],
   );
 
+  // 获取当前 action 的配置
+  const actionConfig = useMemo(
+    () => getFlowActionConfig(clientType, action.type),
+    [clientType, action.type, getFlowActionConfig],
+  );
+
+  // 获取主要参数和 options 参数
+  const mainParams = useMemo(
+    () => getMainParams(clientType, action.type),
+    [clientType, action.type, getMainParams],
+  );
+
+  const optionParams = useMemo(
+    () => getOptionParams(clientType, action.type),
+    [clientType, action.type, getOptionParams],
+  );
+
+  const hasOptionsParams = useMemo(
+    () => checkHasOptions(clientType, action.type),
+    [clientType, action.type, checkHasOptions],
+  );
+
+  // 控制 options 面板展开/收起
+  const [optionsExpanded, setOptionsExpanded] = useState(false);
+
   const updateField = (field: string, value: unknown) => {
     onChange({ ...action, [field]: value } as FlowAction);
   };
 
-  const renderFields = () => {
-    switch (action.type) {
-      case 'aiTap':
-        return (
-          <>
-            <div>
-              <Label className="text-xs font-bold">描述 *</Label>
-              <Input
-                value={action.locate || ''}
-                onChange={(e) => updateField('locate', e.target.value)}
-                placeholder="例如：搜索图标"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-bold">XPath (可选)</Label>
-              <Input
-                value={action.xpath || ''}
-                onChange={(e) => updateField('xpath', e.target.value)}
-                placeholder="//*[@id='...']"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-          </>
-        );
+  /**
+   * 根据参数配置渲染单个输入框
+   */
+  const renderParamInput = (param: FlowActionConfig['params'][0]) => {
+    const value = (action as any)[param.name];
+    const label = `${param.label}${param.required ? ' *' : ''}`;
 
-      case 'aiInput':
+    switch (param.type) {
+      case 'string':
+        // 对于较长的文本，使用 Textarea
+        if (param.name === 'assertion' || param.description?.includes('描述')) {
+          return (
+            <div key={param.name}>
+              <Label className="text-xs font-bold">{label}</Label>
+              <Textarea
+                value={value || ''}
+                onChange={(e) => updateField(param.name, e.target.value)}
+                placeholder={param.placeholder}
+                className="mt-1 text-xs min-h-[60px]"
+              />
+              {param.description && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {param.description}
+                </p>
+              )}
+            </div>
+          );
+        }
+        // 普通文本输入
         return (
-          <>
-            <div>
-              <Label className="text-xs font-bold">输入内容 *</Label>
-              <Input
-                value={action.value || ''}
-                onChange={(e) => updateField('value', e.target.value)}
-                placeholder="要输入的文本"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-bold">定位描述 *</Label>
-              <Input
-                value={action.locate || ''}
-                onChange={(e) => updateField('locate', e.target.value)}
-                placeholder="例如：搜索输入框"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-bold">XPath (可选)</Label>
-              <Input
-                value={action.xpath || ''}
-                onChange={(e) => updateField('xpath', e.target.value)}
-                placeholder="//*[@id='...']"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-          </>
-        );
-
-      case 'aiAssert':
-        return (
-          <div>
-            <Label className="text-xs font-bold">断言描述 *</Label>
-            <Textarea
-              value={action.assertion || ''}
-              onChange={(e) => updateField('assertion', e.target.value)}
-              placeholder="例如：页面包含搜索结果"
-              className="mt-1 text-xs min-h-[60px]"
+          <div key={param.name}>
+            <Label className="text-xs font-bold">{label}</Label>
+            <Input
+              value={value || ''}
+              onChange={(e) => updateField(param.name, e.target.value)}
+              placeholder={param.placeholder}
+              className="mt-1 h-8 text-xs"
             />
+            {param.description && (
+              <p className="text-xs text-gray-500 mt-1">{param.description}</p>
+            )}
           </div>
         );
 
-      case 'sleep':
+      case 'number':
         return (
-          <div>
-            <Label className="text-xs font-bold">延迟时间 (毫秒) *</Label>
+          <div key={param.name}>
+            <Label className="text-xs font-bold">{label}</Label>
             <Input
               type="number"
-              value={action.duration || 0}
-              onChange={(e) => updateField('duration', Number(e.target.value))}
-              placeholder="2000"
+              value={value ?? param.defaultValue ?? 0}
+              onChange={(e) => updateField(param.name, Number(e.target.value))}
+              placeholder={param.placeholder}
               min="0"
               className="mt-1 h-8 text-xs"
             />
+            {param.description && (
+              <p className="text-xs text-gray-500 mt-1">{param.description}</p>
+            )}
           </div>
         );
 
-      case 'aiHover':
+      case 'boolean':
         return (
-          <>
-            <div>
-              <Label className="text-xs font-bold">描述 *</Label>
-              <Input
-                value={action.locate || ''}
-                onChange={(e) => updateField('locate', e.target.value)}
-                placeholder="例如：菜单按钮"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-bold">XPath (可选)</Label>
-              <Input
-                value={action.xpath || ''}
-                onChange={(e) => updateField('xpath', e.target.value)}
-                placeholder="//*[@id='...']"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-          </>
-        );
-
-      case 'aiScroll':
-        return (
-          <>
-            <div>
-              <Label className="text-xs font-bold">滚动方向 *</Label>
-              <Select
-                value={action.direction || 'down'}
-                onValueChange={(val) => updateField('direction', val)}
-              >
-                <SelectTrigger className="mt-1 h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="up">向上</SelectItem>
-                  <SelectItem value="down">向下</SelectItem>
-                  <SelectItem value="left">向左</SelectItem>
-                  <SelectItem value="right">向右</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs font-bold">滚动类型 *</Label>
-              <Select
-                value={action.scrollType || 'once'}
-                onValueChange={(val) => updateField('scrollType', val)}
-              >
-                <SelectTrigger className="mt-1 h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="once">滚动固定距离</SelectItem>
-                  <SelectItem value="untilBottom">滚动到底部</SelectItem>
-                  <SelectItem value="untilTop">滚动到顶部</SelectItem>
-                  <SelectItem value="untilLeft">滚动到最左</SelectItem>
-                  <SelectItem value="untilRight">滚动到最右</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {action.scrollType === 'once' && (
-              <div>
-                <Label className="text-xs font-bold">滚动距离 (像素)</Label>
-                <Input
-                  type="number"
-                  value={action.distance || 0}
-                  onChange={(e) =>
-                    updateField('distance', Number(e.target.value))
-                  }
-                  placeholder="500"
-                  className="mt-1 h-8 text-xs"
-                />
-              </div>
+          <div key={param.name} className="flex items-center gap-2">
+            <Switch
+              checked={value ?? param.defaultValue ?? false}
+              onCheckedChange={(checked) => updateField(param.name, checked)}
+            />
+            <Label className="text-xs font-bold">{label}</Label>
+            {param.description && (
+              <p className="text-xs text-gray-500 ml-2">{param.description}</p>
             )}
-            <div>
-              <Label className="text-xs font-bold">定位描述 (可选)</Label>
-              <Input
-                value={action.locate || ''}
-                onChange={(e) => updateField('locate', e.target.value)}
-                placeholder="滚动的容器元素"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={action.deepThink || false}
-                onCheckedChange={(checked) => updateField('deepThink', checked)}
-              />
-              <Label className="text-xs font-bold">深度思考模式</Label>
-            </div>
-          </>
-        );
-
-      case 'aiWaitFor':
-        return (
-          <>
-            <div>
-              <Label className="text-xs font-bold">等待条件 *</Label>
-              <Textarea
-                value={action.assertion || ''}
-                onChange={(e) => updateField('assertion', e.target.value)}
-                placeholder="例如：页面加载完成"
-                className="mt-1 text-xs min-h-[60px]"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-bold">超时时间 (毫秒)</Label>
-              <Input
-                type="number"
-                value={action.timeoutMs || 15000}
-                onChange={(e) =>
-                  updateField('timeoutMs', Number(e.target.value))
-                }
-                placeholder="15000"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-bold">检查间隔 (毫秒)</Label>
-              <Input
-                type="number"
-                value={action.checkIntervalMs || 3000}
-                onChange={(e) =>
-                  updateField('checkIntervalMs', Number(e.target.value))
-                }
-                placeholder="3000"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-          </>
-        );
-
-      case 'aiKeyboardPress':
-        return (
-          <>
-            <div>
-              <Label className="text-xs font-bold">按键 *</Label>
-              <Input
-                value={action.key || ''}
-                onChange={(e) => updateField('key', e.target.value)}
-                placeholder="Enter, Tab, Escape..."
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-bold">定位描述 (可选)</Label>
-              <Input
-                value={action.locate || ''}
-                onChange={(e) => updateField('locate', e.target.value)}
-                placeholder="在哪个元素上按键"
-                className="mt-1 h-8 text-xs"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={action.deepThink || false}
-                onCheckedChange={(checked) => updateField('deepThink', checked)}
-              />
-              <Label className="text-xs font-bold">深度思考模式</Label>
-            </div>
-          </>
+          </div>
         );
 
       default:
@@ -320,11 +184,54 @@ export function FlowActionItem({
     }
   };
 
+  /**
+   * 渲染所有字段（使用配置驱动）
+   */
+  const renderFields = () => {
+    if (!actionConfig) return null;
+
+    return (
+      <>
+        {/* 主要参数 */}
+        <div className="space-y-2">
+          {mainParams.map((param) => renderParamInput(param))}
+        </div>
+
+        {/* Options 参数（可折叠） */}
+        {hasOptionsParams && optionParams.length > 0 && (
+          <div className="mt-3 border-t border-gray-200 pt-3">
+            <button
+              type="button"
+              onClick={() => setOptionsExpanded(!optionsExpanded)}
+              className="flex items-center gap-1 text-xs font-bold text-gray-700 hover:text-gray-900"
+            >
+              <ChevronDown
+                className={`h-3 w-3 transition-transform ${
+                  optionsExpanded ? 'rotate-180' : ''
+                }`}
+              />
+              高级选项
+            </button>
+            {optionsExpanded && (
+              <div className="mt-2 space-y-2 pl-4 border-l-2 border-gray-200">
+                {optionParams.map((param) => renderParamInput(param))}
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    );
+  };
+
+  const isEnabled = action.enabled !== false; // 默认为 true
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="p-3 bg-white border-2 border-black rounded-none shadow-[3px_3px_0_0_#000]"
+      className={`p-3 border-2 border-black rounded-none shadow-[3px_3px_0_0_#000] ${
+        isEnabled ? 'bg-white' : 'bg-gray-100 opacity-75'
+      }`}
     >
       <div className="flex items-center gap-2 mb-3">
         <div
@@ -337,6 +244,16 @@ export function FlowActionItem({
         <span className="text-xs font-bold text-gray-500 flex-shrink-0">
           #{index + 1}
         </span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Switch
+            checked={isEnabled}
+            onCheckedChange={(checked) => updateField('enabled', checked)}
+            className="scale-75"
+          />
+          <span className="text-xs font-medium text-gray-600">
+            {isEnabled ? '已启用' : '已禁用'}
+          </span>
+        </div>
         <Select
           value={action.type}
           onValueChange={(val) => onChange({ type: val } as FlowAction)}

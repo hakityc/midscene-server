@@ -61,6 +61,10 @@ export interface FlowActionConfig {
     required: boolean;
     placeholder?: string;
     description?: string;
+    /** 是否属于 options 对象 */
+    isOption?: boolean;
+    /** 参数默认值 */
+    defaultValue?: any;
   }[];
   /** 示例用法 */
   example?: string;
@@ -80,15 +84,42 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：登录按钮',
             description: '用自然语言描述要点击的元素',
           },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式（更准确但更慢）',
+          },
+          {
+            name: 'xpath',
+            label: 'XPath 表达式',
+            type: 'string',
+            required: false,
+            isOption: true,
+            placeholder: '//button[@id="login"]',
+            description: '可选的 XPath 选择器',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
+          },
         ],
-        example: 'await agent.aiTap("登录按钮")',
+        example: 'await agent.aiTap("登录按钮", { deepThink: true })',
       },
       {
         type: 'aiInput',
@@ -97,21 +128,51 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'value',
+            name: 'text',
             label: '输入内容',
             type: 'string',
             required: true,
             placeholder: '要输入的文本',
+            description: '要输入的文本内容',
           },
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：用户名输入框',
+            description: '用自然语言描述目标输入框',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'xpath',
+            label: 'XPath 表达式',
+            type: 'string',
+            required: false,
+            isOption: true,
+            placeholder: '//input[@name="username"]',
+            description: '可选的 XPath 选择器',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
-        example: 'await agent.aiInput("admin", "用户名输入框")',
+        example:
+          'await agent.aiInput("admin", "用户名输入框", { xpath: "//input[@name=\'username\']" })',
       },
       {
         type: 'aiAssert',
@@ -136,11 +197,39 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：更多菜单',
+            description: '用自然语言描述要悬停的元素',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'xpath',
+            label: 'XPath 表达式',
+            type: 'string',
+            required: false,
+            isOption: true,
+            placeholder: '//*[@class="menu"]',
+            description: '可选的 XPath 选择器',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiHover("更多菜单")',
@@ -198,14 +287,50 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'keyName',
+            name: 'key',
             label: '按键名称',
             type: 'string',
             required: true,
             placeholder: '例如：Enter, Escape, Tab',
+            description: '要按下的键名',
+          },
+          {
+            name: 'locate',
+            label: '元素定位（可选）',
+            type: 'string',
+            required: false,
+            placeholder: '例如：输入框',
+            description: '可选，在特定元素上按键',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'xpath',
+            label: 'XPath 表达式',
+            type: 'string',
+            required: false,
+            isOption: true,
+            placeholder: '//input',
+            description: '可选的 XPath 选择器',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
-        example: 'await agent.aiKeyboardPress("Enter")',
+        example: 'await agent.aiKeyboardPress("Enter", "搜索框")',
       },
       {
         type: 'aiDoubleClick',
@@ -214,11 +339,39 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：文件图标',
+            description: '用自然语言描述要双击的元素',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'xpath',
+            label: 'XPath 表达式',
+            type: 'string',
+            required: false,
+            isOption: true,
+            placeholder: '//*[@class="file-icon"]',
+            description: '可选的 XPath 选择器',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiDoubleClick("文件图标")',
@@ -230,11 +383,39 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：文件夹',
+            description: '用自然语言描述要右键点击的元素',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'xpath',
+            label: 'XPath 表达式',
+            type: 'string',
+            required: false,
+            isOption: true,
+            placeholder: '//*[@class="folder"]',
+            description: '可选的 XPath 选择器',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiRightClick("文件夹")',
@@ -319,6 +500,16 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: '例如：填写登录表单并提交',
+            description: '任务的自然语言描述，AI 会自动规划执行步骤',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiAction("填写登录表单并提交")',
@@ -393,7 +584,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
 
     windows: [
       // ==================== 基础操作 ====================
-      // Windows 支持所有 Web 的基础操作
+      // Windows 支持所有 Web 的基础操作，但不支持 xpath
       {
         type: 'aiTap',
         label: 'AI 点击',
@@ -401,14 +592,33 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：开始菜单',
+            description: '用自然语言描述要点击的元素',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式（更准确但更慢）',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
-        example: 'await agent.aiTap("开始菜单")',
+        example: 'await agent.aiTap("开始菜单", { deepThink: true })',
       },
       {
         type: 'aiInput',
@@ -417,18 +627,38 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'value',
+            name: 'text',
             label: '输入内容',
             type: 'string',
             required: true,
             placeholder: '要输入的文本',
+            description: '要输入的文本内容',
           },
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：搜索框',
+            description: '用自然语言描述目标输入框',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiInput("notepad", "搜索框")',
@@ -456,11 +686,30 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：文件菜单',
+            description: '用自然语言描述要悬停的元素',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiHover("文件菜单")',
@@ -518,11 +767,38 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'keyName',
+            name: 'key',
             label: '按键名称',
             type: 'string',
             required: true,
             placeholder: '例如：Enter, Escape, Tab',
+            description: '要按下的键名',
+          },
+          {
+            name: 'locate',
+            label: '元素定位（可选）',
+            type: 'string',
+            required: false,
+            placeholder: '例如：输入框',
+            description: '可选，在特定元素上按键',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiKeyboardPress("Enter")',
@@ -534,11 +810,30 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：文件图标',
+            description: '用自然语言描述要双击的元素',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiDoubleClick("文件图标")',
@@ -550,11 +845,30 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'locator',
+            name: 'locate',
             label: '元素定位',
             type: 'string',
             required: true,
             placeholder: '例如：桌面空白处',
+            description: '用自然语言描述要右键点击的元素',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiRightClick("桌面空白处")',
@@ -639,6 +953,16 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: '例如：打开记事本并输入文本',
+            description: '任务的自然语言描述，AI 会自动规划执行步骤',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
         example: 'await agent.aiAction("打开记事本并输入文本")',
@@ -827,4 +1151,43 @@ export function getFullFlowActionConfig() {
     clientTypes,
     flowActions: CLIENT_TYPE_FLOW_ACTIONS,
   };
+}
+
+/**
+ * 获取 action 的主要参数（非 options）
+ */
+export function getMainParams(
+  clientType: ClientType,
+  actionType: FlowActionType,
+) {
+  const config = getFlowActionConfig(clientType, actionType);
+  if (!config) return [];
+  return config.params.filter((p) => !p.isOption);
+}
+
+/**
+ * 获取 action 的 options 参数
+ */
+export function getOptionParams(
+  clientType: ClientType,
+  actionType: FlowActionType,
+) {
+  const config = getFlowActionConfig(clientType, actionType);
+  if (!config) return [];
+  return config.params.filter((p) => p.isOption);
+}
+
+/**
+ * 检查 action 是否有 options 参数
+ */
+export function hasOptions(clientType: ClientType, actionType: FlowActionType) {
+  return getOptionParams(clientType, actionType).length > 0;
+}
+
+/**
+ * 检查客户端类型是否支持 xpath
+ * web 支持，windows 不支持
+ */
+export function supportsXPath(clientType: ClientType): boolean {
+  return clientType === 'web';
 }

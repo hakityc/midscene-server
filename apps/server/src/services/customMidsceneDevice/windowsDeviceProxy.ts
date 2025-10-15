@@ -183,11 +183,18 @@ Status: Ready
         }),
         call: async ({ value, locate }: { value: string; locate: any }) => {
           assert(locate, 'Element not found, cannot input');
+
           // 先点击元素获取焦点
           await this.mouseClick(locate.center[0], locate.center[1]);
-          // 等待焦点切换
-          await this.sleep(100);
-          // 输入文本
+
+          // 等待焦点切换（增加延迟以适应慢速 UI 和高 DPI 环境）
+          await this.sleep(250);
+
+          // 清除原有内容：全选（Ctrl+A）
+          await this.keyPress('Control+a');
+          await this.sleep(50);
+
+          // 输入文本（会自动覆盖选中的内容）
           await this.typeText(value);
         },
       }),

@@ -81,7 +81,6 @@ const promptOptimizeRouter = new Hono().post('/', async (c) => {
       JSON.stringify(messages, null, 2).substring(0, 500),
     );
 
-    // 使用 .generate() 方法（推荐方式）
     const response = await agent.generateVNext(messages);
 
     let optimized = response.text?.trim() || '';

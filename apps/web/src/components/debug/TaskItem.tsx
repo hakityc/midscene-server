@@ -89,6 +89,7 @@ export function TaskItem({
       id: uuidv4(),
       type: 'aiTap',
       locate: '',
+      enabled: true,
     };
     updateTask('flow', [...flowWithIds, newAction]);
   };

@@ -223,11 +223,18 @@ Status: Ready
       defineActionInput(async (param: ActionInputParam) => {
         const element = param.locate;
         assert(element, 'Element not found, cannot input');
+
         // 先点击元素获取焦点
         await this.mouseClick(element.center[0], element.center[1]);
-        // 等待焦点切换
-        await this.sleep(100);
-        // 输入文本
+
+        // 等待焦点切换（增加延迟以适应慢速 UI 和高 DPI 环境）
+        await this.sleep(250);
+
+        // 清除原有内容：全选（Ctrl+A）
+        await this.keyPress('Control+a');
+        await this.sleep(50);
+
+        // 输入文本（会自动覆盖选中的内容）
         await this.typeText(param.value);
       }),
 
@@ -386,7 +393,7 @@ Status: Ready
       console.log(`🖱️ Mouse click at (${x}, ${y})`);
     }
 
-    windowsNative.mouseClick(x, y);
+    await windowsNative.mouseClickAsync(x, y);
   }
 
   /**
@@ -399,7 +406,7 @@ Status: Ready
       console.log(`🖱️ Mouse double click at (${x}, ${y})`);
     }
 
-    windowsNative.mouseDoubleClick(x, y);
+    await windowsNative.mouseDoubleClickAsync(x, y);
   }
 
   /**
@@ -412,7 +419,7 @@ Status: Ready
       console.log(`🖱️ Mouse right click at (${x}, ${y})`);
     }
 
-    windowsNative.mouseRightClick(x, y);
+    await windowsNative.mouseRightClickAsync(x, y);
   }
 
   /**
@@ -425,7 +432,7 @@ Status: Ready
       console.log(`🖱️ Mouse hover at (${x}, ${y})`);
     }
 
-    windowsNative.mouseHover(x, y);
+    await windowsNative.moveMouseAsync(x, y);
   }
 
   /**
@@ -443,7 +450,7 @@ Status: Ready
       console.log(`🖱️ Drag from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
     }
 
-    windowsNative.dragAndDrop(fromX, fromY, toX, toY);
+    await windowsNative.dragAndDropAsync(fromX, fromY, toX, toY);
   }
 
   // ==================== 键盘操作方法 ====================
@@ -458,7 +465,7 @@ Status: Ready
       console.log(`⌨️ Type text: "${text}"`);
     }
 
-    windowsNative.typeText(text);
+    await windowsNative.typeTextAsync(text);
   }
 
   /**
@@ -471,7 +478,7 @@ Status: Ready
       console.log(`⌨️ Press key: ${key}`);
     }
 
-    windowsNative.keyPress(key);
+    await windowsNative.keyPressAsync(key);
   }
 
   // ==================== 滚动操作方法 ====================
@@ -491,7 +498,7 @@ Status: Ready
       console.log(`🔄 Scroll ${direction} at (${x}, ${y}) by ${distance}px`);
     }
 
-    windowsNative.scrollAt(x, y, direction, distance);
+    await windowsNative.scrollAtAsync(x, y, direction, distance);
   }
 
   /**
@@ -507,7 +514,7 @@ Status: Ready
       console.log(`🔄 Global scroll ${direction} by ${distance}px`);
     }
 
-    windowsNative.scrollGlobal(direction, distance);
+    await windowsNative.scrollGlobalAsync(direction, distance);
   }
 
   // ==================== 工具方法 ====================

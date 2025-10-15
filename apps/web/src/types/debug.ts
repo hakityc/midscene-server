@@ -39,6 +39,7 @@ export type FlowActionType =
 export interface BaseFlowAction {
   id?: string; // 用于拖拽排序的唯一标识
   type: FlowActionType;
+  enabled?: boolean; // 是否启用，默认为 true
 }
 
 // aiTap 动作

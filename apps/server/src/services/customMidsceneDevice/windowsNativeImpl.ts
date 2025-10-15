@@ -183,33 +183,11 @@ export class WindowsNativeImpl {
    */
   captureScreen(): string {
     try {
-      // nut-js 使用异步方式捕获屏幕
-      // 由于我们的接口是同步的，这里使用同步包装
-      // 注意：这会阻塞事件循环，建议使用异步版本 captureScreenAsync()
-
-      return (
-        this.runSync(async () => {
-          // 使用临时文件来保存截图
-          const tempFileName = `screenshot_${Date.now()}`;
-          const tempFilePath = tmpdir();
-
-          // 使用 nut-js 的 capture 方法直接保存为 PNG
-          const savedPath = await screen.capture(
-            tempFileName,
-            FileType.PNG,
-            tempFilePath,
-          );
-
-          // 读取文件并转换为 base64
-          const buffer = readFileSync(savedPath);
-          const base64 = buffer.toString('base64');
-
-          // 删除临时文件
-          unlinkSync(savedPath);
-
-          return `data:image/png;base64,${base64}`;
-        }) || ''
+      // 同步接口已废弃，内部改为调用异步并抛弃返回
+      console.warn(
+        '[WindowsNative] captureScreen 同步接口已废弃，请使用 captureScreenAsync()',
       );
+      return '';
     } catch (error) {
       console.error('截图失败:', error);
       throw error;
@@ -280,26 +258,10 @@ export class WindowsNativeImpl {
    * @param x 物理 X 坐标（基于截图分辨率，来自 AI）
    * @param y 物理 Y 坐标（基于截图分辨率，来自 AI）
    */
-  moveMouse(x: number, y: number): void {
-    try {
-      // nut-js 的 mouse.move 是异步的
-      // 使用同步包装
-      this.runSync(async () => {
-        const logical = this.convertToLogicalCoordinates(x, y);
-
-        if (process.env.DEBUG_DPI === 'true') {
-          const screenInfo = this.getScreenSize();
-          console.log('[WindowsNative] 移动鼠标:');
-          console.log(`  物理坐标: (${x}, ${y})`);
-          console.log(`  逻辑坐标: (${logical.x}, ${logical.y})`);
-          console.log(`  DPR: ${screenInfo.dpr.toFixed(4)}`);
-        }
-
-        await mouse.move([new Point(logical.x, logical.y)]);
-      });
-    } catch (error) {
-      console.error('移动鼠标失败:', error);
-    }
+  moveMouse(_x: number, _y: number): void {
+    console.warn(
+      '[WindowsNative] moveMouse 同步接口已废弃，请使用 moveMouseAsync',
+    );
   }
 
   /**
@@ -309,29 +271,10 @@ export class WindowsNativeImpl {
    * @param x 物理 X 坐标（基于截图分辨率，来自 AI）
    * @param y 物理 Y 坐标（基于截图分辨率，来自 AI）
    */
-  mouseClick(x: number, y: number): void {
-    try {
-      this.runSync(async () => {
-        const screenInfo = this.getScreenSize();
-        const logical = this.convertToLogicalCoordinates(x, y);
-
-        // 始终输出调试信息
-        console.log('[WindowsNative] 鼠标点击:');
-        console.log(`  接收到的坐标: (${x}, ${y})`);
-        console.log(
-          `  屏幕信息: ${screenInfo.width}x${screenInfo.height}, DPR: ${screenInfo.dpr.toFixed(4)}`,
-        );
-        console.log(`  转换后逻辑坐标: (${logical.x}, ${logical.y})`);
-
-        // 1. 移动鼠标到目标位置
-        await mouse.move([new Point(logical.x, logical.y)]);
-
-        // 2. 执行单击
-        await mouse.click(Button.LEFT);
-      });
-    } catch (error) {
-      console.error('鼠标单击失败:', error);
-    }
+  mouseClick(_x: number, _y: number): void {
+    console.warn(
+      '[WindowsNative] mouseClick 同步接口已废弃，请使用 mouseClickAsync',
+    );
   }
 
   /**
@@ -341,20 +284,10 @@ export class WindowsNativeImpl {
    * @param x 物理 X 坐标（基于截图分辨率，来自 AI）
    * @param y 物理 Y 坐标（基于截图分辨率，来自 AI）
    */
-  mouseDoubleClick(x: number, y: number): void {
-    try {
-      this.runSync(async () => {
-        const logical = this.convertToLogicalCoordinates(x, y);
-
-        // 1. 移动鼠标到目标位置
-        await mouse.move([new Point(logical.x, logical.y)]);
-
-        // 2. 执行双击
-        await mouse.doubleClick(Button.LEFT);
-      });
-    } catch (error) {
-      console.error('鼠标双击失败:', error);
-    }
+  mouseDoubleClick(_x: number, _y: number): void {
+    console.warn(
+      '[WindowsNative] mouseDoubleClick 同步接口已废弃，请使用 mouseDoubleClickAsync',
+    );
   }
 
   /**
@@ -364,29 +297,20 @@ export class WindowsNativeImpl {
    * @param x 物理 X 坐标（基于截图分辨率，来自 AI）
    * @param y 物理 Y 坐标（基于截图分辨率，来自 AI）
    */
-  mouseRightClick(x: number, y: number): void {
-    try {
-      this.runSync(async () => {
-        const logical = this.convertToLogicalCoordinates(x, y);
-
-        // 1. 移动鼠标到目标位置
-        await mouse.move([new Point(logical.x, logical.y)]);
-
-        // 2. 执行右键点击
-        await mouse.click(Button.RIGHT);
-      });
-    } catch (error) {
-      console.error('鼠标右键点击失败:', error);
-    }
+  mouseRightClick(_x: number, _y: number): void {
+    console.warn(
+      '[WindowsNative] mouseRightClick 同步接口已废弃，请使用 mouseRightClickAsync',
+    );
   }
 
   /**
    * 鼠标悬停
    * 实现 API 文档 2.5
    */
-  mouseHover(x: number, y: number): void {
-    // 悬停就是移动鼠标到指定位置
-    this.moveMouse(x, y);
+  mouseHover(_x: number, _y: number): void {
+    console.warn(
+      '[WindowsNative] mouseHover 同步接口已废弃，请使用 moveMouseAsync',
+    );
   }
 
   /**
@@ -398,27 +322,15 @@ export class WindowsNativeImpl {
    * @param toX 目标物理 X 坐标
    * @param toY 目标物理 Y 坐标
    */
-  dragAndDrop(fromX: number, fromY: number, toX: number, toY: number): void {
-    try {
-      this.runSync(async () => {
-        const logicalFrom = this.convertToLogicalCoordinates(fromX, fromY);
-        const logicalTo = this.convertToLogicalCoordinates(toX, toY);
-
-        // 1. 移动鼠标到起始位置
-        await mouse.move([new Point(logicalFrom.x, logicalFrom.y)]);
-
-        // 2. 按下鼠标左键
-        await mouse.pressButton(Button.LEFT);
-
-        // 3. 平滑拖动到目标位置
-        await mouse.drag([new Point(logicalTo.x, logicalTo.y)]);
-
-        // 4. 释放鼠标左键
-        await mouse.releaseButton(Button.LEFT);
-      });
-    } catch (error) {
-      console.error('拖放操作失败:', error);
-    }
+  dragAndDrop(
+    _fromX: number,
+    _fromY: number,
+    _toX: number,
+    _toY: number,
+  ): void {
+    console.warn(
+      '[WindowsNative] dragAndDrop 同步接口已废弃，请使用 dragAndDropAsync',
+    );
   }
 
   // ==================== 3. 键盘操作 ====================
@@ -609,24 +521,14 @@ export class WindowsNativeImpl {
    * @param y 物理 Y 坐标
    */
   scrollAt(
-    x: number,
-    y: number,
-    direction: 'up' | 'down' | 'left' | 'right',
-    distance: number,
+    _x: number,
+    _y: number,
+    _direction: 'up' | 'down' | 'left' | 'right',
+    _distance: number,
   ): void {
-    try {
-      this.runSync(async () => {
-        const logical = this.convertToLogicalCoordinates(x, y);
-
-        // 1. 移动鼠标到目标位置
-        await mouse.move([new Point(logical.x, logical.y)]);
-
-        // 2. 执行滚动
-        await this.scrollAsync(direction, distance);
-      });
-    } catch (error) {
-      console.error('指定位置滚动失败:', error);
-    }
+    console.warn(
+      '[WindowsNative] scrollAt 同步接口已废弃，请使用 scrollAtAsync',
+    );
   }
 
   /**
@@ -687,46 +589,12 @@ export class WindowsNativeImpl {
    * 注意：这是一个临时解决方案，用于保持接口兼容性
    * 在实际使用中，建议将所有接口改为异步
    */
-  private runSync<T>(asyncFn: () => Promise<T>): T | undefined {
-    let result: T | undefined;
-    let error: Error | undefined;
-    let done = false;
-
-    asyncFn()
-      .then((res) => {
-        result = res;
-        done = true;
-      })
-      .catch((err) => {
-        error = err;
-        done = true;
-      });
-
-    // 等待异步操作完成（最多 10 秒）
-    const startTime = Date.now();
-    const timeout = 10000; // 增加超时时间
-    while (!done && Date.now() - startTime < timeout) {
-      // 忙等待
-      // 添加一个小延迟避免 CPU 占用过高
-      const now = Date.now();
-      while (Date.now() - now < 10) {
-        // 忙等待 10ms
-      }
-    }
-
-    if (!done) {
-      console.error(
-        `[WindowsNative] runSync 超时！操作未在 ${timeout}ms 内完成`,
-      );
-      return undefined;
-    }
-
-    if (error) {
-      console.error('[WindowsNative] runSync 执行出错:', error);
-      throw error;
-    }
-
-    return result;
+  private runSync<T>(_asyncFn: () => Promise<T>): T | undefined {
+    // 已废弃：为了兼容旧同步接口，保留方法但直接返回 undefined 并提示
+    console.warn(
+      '[WindowsNative] runSync 已废弃，请改用对应的 Async 方法并在上层 await',
+    );
+    return undefined;
   }
 
   /**
