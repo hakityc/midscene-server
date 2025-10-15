@@ -1,3 +1,5 @@
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { AlertCircle, GripVertical, Loader2, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -34,6 +36,22 @@ export function FlowActionItem({
 }: FlowActionItemProps) {
   const { loading, error, getFlowActionsByCategory, getCategoryLabel } =
     useClientTypeFlowActions();
+
+  // 使用 useSortable hook
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: action.id || `action-${index}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   // 按类别分组
   const actionsByCategory = useMemo(
@@ -303,9 +321,19 @@ export function FlowActionItem({
   };
 
   return (
-    <div className="p-3 bg-white border-2 border-black rounded-none shadow-[3px_3px_0_0_#000]">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-3 bg-white border-2 border-black rounded-none shadow-[3px_3px_0_0_#000]"
+    >
       <div className="flex items-center gap-2 mb-3">
-        <GripVertical className="h-4 w-4 text-gray-400 cursor-move flex-shrink-0" />
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing flex items-center justify-center"
+        >
+          <GripVertical className="h-4 w-4 text-gray-600 flex-shrink-0" />
+        </div>
         <span className="text-xs font-bold text-gray-500 flex-shrink-0">
           #{index + 1}
         </span>

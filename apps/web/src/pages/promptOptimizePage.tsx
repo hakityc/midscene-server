@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   Copy,
   Image as ImageIcon,
   RotateCcw,
@@ -28,7 +29,6 @@ import { type UploadedImage, usePromptStore } from '@/stores';
 import {
   analyzePrompt,
   calculateQualityScore,
-  generateOptimizedPrompt,
   type OptimizationSuggestion,
   type QualityScore,
 } from '@/utils/promptOptimization';
@@ -73,6 +73,9 @@ export default function PromptOptimizePage() {
     overall: 0,
   });
 
+  // 错误状态
+  const [optimizeError, setOptimizeError] = useState<string | null>(null);
+
   // 实时分析输入提示词
   useEffect(() => {
     if (inputPrompt.trim()) {
@@ -89,17 +92,22 @@ export default function PromptOptimizePage() {
         overall: 0,
       });
     }
+    // 输入变化时清除错误提示
+    setOptimizeError(null);
   }, [inputPrompt, targetAction]);
 
   // 优化提示词的处理函数
   const handleOptimize = async () => {
+    // 清除之前的错误
+    setOptimizeError(null);
+
     // 记录常用配置
     addRecentTargetAction(targetAction);
     if (customOptimize) {
       addRecentCustomOptimization(customOptimize);
     }
 
-    // 使用 React Query mutation
+    // 使用 React Query mutation，真正调用 AI Agent
     optimizePrompt(
       {
         prompt: inputPrompt,
@@ -112,6 +120,7 @@ export default function PromptOptimizePage() {
           const optimized = data.optimized || inputPrompt;
           setOutputPrompt(optimized);
           setShowComparison(true);
+          setOptimizeError(null);
 
           // 保存到历史记录
           addOptimizationHistory({
@@ -124,26 +133,12 @@ export default function PromptOptimizePage() {
             qualityScore: data.qualityScore || qualityScore,
           });
         },
-        onError: () => {
-          // 后端失败时，使用本地规则引擎降级
-          const optimized = generateOptimizedPrompt(
-            inputPrompt,
-            targetAction,
-            customOptimize,
-          );
-          setOutputPrompt(optimized);
-          setShowComparison(true);
-
-          // 保存到历史记录
-          addOptimizationHistory({
-            id: `opt-${Date.now()}`,
-            timestamp: Date.now(),
-            original: inputPrompt,
-            optimized,
-            targetAction,
-            customOptimize,
-            qualityScore,
-          });
+        onError: (error) => {
+          // 显示错误信息，不使用硬编码降级
+          const errorMessage =
+            error instanceof Error ? error.message : '优化失败，请重试';
+          setOptimizeError(errorMessage);
+          setShowComparison(false);
         },
       },
     );
@@ -174,6 +169,35 @@ export default function PromptOptimizePage() {
     e.target.value = '';
   };
 
+  // 处理粘贴图片
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    // 遍历粘贴的内容
+    Array.from(items).forEach((item) => {
+      // 检查是否是图片类型
+      if (item.type.startsWith('image/')) {
+        e.preventDefault(); // 阻止默认粘贴行为（避免粘贴图片路径文本）
+
+        const file = item.getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const url = event.target?.result as string;
+            const newImage: UploadedImage = {
+              id: `${Date.now()}-${Math.random()}`,
+              url,
+              name: file.name || `粘贴的图片-${Date.now()}.png`,
+            };
+            addImage(newImage);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    });
+  };
+
   // 复制到剪贴板
   const handleCopy = async () => {
     if (outputPrompt) {
@@ -192,6 +216,7 @@ export default function PromptOptimizePage() {
       clarity: 0,
       overall: 0,
     });
+    setOptimizeError(null);
   };
 
   // 应用示例
@@ -280,6 +305,10 @@ export default function PromptOptimizePage() {
                   上传截图辅助优化{' '}
                   <span className="text-muted-foreground text-xs">(可选)</span>
                 </Label>
+                <p className="text-xs text-amber-600 font-medium">
+                  ⚠️ 当前版本：请在提示词中描述图片内容，AI
+                  将根据您的描述优化提示词。完整视觉支持即将推出！
+                </p>
 
                 {/* 上传按钮和预览 */}
                 <div className="space-y-3">
@@ -348,10 +377,16 @@ export default function PromptOptimizePage() {
                       <CardContent className="flex flex-col items-center justify-center py-6 text-center">
                         <ImageIcon className="h-10 w-10 text-muted-foreground/50 mb-2" />
                         <p className="text-sm text-muted-foreground">
-                          上传页面截图，帮助 AI 更好地理解上下文
+                          上传页面截图作为参考
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           支持 JPG、PNG、GIF 等格式
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 font-medium">
+                          💡 也可以在下方输入框中直接粘贴图片
+                        </p>
+                        <p className="text-xs text-amber-600 mt-2 font-medium">
+                          请在提示词中描述截图中的元素（位置、颜色、文字等）
                         </p>
                       </CardContent>
                     </Card>
@@ -363,12 +398,18 @@ export default function PromptOptimizePage() {
 
               {/* 输入文本框 */}
               <div className="flex-1 flex flex-col space-y-2">
-                <Label htmlFor={inputPromptId}>请输入你的提示词</Label>
+                <Label htmlFor={inputPromptId}>
+                  请输入你的提示词
+                  <span className="text-muted-foreground text-xs ml-2">
+                    (支持直接粘贴图片)
+                  </span>
+                </Label>
                 <Textarea
                   id={inputPromptId}
-                  placeholder="例如：点击搜索按钮"
+                  placeholder="例如：点击搜索按钮&#10;&#10;如果上传了截图，可以这样描述：&#10;点击登录按钮。截图中显示页面右上角有一个蓝色的登录按钮。&#10;&#10;💡 提示：可以直接 Ctrl+V 粘贴截图"
                   value={inputPrompt}
                   onChange={(e) => setInputPrompt(e.target.value)}
+                  onPaste={handlePaste}
                   className="flex-1 min-h-[200px] resize-none font-mono"
                 />
               </div>
@@ -381,8 +422,31 @@ export default function PromptOptimizePage() {
                 className="w-full"
               >
                 <Send className="h-5 w-5 mr-2" />
-                {isOptimizing ? '优化中...' : '开始优化'}
+                {isOptimizing ? 'AI 正在优化中...' : '开始 AI 优化'}
               </Button>
+
+              {/* 错误提示 */}
+              {optimizeError && (
+                <Card className="border-red-500 bg-red-50">
+                  <CardContent className="pt-4">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                      <div className="flex-1">
+                        <div className="font-semibold text-red-900 mb-1">
+                          AI 优化失败
+                        </div>
+                        <div className="text-sm text-red-700">
+                          {optimizeError}
+                        </div>
+                        <div className="text-xs text-red-600 mt-2">
+                          💡 提示：请检查网络连接或稍后重试。所有优化均由 AI
+                          完成，不使用硬编码规则。
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
 

@@ -7,6 +7,7 @@ import { setupRouter } from './routes/index';
 import { setupError } from './utils/error';
 import { setupGlobalErrorHandlers } from './utils/globalErrorHandler';
 import { serverLogger } from './utils/logger';
+import { ensurePortAvailable } from './utils/portManager';
 import { setupWebSocket } from './websocket';
 
 const initApp = () => {
@@ -38,6 +39,13 @@ const startServer = async () => {
 
   const port = Number(process.env.PORT || '3000');
 
+  // 检查并释放端口
+  const portAvailable = await ensurePortAvailable(port);
+  if (!portAvailable) {
+    serverLogger.error({ port }, '❌ 端口不可用，服务启动失败');
+    process.exit(1);
+  }
+
   // 预初始化 WebOperateService
   try {
     console.log('�� 预初始化 WebOperateService...');
@@ -55,16 +63,37 @@ const startServer = async () => {
   // 设置 WebSocket
   const { injectWebSocket } = setupWebSocket(app);
 
-  // 启动服务器
-  const server = serve({
-    fetch: app.fetch,
-    port: port,
-  });
+  // 启动服务器，添加错误处理
+  try {
+    const server = serve(
+      {
+        fetch: app.fetch,
+        port: port,
+      },
+      (info) => {
+        // 这个回调在服务器成功启动后才会执行
+        serverLogger.info({ port: info.port }, '✅ 服务启动成功');
+      },
+    );
 
-  // 注入 WebSocket
-  injectWebSocket(server);
+    // 监听服务器错误
+    server.on('error', (error: Error) => {
+      serverLogger.error({ error, port }, '❌ 服务器错误');
+      if (error.message.includes('EADDRINUSE')) {
+        serverLogger.error(
+          { port },
+          '❌ 端口被占用，请检查是否有其他进程在使用该端口',
+        );
+        process.exit(1);
+      }
+    });
 
-  serverLogger.info({ port }, '服务启动成功');
+    // 注入 WebSocket
+    injectWebSocket(server);
+  } catch (error) {
+    serverLogger.error({ error, port }, '❌ 启动服务器失败');
+    process.exit(1);
+  }
 };
 
 startServer();

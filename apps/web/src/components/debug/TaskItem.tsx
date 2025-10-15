@@ -1,5 +1,29 @@
-import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+  ChevronDown,
+  ChevronRight,
+  GripVertical,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,20 +48,53 @@ export function TaskItem({
 }: TaskItemProps) {
   const [collapsed, setCollapsed] = useState(false);
 
+  // 确保所有动作都有稳定的 ID
+  const flowWithIds = useMemo(() => {
+    return task.flow.map((action) => ({
+      ...action,
+      id: action.id || uuidv4(),
+    }));
+  }, [task.flow]);
+
+  // 任务拖拽 hook
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  // 动作拖拽传感器配置
+  const actionSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
   const updateTask = (field: keyof Task, value: unknown) => {
     onChange({ ...task, [field]: value });
   };
 
   const addAction = () => {
     const newAction: FlowAction = {
+      id: uuidv4(),
       type: 'aiTap',
       locate: '',
     };
-    updateTask('flow', [...task.flow, newAction]);
+    updateTask('flow', [...flowWithIds, newAction]);
   };
 
   const updateAction = (actionIndex: number, action: FlowAction) => {
-    const newFlow = [...task.flow];
+    const newFlow = [...flowWithIds];
     newFlow[actionIndex] = action;
     updateTask('flow', newFlow);
   };
@@ -45,14 +102,41 @@ export function TaskItem({
   const removeAction = (actionIndex: number) => {
     updateTask(
       'flow',
-      task.flow.filter((_, i) => i !== actionIndex),
+      flowWithIds.filter((_, i) => i !== actionIndex),
     );
   };
 
+  // 处理动作拖拽结束
+  const handleActionDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = flowWithIds.findIndex(
+        (action) => action.id === active.id,
+      );
+      const newIndex = flowWithIds.findIndex((action) => action.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        updateTask('flow', arrayMove(flowWithIds, oldIndex, newIndex));
+      }
+    }
+  };
+
   return (
-    <div className="p-4 bg-amber-50 border-2 border-black rounded-none shadow-[4px_4px_0_0_#000]">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-4 bg-amber-50 border-2 border-black rounded-none shadow-[4px_4px_0_0_#000]"
+    >
       {/* 任务头部 */}
       <div className="flex items-start gap-3 mb-3">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing flex items-center justify-center h-6 w-6 hover:bg-amber-200 rounded"
+        >
+          <GripVertical className="h-4 w-4 text-gray-600" />
+        </div>
         <Button
           size="sm"
           variant="ghost"
@@ -106,24 +190,35 @@ export function TaskItem({
                 <div className="flex items-center justify-between mb-2">
                   <Label className="text-xs font-bold">动作流程</Label>
                   <span className="text-xs text-gray-500 font-medium">
-                    {task.flow.length} 个动作
+                    {flowWithIds.length} 个动作
                   </span>
                 </div>
 
-                <div className="space-y-2">
-                  {task.flow.map((action, actionIndex) => (
-                    <FlowActionItem
-                      key={actionIndex}
-                      action={action}
-                      index={actionIndex}
-                      onChange={(updatedAction) =>
-                        updateAction(actionIndex, updatedAction)
-                      }
-                      onRemove={() => removeAction(actionIndex)}
-                      clientType={clientType}
-                    />
-                  ))}
-                </div>
+                <DndContext
+                  sensors={actionSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleActionDragEnd}
+                >
+                  <SortableContext
+                    items={flowWithIds.map((action) => action.id as string)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-2">
+                      {flowWithIds.map((action, actionIndex) => (
+                        <FlowActionItem
+                          key={action.id}
+                          action={action}
+                          index={actionIndex}
+                          onChange={(updatedAction) =>
+                            updateAction(actionIndex, updatedAction)
+                          }
+                          onRemove={() => removeAction(actionIndex)}
+                          clientType={clientType}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
 
                 <Button
                   onClick={addAction}

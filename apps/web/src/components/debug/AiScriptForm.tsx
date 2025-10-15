@@ -1,9 +1,24 @@
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import type { Task, ClientType } from '@/types/debug';
+import type { ClientType, Task } from '@/types/debug';
 import { TaskItem } from './TaskItem';
 
 interface AiScriptFormProps {
@@ -21,6 +36,14 @@ export function AiScriptForm({
   onLoadingShadeChange,
   clientType,
 }: AiScriptFormProps) {
+  // 拖拽传感器配置
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
   const addTask = () => {
     const newTask: Task = {
       id: uuidv4(),
@@ -41,6 +64,20 @@ export function AiScriptForm({
     onTasksChange(tasks.filter((_, i) => i !== taskIndex));
   };
 
+  // 处理拖拽结束事件
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = tasks.findIndex((task) => task.id === active.id);
+      const newIndex = tasks.findIndex((task) => task.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onTasksChange(arrayMove(tasks, oldIndex, newIndex));
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* 任务列表 */}
@@ -52,18 +89,29 @@ export function AiScriptForm({
           </span>
         </div>
 
-        <div className="space-y-3">
-          {tasks.map((task, taskIndex) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              index={taskIndex}
-              onChange={(updatedTask) => updateTask(taskIndex, updatedTask)}
-              onRemove={() => removeTask(taskIndex)}
-              clientType={clientType}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={tasks.map((task) => task.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
+              {tasks.map((task, taskIndex) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  index={taskIndex}
+                  onChange={(updatedTask) => updateTask(taskIndex, updatedTask)}
+                  onRemove={() => removeTask(taskIndex)}
+                  clientType={clientType}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         <Button
           onClick={addTask}

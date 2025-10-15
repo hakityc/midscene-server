@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { WsInboundMessage } from '@/types/debug';
-import { parseJsonString } from '@/utils/jsonParser';
 import { validateJson } from '@/utils/messageBuilder';
 
 interface JsonPreviewProps {
@@ -26,7 +25,9 @@ export function JsonPreview({
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const formatted = JSON.stringify(message, null, 2);
+    // 只展示 payload.params 部分
+    const params = message.payload?.params || {};
+    const formatted = JSON.stringify(params, null, 2);
     setJsonString(formatted);
     setIsValid(true);
     setError('');
@@ -42,17 +43,23 @@ export function JsonPreview({
     setError(validation.error || '');
 
     if (validation.isValid && validation.parsed) {
+      // 只更新 params 部分
+      const updatedMessage = {
+        ...message,
+        payload: {
+          ...message.payload,
+          params: validation.parsed,
+        },
+      };
+
       // 更新消息
       if (onEdit) {
-        onEdit(validation.parsed as WsInboundMessage);
+        onEdit(updatedMessage);
       }
 
       // 解析并更新表单
       if (onFormUpdate) {
-        const parseResult = parseJsonString(value);
-        if (parseResult.success && parseResult.data) {
-          onFormUpdate(parseResult.data);
-        }
+        onFormUpdate(validation.parsed);
       }
     }
   };
@@ -81,12 +88,15 @@ export function JsonPreview({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-semibold">JSON 预览</Label>
+        <div>
+          <Label className="text-sm font-semibold">参数 JSON</Label>
+          <p className="text-xs text-muted-foreground mt-0.5">payload.params</p>
+        </div>
         <div className="flex items-center gap-2">
           {editable && (
             <Button size="sm" variant="outline" onClick={handlePaste}>
               <Clipboard className="h-3 w-3 mr-1" />
-              粘贴 JSON
+              粘贴
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={handleCopy}>
@@ -134,10 +144,10 @@ export function JsonPreview({
       {editable && (
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">
-            💡 编辑 JSON 会同步更新表单
+            💡 编辑参数 JSON 会同步更新表单
           </p>
           <p className="text-xs text-muted-foreground">
-            📋 点击"粘贴 JSON"按钮可以快速从剪贴板导入 JSON 并更新表单
+            📋 点击"粘贴"按钮可以快速从剪贴板导入参数并更新表单
           </p>
         </div>
       )}

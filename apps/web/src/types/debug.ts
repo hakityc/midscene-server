@@ -31,6 +31,7 @@ export type FlowActionType =
 
 // Flow 动作基础接口
 export interface BaseFlowAction {
+  id?: string; // 用于拖拽排序的唯一标识
   type: FlowActionType;
 }
 
