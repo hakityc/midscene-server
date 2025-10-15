@@ -1,6 +1,5 @@
 import { History, Send } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { useCallback, useMemo } from 'react';
 import { ActionSelector } from '@/components/debug/ActionSelector';
 import { AiScriptForm } from '@/components/debug/AiScriptForm';
 import { HistoryPanel } from '@/components/debug/HistoryPanel';
@@ -18,60 +17,50 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useMessageHistory } from '@/hooks/useMessageHistory';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import type {
-  HistoryItem,
-  MessageMeta,
-  Task,
-  Template,
-  WebSocketAction,
-  WsInboundMessage,
-} from '@/types/debug';
+import { useDebugStore } from '@/stores';
+import type { HistoryItem, Template, WsInboundMessage } from '@/types/debug';
 import {
   buildAiMessage,
   buildAiScriptMessage,
   buildCommandScriptMessage,
   buildSiteScriptMessage,
-  generateMeta,
 } from '@/utils/messageBuilder';
 import { getAllTemplates } from '@/utils/templates';
 
 export default function MidsceneDebugPage() {
-  const endpoint = 'ws://localhost:3000/ws';
+  // 使用 Zustand store
+  const {
+    endpoint,
+    action,
+    meta,
+    tasks,
+    enableLoadingShade,
+    aiPrompt,
+    siteScript,
+    siteScriptCmd,
+    command,
+    history,
+    showHistory,
+    setAction,
+    setMeta,
+    refreshMessageId,
+    setTasks,
+    setEnableLoadingShade,
+    setAiPrompt,
+    setSiteScript,
+    setSiteScriptCmd,
+    setCommand,
+    setShowHistory,
+    addHistory,
+    removeHistory,
+    clearHistory,
+    loadHistory,
+    updateFromJson,
+  } = useDebugStore();
+
   const { status, error, messages, connect, send, clearMessages } =
     useWebSocket(endpoint);
-  const { history, addHistory, removeHistory, clearHistory } =
-    useMessageHistory();
-
-  // 状态管理
-  const [action, setAction] = useState<WebSocketAction>('aiScript');
-  const [meta, setMeta] = useState<MessageMeta>(generateMeta());
-  const [showHistory, setShowHistory] = useState(false);
-
-  // AI Script 状态
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: uuidv4(),
-      name: '示例任务',
-      continueOnError: false,
-      flow: [
-        {
-          type: 'aiTap',
-          locate: '搜索图标',
-        },
-      ],
-    },
-  ]);
-  const [enableLoadingShade, setEnableLoadingShade] = useState(true);
-
-  // 其他 Action 状态
-  const [aiPrompt, setAiPrompt] = useState('点击搜索按钮');
-  const [siteScript, setSiteScript] = useState(
-    'console.log("Hello from Midscene");',
-  );
-  const [siteScriptCmd, setSiteScriptCmd] = useState('');
-  const [command, setCommand] = useState('start');
 
   // 模板
   const templates = useMemo(() => getAllTemplates(), []);
@@ -83,41 +72,6 @@ export default function MidsceneDebugPage() {
   //     connect();
   //   }
   // }, []);
-
-  // 刷新 Message ID
-  const refreshMessageId = useCallback(() => {
-    setMeta((prev) => ({
-      ...prev,
-      messageId: uuidv4(),
-      timestamp: Date.now(),
-    }));
-  }, []);
-
-  // 从 JSON 更新表单
-  const handleJsonToFormUpdate = useCallback((formData: any) => {
-    if (formData.action) setAction(formData.action);
-    if (formData.meta) setMeta(formData.meta);
-
-    // 根据 Action 类型更新相应的状态
-    switch (formData.action) {
-      case 'aiScript':
-        if (formData.tasks) setTasks(formData.tasks);
-        if (typeof formData.enableLoadingShade === 'boolean') {
-          setEnableLoadingShade(formData.enableLoadingShade);
-        }
-        break;
-      case 'ai':
-        if (formData.aiPrompt) setAiPrompt(formData.aiPrompt);
-        break;
-      case 'siteScript':
-        if (formData.siteScript) setSiteScript(formData.siteScript);
-        if (formData.siteScriptCmd) setSiteScriptCmd(formData.siteScriptCmd);
-        break;
-      case 'command':
-        if (formData.params) setCommand(formData.params as string);
-        break;
-    }
-  }, []);
 
   // 构建消息
   const buildMessage = useCallback((): WsInboundMessage | null => {
@@ -163,58 +117,24 @@ export default function MidsceneDebugPage() {
   }, [buildMessage, send, addHistory, refreshMessageId]);
 
   // 加载历史记录
-  const handleLoadHistory = useCallback((item: HistoryItem) => {
-    const msg = item.message;
-    setAction(msg.payload.action as WebSocketAction);
-    setMeta(msg.meta);
-
-    // 根据 action 类型恢复状态
-    if (msg.payload.action === 'aiScript') {
-      const params = msg.payload.params as { tasks: Task[] };
-      if (params.tasks) {
-        setTasks(
-          params.tasks.map((t) => ({
-            ...t,
-            id: uuidv4(),
-          })),
-        );
-      }
-      setEnableLoadingShade(
-        msg.payload.option?.includes('LOADING_SHADE') || false,
-      );
-    } else if (msg.payload.action === 'ai') {
-      setAiPrompt(msg.payload.params as string);
-    } else if (msg.payload.action === 'siteScript') {
-      setSiteScript(msg.payload.params as string);
-      setSiteScriptCmd(msg.payload.originalCmd || '');
-    } else if (msg.payload.action === 'command') {
-      setCommand(msg.payload.params as string);
-    }
-
-    setShowHistory(false);
-  }, []);
+  const handleLoadHistory = useCallback(
+    (item: HistoryItem) => {
+      loadHistory(item);
+    },
+    [loadHistory],
+  );
 
   // 加载模板
-  const handleLoadTemplate = useCallback((template: Template) => {
-    const msg = template.message;
-    setAction(msg.payload.action as WebSocketAction);
-    setMeta(generateMeta());
-
-    if (msg.payload.action === 'aiScript') {
-      const params = msg.payload.params as { tasks: Task[] };
-      if (params.tasks) {
-        setTasks(
-          params.tasks.map((t) => ({
-            ...t,
-            id: uuidv4(),
-          })),
-        );
-      }
-      setEnableLoadingShade(
-        msg.payload.option?.includes('LOADING_SHADE') || false,
-      );
-    }
-  }, []);
+  const handleLoadTemplate = useCallback(
+    (template: Template) => {
+      const msg = template.message;
+      updateFromJson({
+        ...msg.payload,
+      });
+      refreshMessageId(); // 生成新的 messageId
+    },
+    [updateFromJson, refreshMessageId],
+  );
 
   // 当前消息预览
   const currentMessage = useMemo(() => buildMessage(), [buildMessage]);
@@ -352,7 +272,7 @@ export default function MidsceneDebugPage() {
                       onEdit={(_message) => {
                         // 可以在这里处理消息更新，如果需要的话
                       }}
-                      onFormUpdate={handleJsonToFormUpdate}
+                      onFormUpdate={updateFromJson}
                     />
                   )}
                 </TabsContent>

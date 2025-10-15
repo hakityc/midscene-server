@@ -23,6 +23,8 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { usePromptOptimizeApi } from '@/hooks/usePromptOptimizeApi';
+import { type UploadedImage, usePromptStore } from '@/stores';
 import {
   analyzePrompt,
   calculateQualityScore,
@@ -37,14 +39,30 @@ export default function PromptOptimizePage() {
   const inputPromptId = useId();
   const imageUploadId = useId();
 
-  const [inputPrompt, setInputPrompt] = useState('');
-  const [outputPrompt, setOutputPrompt] = useState('');
-  const [customOptimize, setCustomOptimize] = useState('');
-  const [targetAction, setTargetAction] = useState('all');
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<
-    Array<{ id: string; url: string; name: string }>
-  >([]);
+  // 使用 Zustand store
+  const {
+    inputPrompt,
+    outputPrompt,
+    customOptimize,
+    targetAction,
+    showComparison,
+    uploadedImages,
+    setInputPrompt,
+    setOutputPrompt,
+    setCustomOptimize,
+    setTargetAction,
+    setShowComparison,
+    addImage,
+    removeImage,
+    reset,
+    addOptimizationHistory,
+    addRecentTargetAction,
+    addRecentCustomOptimization,
+  } = usePromptStore();
+
+  // 使用 React Query API hook
+  const { mutate: optimizePrompt, isPending: isOptimizing } =
+    usePromptOptimizeApi();
 
   // 实时分析状态
   const [suggestions, setSuggestions] = useState<OptimizationSuggestion[]>([]);
@@ -54,7 +72,6 @@ export default function PromptOptimizePage() {
     clarity: 0,
     overall: 0,
   });
-  const [showComparison, setShowComparison] = useState(false);
 
   // 实时分析输入提示词
   useEffect(() => {
@@ -76,49 +93,60 @@ export default function PromptOptimizePage() {
 
   // 优化提示词的处理函数
   const handleOptimize = async () => {
-    setIsOptimizing(true);
-    try {
-      // 优先调用后端 AI（Mastra Agent）
-      const res = await fetch('/api/prompt-optimize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: inputPrompt,
-          targetAction,
-          customOptimize,
-          images: uploadedImages.map((i) => i.url),
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const optimized = (data?.optimized as string) || '';
-        setOutputPrompt(optimized || inputPrompt);
-        setShowComparison(true);
-        setIsOptimizing(false);
-        return;
-      }
-
-      // 后端不可用时，使用本地规则引擎降级
-      const optimized = generateOptimizedPrompt(
-        inputPrompt,
-        targetAction,
-        customOptimize,
-      );
-      setOutputPrompt(optimized);
-      setShowComparison(true);
-      setIsOptimizing(false);
-    } catch (_error) {
-      // 统一降级
-      const optimized = generateOptimizedPrompt(
-        inputPrompt,
-        targetAction,
-        customOptimize,
-      );
-      setOutputPrompt(optimized);
-      setShowComparison(true);
-      setIsOptimizing(false);
+    // 记录常用配置
+    addRecentTargetAction(targetAction);
+    if (customOptimize) {
+      addRecentCustomOptimization(customOptimize);
     }
+
+    // 使用 React Query mutation
+    optimizePrompt(
+      {
+        prompt: inputPrompt,
+        targetAction,
+        customOptimize,
+        images: uploadedImages.map((i) => i.url),
+      },
+      {
+        onSuccess: (data) => {
+          const optimized = data.optimized || inputPrompt;
+          setOutputPrompt(optimized);
+          setShowComparison(true);
+
+          // 保存到历史记录
+          addOptimizationHistory({
+            id: `opt-${Date.now()}`,
+            timestamp: Date.now(),
+            original: inputPrompt,
+            optimized,
+            targetAction,
+            customOptimize,
+            qualityScore: data.qualityScore || qualityScore,
+          });
+        },
+        onError: () => {
+          // 后端失败时，使用本地规则引擎降级
+          const optimized = generateOptimizedPrompt(
+            inputPrompt,
+            targetAction,
+            customOptimize,
+          );
+          setOutputPrompt(optimized);
+          setShowComparison(true);
+
+          // 保存到历史记录
+          addOptimizationHistory({
+            id: `opt-${Date.now()}`,
+            timestamp: Date.now(),
+            original: inputPrompt,
+            optimized,
+            targetAction,
+            customOptimize,
+            qualityScore,
+          });
+        },
+      },
+    );
   };
 
   // 处理图片上传
@@ -131,14 +159,12 @@ export default function PromptOptimizePage() {
         const reader = new FileReader();
         reader.onload = (event) => {
           const url = event.target?.result as string;
-          setUploadedImages((prev) => [
-            ...prev,
-            {
-              id: `${Date.now()}-${Math.random()}`,
-              url,
-              name: file.name,
-            },
-          ]);
+          const newImage: UploadedImage = {
+            id: `${Date.now()}-${Math.random()}`,
+            url,
+            name: file.name,
+          };
+          addImage(newImage);
         };
         reader.readAsDataURL(file);
       }
@@ -146,11 +172,6 @@ export default function PromptOptimizePage() {
 
     // 重置 input 以允许上传相同文件
     e.target.value = '';
-  };
-
-  // 删除图片
-  const handleRemoveImage = (id: string) => {
-    setUploadedImages((prev) => prev.filter((img) => img.id !== id));
   };
 
   // 复制到剪贴板
@@ -163,11 +184,7 @@ export default function PromptOptimizePage() {
 
   // 重置表单
   const handleReset = () => {
-    setInputPrompt('');
-    setOutputPrompt('');
-    setCustomOptimize('');
-    setTargetAction('all');
-    setUploadedImages([]);
+    reset();
     setSuggestions([]);
     setQualityScore({
       precision: 0,
@@ -175,7 +192,6 @@ export default function PromptOptimizePage() {
       clarity: 0,
       overall: 0,
     });
-    setShowComparison(false);
   };
 
   // 应用示例
@@ -312,7 +328,7 @@ export default function PromptOptimizePage() {
                               type="button"
                               variant="destructive"
                               size="sm"
-                              onClick={() => handleRemoveImage(image.id)}
+                              onClick={() => removeImage(image.id)}
                             >
                               <X className="h-4 w-4 mr-1" />
                               删除

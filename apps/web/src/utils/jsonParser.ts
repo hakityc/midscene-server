@@ -134,6 +134,7 @@ function parseFlow(flow: any[]): FlowAction[] {
       return {
         type: 'aiScroll' as const,
         direction: action.aiScroll.direction || 'down',
+        scrollType: action.aiScroll.scrollType || 'once',
         distance: action.aiScroll.distance || 100,
       };
     }

@@ -170,11 +170,11 @@ export function MessageMonitor({
                       </span>
                     </div>
                     <p className="text-xs break-words">{message.content}</p>
-                    {expandedId === message.id && message.data && (
+                    {expandedId === message.id && message.data ? (
                       <pre className="mt-2 p-2 bg-background/70 border rounded-md text-xs overflow-x-auto font-mono">
                         {JSON.stringify(message.data, null, 2)}
                       </pre>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
