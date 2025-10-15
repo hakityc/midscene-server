@@ -206,14 +206,21 @@ export function MessageMonitor({
                         {format(message.timestamp, 'HH:mm:ss')}
                       </span>
                       <span className="text-xs px-2 py-0.5 rounded-md bg-background/50 border">
-                        {message.direction === 'sent' ? '发送' : '接收'}
+                        {message.direction === 'sent' ? '📤 发送' : '📥 接收'}
                       </span>
                     </div>
-                    <p className="text-xs break-words">{message.content}</p>
+                    <p className="text-xs break-words whitespace-pre-wrap leading-relaxed">
+                      {message.content}
+                    </p>
                     {expandedId === message.id && message.data ? (
-                      <pre className="mt-2 p-2 bg-background/70 border rounded-md text-xs overflow-x-auto font-mono">
-                        {JSON.stringify(message.data, null, 2)}
-                      </pre>
+                      <div className="mt-2 space-y-2">
+                        <div className="text-xs text-muted-foreground font-medium">
+                          详细数据:
+                        </div>
+                        <pre className="p-2 bg-background/70 border rounded-md text-xs overflow-x-auto font-mono">
+                          {JSON.stringify(message.data, null, 2)}
+                        </pre>
+                      </div>
                     ) : null}
                   </div>
                 </div>

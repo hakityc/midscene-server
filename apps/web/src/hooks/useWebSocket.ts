@@ -4,6 +4,10 @@ import type {
   WsInboundMessage,
   WsOutboundMessage,
 } from '@/types/debug';
+import {
+  formatSentMessage,
+  formatWebSocketMessage,
+} from '@/utils/messageFormatter';
 
 type WebSocketStatus =
   | 'idle'
@@ -120,16 +124,13 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
         try {
           const data = JSON.parse(event.data) as WsOutboundMessage;
           const isSuccess = data.payload.status === 'success';
+          const formatted = formatWebSocketMessage(data);
+
           addMessage(
             'received',
             isSuccess ? 'success' : 'error',
-            isSuccess
-              ? data.payload.result
-                ? typeof data.payload.result === 'string'
-                  ? data.payload.result
-                  : '处理完成'
-                : '处理完成'
-              : data.payload.error || '处理失败',
+            formatted.title +
+              (formatted.description ? `: ${formatted.description}` : ''),
             data,
           );
         } catch {
@@ -190,12 +191,8 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
       try {
         const jsonString = JSON.stringify(message);
         ws.send(jsonString);
-        addMessage(
-          'sent',
-          'info',
-          `发送 ${message.payload.action} 请求`,
-          message,
-        );
+        const formatted = formatSentMessage(message.payload.action);
+        addMessage('sent', 'info', formatted.title, message);
       } catch (e) {
         const errorMsg = e instanceof Error ? e.message : '发送消息失败';
         setError(errorMsg);
