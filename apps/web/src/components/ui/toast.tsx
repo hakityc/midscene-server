@@ -69,7 +69,7 @@ function ToastItem({ toast, onClose }: ToastProps) {
       className={`
         relative flex items-start gap-3 rounded-lg border p-4 shadow-lg transition-all duration-300
         ${getTypeStyles()}
-        ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
+        ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}
       `}
       style={{ minWidth: '320px', maxWidth: '400px' }}
     >
@@ -123,7 +123,7 @@ export function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 space-y-2">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={removeToast} />
       ))}

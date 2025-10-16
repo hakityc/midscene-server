@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { VariableInput } from '@/components/ui/variable-input';
+import { VariableTextarea } from '@/components/ui/variable-textarea';
 import {
   type FlowActionConfig,
   useClientTypeFlowActions,
@@ -149,19 +150,21 @@ export function FlowActionItem({
 
     switch (param.type) {
       case 'string':
-        // 对于较长的文本，使用 Textarea
+        // 对于较长的文本，使用 VariableTextarea（支持变量）
         if (param.name === 'assertion' || param.description?.includes('描述')) {
           return (
             <div key={param.name}>
               <Label className="text-xs font-bold">{label}</Label>
-              <Textarea
+              <VariableTextarea
                 value={value || ''}
-                onChange={(e) => updateField(param.name, e.target.value)}
-                onBlur={() => validateField(param)}
+                onChange={(newValue) => updateField(param.name, newValue)}
                 placeholder={param.placeholder}
-                className={`mt-1 text-xs min-h-[60px] ${
-                  hasError ? 'border-red-500 focus-visible:ring-red-500' : ''
+                className={`mt-1 ${
+                  hasError
+                    ? 'border-red-500 [&>div]:focus-within:ring-red-500'
+                    : ''
                 }`}
+                rows={3}
               />
               {hasError && (
                 <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
@@ -177,17 +180,18 @@ export function FlowActionItem({
             </div>
           );
         }
-        // 普通文本输入
+        // 普通文本输入 - 使用 VariableInput（支持变量）
         return (
           <div key={param.name}>
             <Label className="text-xs font-bold">{label}</Label>
-            <Input
+            <VariableInput
               value={value || ''}
-              onChange={(e) => updateField(param.name, e.target.value)}
-              onBlur={() => validateField(param)}
+              onChange={(newValue) => updateField(param.name, newValue)}
               placeholder={param.placeholder}
-              className={`mt-1 h-8 text-xs ${
-                hasError ? 'border-red-500 focus-visible:ring-red-500' : ''
+              className={`mt-1 ${
+                hasError
+                  ? 'border-red-500 [&>div]:focus-within:ring-red-500'
+                  : ''
               }`}
             />
             {hasError && (
@@ -294,7 +298,7 @@ export function FlowActionItem({
       ref={setNodeRef}
       style={style}
       className={`p-3 border-2 border-black rounded-none shadow-[3px_3px_0_0_#000] ${
-        isEnabled ? 'bg-white' : 'bg-gray-100 opacity-75'
+        isEnabled ? 'bg-white' : 'bg-gray-200 opacity-75'
       }`}
     >
       <div className="flex items-center gap-2 mb-3">

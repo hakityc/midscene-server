@@ -2,6 +2,7 @@ import { BookTemplate, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from '@/components/ui/toast';
 import type { Template } from '@/types/debug';
 import { deleteTemplate, getAllTemplates } from '@/utils/templateStorage';
 
@@ -77,7 +78,13 @@ export function TemplatePanel({ onLoad }: TemplatePanelProps) {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => onLoad(template)}
+                      onClick={() => {
+                        onLoad(template);
+                        toast.success(
+                          '模板加载成功',
+                          `已加载模板"${template.name}"`,
+                        );
+                      }}
                     >
                       <Upload className="h-3 w-3 mr-1" />
                       使用
@@ -89,6 +96,7 @@ export function TemplatePanel({ onLoad }: TemplatePanelProps) {
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-3 w-3" />
+                      删除
                     </Button>
                   </div>
                 </div>

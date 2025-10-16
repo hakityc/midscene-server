@@ -1,8 +1,9 @@
 import { CheckCircle2, Clipboard, Copy, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useVariableTransform } from '@/hooks/useVariableTransform';
 import type { WsInboundMessage } from '@/types/debug';
 import { validateJson } from '@/utils/messageBuilder';
 
@@ -93,15 +94,36 @@ export function JsonPreview({
   const [isValid, setIsValid] = useState(true);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const { transformTasks } = useVariableTransform();
+
+  // 转换变量为占位符后的参数（用于预览）
+  const previewParams = useMemo(() => {
+    const params = message.payload?.params || {};
+
+    // 如果是 aiScript 类型且有 tasks，转换变量为占位符
+    if (
+      message.payload?.action === 'aiScript' &&
+      typeof params === 'object' &&
+      params !== null &&
+      'tasks' in params &&
+      Array.isArray(params.tasks)
+    ) {
+      return {
+        ...params,
+        tasks: transformTasks(params.tasks, 'placeholder'),
+      };
+    }
+
+    return params;
+  }, [message, transformTasks]);
 
   useEffect(() => {
-    // 只展示 payload.params 部分
-    const params = message.payload?.params || {};
-    const formatted = formatJsonWithDisabledActions(params);
+    // 使用转换后的参数格式化 JSON
+    const formatted = formatJsonWithDisabledActions(previewParams);
     setJsonString(formatted);
     setIsValid(true);
     setError('');
-  }, [message]);
+  }, [previewParams]);
 
   const handleChange = (value: string) => {
     setJsonString(value);

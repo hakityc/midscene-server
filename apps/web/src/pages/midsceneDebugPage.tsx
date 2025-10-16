@@ -17,9 +17,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useVariableTransform } from '@/hooks/useVariableTransform';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useDebugStore } from '@/stores';
-import type { HistoryItem, Template, WsInboundMessage } from '@/types/debug';
+import type {
+  AiScriptParams,
+  HistoryItem,
+  Template,
+  WsInboundMessage,
+} from '@/types/debug';
 import {
   buildAiMessage,
   buildAiScriptMessage,
@@ -76,6 +82,9 @@ export default function MidsceneDebugPage() {
   //   }
   // }, []);
 
+  // 变量转换 Hook
+  const { transformTasks } = useVariableTransform();
+
   // 构建消息
   const buildMessage = useCallback((): WsInboundMessage | null => {
     const option = enableLoadingShade ? 'LOADING_SHADE' : undefined;
@@ -109,15 +118,38 @@ export default function MidsceneDebugPage() {
     command,
   ]);
 
-  // 发送消息
+  // 发送消息（转换变量为运行时值）
   const handleSend = useCallback(() => {
     const message = buildMessage();
     if (!message) return;
 
-    send(message);
-    addHistory(message);
+    // 如果是 aiScript 类型，转换变量为运行时值
+    let messageToSend = message;
+    const params = message.payload?.params;
+    if (
+      message.payload?.action === 'aiScript' &&
+      params &&
+      typeof params === 'object' &&
+      params !== null &&
+      'tasks' in params &&
+      Array.isArray(params.tasks)
+    ) {
+      messageToSend = {
+        ...message,
+        payload: {
+          ...message.payload,
+          params: {
+            ...params,
+            tasks: transformTasks(params.tasks, 'runtime'),
+          },
+        },
+      };
+    }
+
+    send(messageToSend);
+    addHistory(message); // 历史记录保存原始值（包含变量）
     refreshMessageId();
-  }, [buildMessage, send, addHistory, refreshMessageId]);
+  }, [buildMessage, send, addHistory, refreshMessageId, transformTasks]);
 
   // 加载历史记录
   const handleLoadHistory = useCallback(
@@ -131,12 +163,31 @@ export default function MidsceneDebugPage() {
   const handleLoadTemplate = useCallback(
     (template: Template) => {
       const msg = template.message;
-      updateFromJson({
-        ...msg.payload,
-      });
+
+      // 清空当前任务列表并设置新的任务
+      if (msg.payload.action === 'aiScript') {
+        const aiScriptParams = msg.payload.params as AiScriptParams;
+        if (aiScriptParams?.tasks) {
+          setTasks(aiScriptParams.tasks);
+          setAction('aiScript');
+
+          // 设置加载遮罩选项
+          if (msg.payload.option === 'LOADING_SHADE') {
+            setEnableLoadingShade(true);
+          } else {
+            setEnableLoadingShade(false);
+          }
+        }
+      }
+
+      // 更新元数据
+      if (msg.meta) {
+        setMeta(msg.meta);
+      }
+
       refreshMessageId(); // 生成新的 messageId
     },
-    [updateFromJson, refreshMessageId],
+    [setTasks, setAction, setEnableLoadingShade, setMeta, refreshMessageId],
   );
 
   // 当前消息预览
