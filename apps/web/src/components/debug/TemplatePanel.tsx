@@ -2,6 +2,7 @@ import { BookTemplate, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from '@/components/ui/toast';
 import type { Template } from '@/types/debug';
 import { deleteTemplate, getAllTemplates } from '@/utils/templateStorage';
@@ -12,6 +13,15 @@ interface TemplatePanelProps {
 
 export function TemplatePanel({ onLoad }: TemplatePanelProps) {
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    templateId: string;
+    templateName: string;
+  }>({
+    open: false,
+    templateId: '',
+    templateName: '',
+  });
 
   // 加载模板
   const loadTemplates = () => {
@@ -34,13 +44,26 @@ export function TemplatePanel({ onLoad }: TemplatePanelProps) {
     };
   }, []);
 
-  // 删除模板
+  // 显示删除确认对话框
   const handleDelete = (templateId: string, templateName: string) => {
-    if (confirm(`确定要删除模板"${templateName}"吗？`)) {
-      deleteTemplate(templateId);
-      loadTemplates();
-      window.dispatchEvent(new Event('templates-updated'));
-    }
+    setDeleteDialog({
+      open: true,
+      templateId,
+      templateName,
+    });
+  };
+
+  // 确认删除模板
+  const confirmDelete = () => {
+    deleteTemplate(deleteDialog.templateId);
+    loadTemplates();
+    window.dispatchEvent(new Event('templates-updated'));
+    toast.success('删除成功', `模板"${deleteDialog.templateName}"已删除`);
+    setDeleteDialog({
+      open: false,
+      templateId: '',
+      templateName: '',
+    });
   };
 
   return (
@@ -108,6 +131,18 @@ export function TemplatePanel({ onLoad }: TemplatePanelProps) {
           </div>
         )}
       </CardContent>
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}
+        title="确认删除模板"
+        description={`确定要删除模板"${deleteDialog.templateName}"吗？此操作不可撤销。`}
+        confirmText="删除"
+        cancelText="取消"
+        variant="destructive"
+        onConfirm={confirmDelete}
+      />
     </Card>
   );
 }
