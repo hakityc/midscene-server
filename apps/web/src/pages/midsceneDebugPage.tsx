@@ -86,70 +86,61 @@ export default function MidsceneDebugPage() {
   const { transformTasks } = useVariableTransform();
 
   // 构建消息
-  const buildMessage = useCallback((): WsInboundMessage | null => {
-    const option = enableLoadingShade ? 'LOADING_SHADE' : undefined;
+  const buildMessage = useCallback(
+    (mode: 'original' | 'runtime' = 'original'): WsInboundMessage | null => {
+      const option = enableLoadingShade ? 'LOADING_SHADE' : undefined;
 
-    switch (action) {
-      case 'aiScript':
-        return buildAiScriptMessage(tasks, meta, option);
-      case 'ai':
-        return buildAiMessage(aiPrompt, meta, option);
-      case 'siteScript':
-        return buildSiteScriptMessage(siteScript, siteScriptCmd, meta);
-      case 'command':
-        return buildCommandScriptMessage(command, meta);
-      default:
-        return {
-          meta,
-          payload: {
-            action,
-            params: '',
-          },
-        };
-    }
-  }, [
-    action,
-    meta,
-    tasks,
-    enableLoadingShade,
-    aiPrompt,
-    siteScript,
-    siteScriptCmd,
-    command,
-  ]);
+      switch (action) {
+        case 'aiScript': {
+          // 根据模式选择是否转换变量
+          const tasksToUse =
+            mode === 'runtime' ? transformTasks(tasks, 'runtime') : tasks;
+          return buildAiScriptMessage(tasksToUse, meta, option);
+        }
+        case 'ai':
+          return buildAiMessage(aiPrompt, meta, option);
+        case 'siteScript':
+          return buildSiteScriptMessage(siteScript, siteScriptCmd, meta);
+        case 'command':
+          return buildCommandScriptMessage(command, meta);
+        default:
+          return {
+            meta,
+            payload: {
+              action,
+              params: '',
+            },
+          };
+      }
+    },
+    [
+      action,
+      meta,
+      tasks,
+      enableLoadingShade,
+      aiPrompt,
+      siteScript,
+      siteScriptCmd,
+      command,
+      transformTasks,
+    ],
+  );
 
   // 发送消息（转换变量为运行时值）
   const handleSend = useCallback(() => {
-    const message = buildMessage();
-    if (!message) return;
+    // 构建运行时消息（变量已转换）
+    const messageToSend = buildMessage('runtime');
+    if (!messageToSend) return;
 
-    // 如果是 aiScript 类型，转换变量为运行时值
-    let messageToSend = message;
-    const params = message.payload?.params;
-    if (
-      message.payload?.action === 'aiScript' &&
-      params &&
-      typeof params === 'object' &&
-      params !== null &&
-      'tasks' in params &&
-      Array.isArray(params.tasks)
-    ) {
-      messageToSend = {
-        ...message,
-        payload: {
-          ...message.payload,
-          params: {
-            ...params,
-            tasks: transformTasks(params.tasks, 'runtime'),
-          },
-        },
-      };
-    }
+    // 构建原始消息（用于历史记录，保留变量）
+    const originalMessage = buildMessage('original');
 
     send(messageToSend);
-    addHistory(message); // 历史记录保存原始值（包含变量）
+    if (originalMessage) {
+      addHistory(originalMessage); // 历史记录保存原始值（包含变量）
+    }
     refreshMessageId();
-  }, [buildMessage, send, addHistory, refreshMessageId, transformTasks]);
+  }, [buildMessage, send, addHistory, refreshMessageId]);
 
   // 加载历史记录
   const handleLoadHistory = useCallback(
@@ -190,8 +181,8 @@ export default function MidsceneDebugPage() {
     [setTasks, setAction, setEnableLoadingShade, setMeta, refreshMessageId],
   );
 
-  // 当前消息预览
-  const currentMessage = buildMessage();
+  // 当前消息预览（显示原始消息，包含变量）
+  const currentMessage = buildMessage('original');
 
   // 渲染表单
   const renderForm = () => {

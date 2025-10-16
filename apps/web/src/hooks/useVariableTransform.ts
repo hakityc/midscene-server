@@ -101,19 +101,74 @@ export function useVariableTransform() {
 
   /**
    * 处理 FlowAction：转换所有字符串字段中的变量
+   * 支持 FlowAction 格式和 API 格式
    */
   const transformAction = (
     action: FlowAction,
     mode: 'runtime' | 'placeholder',
   ): FlowAction => {
     const transform = mode === 'runtime' ? toRuntime : toPlaceholder;
-    const fields = getActionVariableFields(action);
     const processed = { ...action };
 
+    // 处理 FlowAction 格式的字段
+    const fields = getActionVariableFields(action);
     fields.forEach((field) => {
       const value = (action as any)[field];
       if (typeof value === 'string' && hasVariables(value)) {
         (processed as any)[field] = transform(value);
+      }
+    });
+
+    // 处理 API 格式的字段（经过 buildAiScriptMessage 转换后的格式）
+    const apiFields = [
+      'aiTap',
+      'aiInput',
+      'aiAssert',
+      'aiHover',
+      'aiScroll',
+      'aiWaitFor',
+      'aiKeyboardPress',
+      'aiDoubleClick',
+      'aiRightClick',
+      'aiQuery',
+      'aiString',
+      'aiNumber',
+      'aiBoolean',
+      'aiAction',
+      'aiLocate',
+      'screenshot',
+      'logText',
+      'logScreenshot',
+      'javascript',
+      'setClipboard',
+      'activateWindow',
+      'sleep',
+      'getClipboard',
+      'getWindowList',
+    ];
+
+    apiFields.forEach((field) => {
+      const value = (action as any)[field];
+      if (typeof value === 'string' && hasVariables(value)) {
+        (processed as any)[field] = transform(value);
+      }
+      // 处理 aiScroll 这种嵌套对象的情况
+      if (typeof value === 'object' && value !== null && field === 'aiScroll') {
+        const scrollValue = value.direction || value.scrollType || value.locate;
+        if (typeof scrollValue === 'string' && hasVariables(scrollValue)) {
+          (processed as any)[field] = {
+            ...value,
+            ...(value.direction && hasVariables(value.direction)
+              ? { direction: transform(value.direction) }
+              : {}),
+            ...(value.scrollType && hasVariables(value.scrollType)
+              ? { scrollType: transform(value.scrollType) }
+              : {}),
+            ...(value.locate && hasVariables(value.locate)
+              ? { locate: transform(value.locate) }
+              : {}),
+          };
+        }
       }
     });
 
