@@ -70,9 +70,10 @@ export function flowActionToApiFormat(
       break;
 
     case 'aiInput':
+      // aiInput 和 locate 都是必填字段，使用默认值确保字段存在
       result = filterUndefined({
-        aiInput: action.value,
-        locate: action.locate,
+        aiInput: action.value || '',
+        locate: action.locate || '',
         xpath: action.xpath,
         deepThink: action.deepThink,
         cacheable: action.cacheable,
@@ -80,16 +81,18 @@ export function flowActionToApiFormat(
       break;
 
     case 'aiAssert':
+      // assertion 是必填字段
       result = filterUndefined({
-        aiAssert: action.assertion,
+        aiAssert: action.assertion || '',
         errorMessage: action.errorMessage,
         name: action.name,
       });
       break;
 
     case 'aiHover':
+      // locate 是必填字段
       result = filterUndefined({
-        aiHover: action.locate,
+        aiHover: action.locate || '',
         xpath: action.xpath,
         deepThink: action.deepThink,
         cacheable: action.cacheable,
@@ -97,10 +100,11 @@ export function flowActionToApiFormat(
       break;
 
     case 'aiScroll':
+      // direction 和 scrollType 是必填字段
       result = {
         aiScroll: filterUndefined({
-          direction: action.direction,
-          scrollType: action.scrollType,
+          direction: action.direction || 'down',
+          scrollType: action.scrollType || 'once',
           distance: action.distance,
           locate: action.locate,
           xpath: action.xpath,
@@ -113,15 +117,17 @@ export function flowActionToApiFormat(
       break;
 
     case 'aiWaitFor':
+      // assertion 是必填字段
       result = filterUndefined({
-        aiWaitFor: action.assertion,
+        aiWaitFor: action.assertion || '',
         timeout: action.timeoutMs,
       });
       break;
 
     case 'aiKeyboardPress':
+      // key 是必填字段
       result = filterUndefined({
-        aiKeyboardPress: action.key,
+        aiKeyboardPress: action.key || 'Enter',
         locate: action.locate,
         xpath: action.xpath,
         deepThink: action.deepThink,
@@ -130,8 +136,9 @@ export function flowActionToApiFormat(
       break;
 
     case 'aiDoubleClick':
+      // locate 是必填字段
       result = filterUndefined({
-        aiDoubleClick: action.locate,
+        aiDoubleClick: action.locate || '',
         xpath: action.xpath,
         deepThink: action.deepThink,
         cacheable: action.cacheable,
@@ -139,8 +146,9 @@ export function flowActionToApiFormat(
       break;
 
     case 'aiRightClick':
+      // locate 是必填字段
       result = filterUndefined({
-        aiRightClick: action.locate,
+        aiRightClick: action.locate || '',
         xpath: action.xpath,
         deepThink: action.deepThink,
         cacheable: action.cacheable,
@@ -149,39 +157,46 @@ export function flowActionToApiFormat(
 
     // ==================== 查询操作 ====================
     case 'aiQuery':
+      // demand 是必填字段
       result = filterUndefined({
-        aiQuery: action.demand,
+        aiQuery: action.demand || '',
         name: action.name,
       });
       break;
 
     case 'aiString':
-      result = { aiString: action.prompt };
+      // prompt 是必填字段
+      result = { aiString: action.prompt || '' };
       break;
 
     case 'aiNumber':
-      result = { aiNumber: action.prompt };
+      // prompt 是必填字段
+      result = { aiNumber: action.prompt || '' };
       break;
 
     case 'aiBoolean':
-      result = { aiBoolean: action.prompt };
+      // prompt 是必填字段
+      result = { aiBoolean: action.prompt || '' };
       break;
 
     // ==================== 高级操作 ====================
     case 'aiAction':
+      // prompt 是必填字段
       result = filterUndefined({
-        aiAction: action.prompt,
+        aiAction: action.prompt || '',
         cacheable: action.cacheable,
       });
       break;
 
     case 'aiLocate':
-      result = { aiLocate: action.prompt };
+      // prompt 是必填字段
+      result = { aiLocate: action.prompt || '' };
       break;
 
     // ==================== 工具方法 ====================
     case 'sleep':
-      result = { sleep: action.duration };
+      // duration 是必填字段
+      result = { sleep: action.duration ?? 0 };
       break;
 
     case 'screenshot':
@@ -191,7 +206,8 @@ export function flowActionToApiFormat(
       break;
 
     case 'logText':
-      result = { logText: action.text };
+      // text 是必填字段
+      result = { logText: action.text || '' };
       break;
 
     case 'logScreenshot':
@@ -203,8 +219,9 @@ export function flowActionToApiFormat(
 
     // ==================== Web 特有 ====================
     case 'javascript':
+      // code 是必填字段
       result = filterUndefined({
-        javascript: action.code,
+        javascript: action.code || '',
         name: action.name,
       });
       break;
@@ -215,7 +232,8 @@ export function flowActionToApiFormat(
       break;
 
     case 'setClipboard':
-      result = { setClipboard: action.text };
+      // text 是必填字段
+      result = { setClipboard: action.text || '' };
       break;
 
     case 'getWindowList':
@@ -223,7 +241,8 @@ export function flowActionToApiFormat(
       break;
 
     case 'activateWindow':
-      result = { activateWindow: action.windowHandle };
+      // windowHandle 是必填字段
+      result = { activateWindow: action.windowHandle || '' };
       break;
 
     default:

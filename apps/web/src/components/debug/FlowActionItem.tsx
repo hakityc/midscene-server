@@ -101,8 +101,42 @@ export function FlowActionItem({
   // 控制 options 面板展开/收起
   const [optionsExpanded, setOptionsExpanded] = useState(false);
 
+  // 验证错误状态
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
+
   const updateField = (field: string, value: unknown) => {
     onChange({ ...action, [field]: value } as FlowAction);
+    // 清除该字段的验证错误
+    if (validationErrors[field]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // 验证必填字段
+  const validateField = (param: FlowActionConfig['params'][0]) => {
+    if (!param.required) return;
+
+    const value = (action as any)[param.name];
+    const isEmpty = value === undefined || value === null || value === '';
+
+    if (isEmpty) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [param.name]: `${param.label}不能为空`,
+      }));
+    } else {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[param.name];
+        return newErrors;
+      });
+    }
   };
 
   /**
@@ -111,6 +145,7 @@ export function FlowActionItem({
   const renderParamInput = (param: FlowActionConfig['params'][0]) => {
     const value = (action as any)[param.name];
     const label = `${param.label}${param.required ? ' *' : ''}`;
+    const hasError = !!validationErrors[param.name];
 
     switch (param.type) {
       case 'string':
@@ -122,10 +157,19 @@ export function FlowActionItem({
               <Textarea
                 value={value || ''}
                 onChange={(e) => updateField(param.name, e.target.value)}
+                onBlur={() => validateField(param)}
                 placeholder={param.placeholder}
-                className="mt-1 text-xs min-h-[60px]"
+                className={`mt-1 text-xs min-h-[60px] ${
+                  hasError ? 'border-red-500 focus-visible:ring-red-500' : ''
+                }`}
               />
-              {param.description && (
+              {hasError && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {validationErrors[param.name]}
+                </p>
+              )}
+              {!hasError && param.description && (
                 <p className="text-xs text-gray-500 mt-1">
                   {param.description}
                 </p>
@@ -140,10 +184,19 @@ export function FlowActionItem({
             <Input
               value={value || ''}
               onChange={(e) => updateField(param.name, e.target.value)}
+              onBlur={() => validateField(param)}
               placeholder={param.placeholder}
-              className="mt-1 h-8 text-xs"
+              className={`mt-1 h-8 text-xs ${
+                hasError ? 'border-red-500 focus-visible:ring-red-500' : ''
+              }`}
             />
-            {param.description && (
+            {hasError && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {validationErrors[param.name]}
+              </p>
+            )}
+            {!hasError && param.description && (
               <p className="text-xs text-gray-500 mt-1">{param.description}</p>
             )}
           </div>
@@ -157,11 +210,20 @@ export function FlowActionItem({
               type="number"
               value={value ?? param.defaultValue ?? 0}
               onChange={(e) => updateField(param.name, Number(e.target.value))}
+              onBlur={() => validateField(param)}
               placeholder={param.placeholder}
               min="0"
-              className="mt-1 h-8 text-xs"
+              className={`mt-1 h-8 text-xs ${
+                hasError ? 'border-red-500 focus-visible:ring-red-500' : ''
+              }`}
             />
-            {param.description && (
+            {hasError && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {validationErrors[param.name]}
+              </p>
+            )}
+            {!hasError && param.description && (
               <p className="text-xs text-gray-500 mt-1">{param.description}</p>
             )}
           </div>

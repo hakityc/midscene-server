@@ -1,5 +1,5 @@
 import { History, Play, Send, Square } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { ActionSelector } from '@/components/debug/ActionSelector';
 import { AiScriptForm } from '@/components/debug/AiScriptForm';
 import { HistoryPanel } from '@/components/debug/HistoryPanel';
@@ -26,7 +26,6 @@ import {
   buildCommandScriptMessage,
   buildSiteScriptMessage,
 } from '@/utils/messageBuilder';
-import { getAllTemplates } from '@/utils/templates';
 
 export default function MidsceneDebugPage() {
   // 使用 Zustand store
@@ -61,9 +60,6 @@ export default function MidsceneDebugPage() {
 
   const { status, error, messages, connect, send, clearMessages } =
     useWebSocket(endpoint);
-
-  // 模板
-  const templates = useMemo(() => getAllTemplates(), []);
 
   // 自动连接
   // useEffect(() => {
@@ -137,7 +133,7 @@ export default function MidsceneDebugPage() {
   );
 
   // 当前消息预览
-  const currentMessage = useMemo(() => buildMessage(), [buildMessage]);
+  const currentMessage = buildMessage();
 
   // 渲染表单
   const renderForm = () => {
@@ -344,10 +340,7 @@ export default function MidsceneDebugPage() {
                   />
                 </div>
                 <div className="h-1/2">
-                  <TemplatePanel
-                    templates={templates}
-                    onLoad={handleLoadTemplate}
-                  />
+                  <TemplatePanel onLoad={handleLoadTemplate} />
                 </div>
               </>
             )}

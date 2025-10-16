@@ -137,7 +137,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'text',
+            name: 'value',
             label: '输入内容',
             type: 'string',
             required: true,
@@ -344,7 +344,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             description: '等待的条件描述',
           },
           {
-            name: 'timeout',
+            name: 'timeoutMs',
             label: '超时时间(ms)',
             type: 'number',
             required: false,
@@ -622,7 +622,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'utility',
         params: [
           {
-            name: 'ms',
+            name: 'duration',
             label: '等待时间(ms)',
             type: 'number',
             required: true,
@@ -763,7 +763,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'basic',
         params: [
           {
-            name: 'text',
+            name: 'value',
             label: '输入内容',
             type: 'string',
             required: true,
@@ -942,7 +942,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             description: '等待的条件描述',
           },
           {
-            name: 'timeout',
+            name: 'timeoutMs',
             label: '超时时间(ms)',
             type: 'number',
             required: false,
@@ -1193,7 +1193,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         category: 'utility',
         params: [
           {
-            name: 'ms',
+            name: 'duration',
             label: '等待时间(ms)',
             type: 'number',
             required: true,

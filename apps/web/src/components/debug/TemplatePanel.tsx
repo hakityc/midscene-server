@@ -1,24 +1,63 @@
-import { BookTemplate, Upload } from 'lucide-react';
+import { BookTemplate, Trash2, Upload } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Template } from '@/types/debug';
+import { deleteTemplate, getAllTemplates } from '@/utils/templateStorage';
 
 interface TemplatePanelProps {
-  templates: Template[];
   onLoad: (template: Template) => void;
 }
 
-export function TemplatePanel({ templates, onLoad }: TemplatePanelProps) {
+export function TemplatePanel({ onLoad }: TemplatePanelProps) {
+  const [templates, setTemplates] = useState<Template[]>([]);
+
+  // 加载模板
+  const loadTemplates = () => {
+    setTemplates(getAllTemplates());
+  };
+
+  // 初始加载和监听更新
+  useEffect(() => {
+    loadTemplates();
+
+    // 监听模板更新事件
+    const handleTemplatesUpdated = () => {
+      loadTemplates();
+    };
+
+    window.addEventListener('templates-updated', handleTemplatesUpdated);
+
+    return () => {
+      window.removeEventListener('templates-updated', handleTemplatesUpdated);
+    };
+  }, []);
+
+  // 删除模板
+  const handleDelete = (templateId: string, templateName: string) => {
+    if (confirm(`确定要删除模板"${templateName}"吗？`)) {
+      deleteTemplate(templateId);
+      loadTemplates();
+      window.dispatchEvent(new Event('templates-updated'));
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold">快速模板</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-semibold">快速模板</CardTitle>
+          <span className="text-xs text-muted-foreground">
+            {templates.length} 个模板
+          </span>
+        </div>
       </CardHeader>
       <CardContent>
         {templates.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm">
             <BookTemplate className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            暂无模板
+            <p>暂无模板</p>
+            <p className="text-xs mt-2">在任务列表中点击"保存为模板"创建模板</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -34,15 +73,24 @@ export function TemplatePanel({ templates, onLoad }: TemplatePanelProps) {
                       {template.description}
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onLoad(template)}
-                    className="flex-shrink-0"
-                  >
-                    <Upload className="h-3 w-3 mr-1" />
-                    使用
-                  </Button>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onLoad(template)}
+                    >
+                      <Upload className="h-3 w-3 mr-1" />
+                      使用
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDelete(template.id, template.name)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="text-xs px-2 py-1 bg-background/70 border rounded-md font-mono">
                   {template.action}
