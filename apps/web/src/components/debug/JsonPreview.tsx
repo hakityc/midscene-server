@@ -27,11 +27,21 @@ function formatJsonWithDisabledActions(params: any): string {
       lines.push(`      "continueOnError": ${task.continueOnError},`);
       lines.push(`      "flow": [`);
 
-      task.flow.forEach((action: any, index: number) => {
+      // 收集有效的动作行
+      const actionLines: string[] = [];
+
+      task.flow.forEach((action: any) => {
         const isEnabled = action.enabled !== false;
         // 移除前端专用字段（id, enabled）
         // biome-ignore lint/correctness/noUnusedVariables: 解构是为了移除字段
         const { id, enabled, ...cleanAction } = action;
+
+        // 检查是否为空对象（移除字段后没有任何内容）
+        const isEmptyAction = Object.keys(cleanAction).length === 0;
+        if (isEmptyAction) {
+          return; // 跳过空对象
+        }
+
         const actionStr = JSON.stringify(cleanAction, null, 2);
         const indentedAction = actionStr
           .split('\n')
@@ -44,12 +54,15 @@ function formatJsonWithDisabledActions(params: any): string {
             .split('\n')
             .map((line) => '// ' + line)
             .join('\n');
-          lines.push(commented + (index < task.flow.length - 1 ? ',' : ''));
+          actionLines.push(commented);
         } else {
-          lines.push(
-            indentedAction + (index < task.flow.length - 1 ? ',' : ''),
-          );
+          actionLines.push(indentedAction);
         }
+      });
+
+      // 添加带逗号的动作行
+      actionLines.forEach((line, index) => {
+        lines.push(line + (index < actionLines.length - 1 ? ',' : ''));
       });
 
       lines.push(`      ]`);

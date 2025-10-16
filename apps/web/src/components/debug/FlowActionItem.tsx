@@ -22,9 +22,11 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { useClientTypeFlowActions } from '@/hooks/useClientTypeFlowActions';
+import {
+  type FlowActionConfig,
+  useClientTypeFlowActions,
+} from '@/hooks/useClientTypeFlowActions';
 import type { ClientType, FlowAction } from '@/types/debug';
-import type { FlowActionConfig } from '@/types/flowAction';
 
 interface FlowActionItemProps {
   action: FlowAction;

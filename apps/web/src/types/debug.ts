@@ -26,14 +26,36 @@ export interface MessageMeta {
 
 // Flow 动作类型
 export type FlowActionType =
+  // 基础操作
   | 'aiTap'
   | 'aiInput'
   | 'aiAssert'
-  | 'sleep'
   | 'aiHover'
   | 'aiScroll'
   | 'aiWaitFor'
-  | 'aiKeyboardPress';
+  | 'aiKeyboardPress'
+  | 'aiDoubleClick'
+  | 'aiRightClick'
+  // 查询操作
+  | 'aiQuery'
+  | 'aiString'
+  | 'aiNumber'
+  | 'aiBoolean'
+  // 高级操作
+  | 'aiAction'
+  | 'aiLocate'
+  // 工具方法
+  | 'sleep'
+  | 'screenshot'
+  | 'logText'
+  | 'logScreenshot'
+  // Web 特有
+  | 'javascript'
+  // Windows 特有
+  | 'getClipboard'
+  | 'setClipboard'
+  | 'getWindowList'
+  | 'activateWindow';
 
 // Flow 动作基础接口
 export interface BaseFlowAction {
@@ -114,6 +136,110 @@ export interface AiKeyboardPressAction extends BaseFlowAction {
   cacheable?: boolean; // 是否允许缓存，默认 true
 }
 
+// aiDoubleClick 动作
+export interface AiDoubleClickAction extends BaseFlowAction {
+  type: 'aiDoubleClick';
+  locate: string; // 定位描述
+  xpath?: string; // XPath 路径
+  deepThink?: boolean; // 是否使用深度思考，默认 false
+  cacheable?: boolean; // 是否允许缓存，默认 true
+}
+
+// aiRightClick 动作
+export interface AiRightClickAction extends BaseFlowAction {
+  type: 'aiRightClick';
+  locate: string; // 定位描述
+  xpath?: string; // XPath 路径
+  deepThink?: boolean; // 是否使用深度思考，默认 false
+  cacheable?: boolean; // 是否允许缓存，默认 true
+}
+
+// aiQuery 动作
+export interface AiQueryAction extends BaseFlowAction {
+  type: 'aiQuery';
+  demand: string; // 查询需求描述
+  name?: string; // 查询结果在 JSON 输出中的 key
+}
+
+// aiString 动作
+export interface AiStringAction extends BaseFlowAction {
+  type: 'aiString';
+  prompt: string; // 查询内容
+}
+
+// aiNumber 动作
+export interface AiNumberAction extends BaseFlowAction {
+  type: 'aiNumber';
+  prompt: string; // 查询内容
+}
+
+// aiBoolean 动作
+export interface AiBooleanAction extends BaseFlowAction {
+  type: 'aiBoolean';
+  prompt: string; // 查询内容
+}
+
+// aiAction 动作
+export interface AiActionAction extends BaseFlowAction {
+  type: 'aiAction';
+  prompt: string; // 任务描述
+  cacheable?: boolean; // 是否允许缓存，默认 true
+}
+
+// aiLocate 动作
+export interface AiLocateAction extends BaseFlowAction {
+  type: 'aiLocate';
+  prompt: string; // 元素描述
+}
+
+// screenshot 动作
+export interface ScreenshotAction extends BaseFlowAction {
+  type: 'screenshot';
+  name?: string; // 截图名称
+}
+
+// logText 动作
+export interface LogTextAction extends BaseFlowAction {
+  type: 'logText';
+  text: string; // 文本内容
+}
+
+// logScreenshot 动作
+export interface LogScreenshotAction extends BaseFlowAction {
+  type: 'logScreenshot';
+  title?: string; // 截图标题
+  content?: string; // 截图描述
+}
+
+// javascript 动作
+export interface JavascriptAction extends BaseFlowAction {
+  type: 'javascript';
+  code: string; // JavaScript 代码
+  name?: string; // 返回值名称
+}
+
+// getClipboard 动作
+export interface GetClipboardAction extends BaseFlowAction {
+  type: 'getClipboard';
+}
+
+// setClipboard 动作
+export interface SetClipboardAction extends BaseFlowAction {
+  type: 'setClipboard';
+  text: string; // 剪贴板内容
+}
+
+// getWindowList 动作
+export interface GetWindowListAction extends BaseFlowAction {
+  type: 'getWindowList';
+}
+
+// activateWindow 动作
+export interface ActivateWindowAction extends BaseFlowAction {
+  type: 'activateWindow';
+  windowHandle: string; // 窗口句柄
+}
+
 // 联合类型
 export type FlowAction =
   | AiTapAction
@@ -123,7 +249,23 @@ export type FlowAction =
   | AiHoverAction
   | AiScrollAction
   | AiWaitForAction
-  | AiKeyboardPressAction;
+  | AiKeyboardPressAction
+  | AiDoubleClickAction
+  | AiRightClickAction
+  | AiQueryAction
+  | AiStringAction
+  | AiNumberAction
+  | AiBooleanAction
+  | AiActionAction
+  | AiLocateAction
+  | ScreenshotAction
+  | LogTextAction
+  | LogScreenshotAction
+  | JavascriptAction
+  | GetClipboardAction
+  | SetClipboardAction
+  | GetWindowListAction
+  | ActivateWindowAction;
 
 // 任务定义
 export interface Task {

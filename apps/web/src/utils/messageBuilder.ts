@@ -42,50 +42,62 @@ function filterUndefined<T extends Record<string, unknown>>(
 }
 
 /**
+ * 检查对象是否为空
+ */
+function isEmptyObject(obj: Record<string, unknown>): boolean {
+  return Object.keys(obj).length === 0;
+}
+
+/**
  * 将 FlowAction 转换为 API 格式
  * 根据官方文档支持所有可选配置参数
+ * @returns API 格式的对象，如果转换结果为空则返回 null
  */
 export function flowActionToApiFormat(
   action: FlowAction,
-): Record<string, unknown> {
+): Record<string, unknown> | null {
+  let result: Record<string, unknown>;
+
   switch (action.type) {
+    // ==================== 基础操作 ====================
     case 'aiTap':
-      return filterUndefined({
+      result = filterUndefined({
         aiTap: action.locate || '',
         xpath: action.xpath,
         deepThink: action.deepThink,
         cacheable: action.cacheable,
       });
+      break;
 
     case 'aiInput':
-      return filterUndefined({
+      result = filterUndefined({
         aiInput: action.value,
         locate: action.locate,
         xpath: action.xpath,
         deepThink: action.deepThink,
         cacheable: action.cacheable,
       });
+      break;
 
     case 'aiAssert':
-      return filterUndefined({
+      result = filterUndefined({
         aiAssert: action.assertion,
         errorMessage: action.errorMessage,
         name: action.name,
       });
-
-    case 'sleep':
-      return { sleep: action.duration };
+      break;
 
     case 'aiHover':
-      return filterUndefined({
+      result = filterUndefined({
         aiHover: action.locate,
         xpath: action.xpath,
         deepThink: action.deepThink,
         cacheable: action.cacheable,
       });
+      break;
 
     case 'aiScroll':
-      return {
+      result = {
         aiScroll: filterUndefined({
           direction: action.direction,
           scrollType: action.scrollType,
@@ -98,32 +110,128 @@ export function flowActionToApiFormat(
           cacheable: action.cacheable,
         }),
       };
+      break;
 
     case 'aiWaitFor':
-      return {
-        aiWaitFor: filterUndefined({
-          assertion: action.assertion,
-          timeoutMs: action.timeoutMs,
-          checkIntervalMs: action.checkIntervalMs,
-        }),
-      };
+      result = filterUndefined({
+        aiWaitFor: action.assertion,
+        timeout: action.timeoutMs,
+      });
+      break;
 
     case 'aiKeyboardPress':
-      return {
-        aiKeyboardPress: filterUndefined({
-          key: action.key,
-          locate: action.locate,
-          deepThink: action.deepThink,
-        }),
-        ...filterUndefined({
-          xpath: action.xpath,
-          cacheable: action.cacheable,
-        }),
-      };
+      result = filterUndefined({
+        aiKeyboardPress: action.key,
+        locate: action.locate,
+        xpath: action.xpath,
+        deepThink: action.deepThink,
+        cacheable: action.cacheable,
+      });
+      break;
+
+    case 'aiDoubleClick':
+      result = filterUndefined({
+        aiDoubleClick: action.locate,
+        xpath: action.xpath,
+        deepThink: action.deepThink,
+        cacheable: action.cacheable,
+      });
+      break;
+
+    case 'aiRightClick':
+      result = filterUndefined({
+        aiRightClick: action.locate,
+        xpath: action.xpath,
+        deepThink: action.deepThink,
+        cacheable: action.cacheable,
+      });
+      break;
+
+    // ==================== 查询操作 ====================
+    case 'aiQuery':
+      result = filterUndefined({
+        aiQuery: action.demand,
+        name: action.name,
+      });
+      break;
+
+    case 'aiString':
+      result = { aiString: action.prompt };
+      break;
+
+    case 'aiNumber':
+      result = { aiNumber: action.prompt };
+      break;
+
+    case 'aiBoolean':
+      result = { aiBoolean: action.prompt };
+      break;
+
+    // ==================== 高级操作 ====================
+    case 'aiAction':
+      result = filterUndefined({
+        aiAction: action.prompt,
+        cacheable: action.cacheable,
+      });
+      break;
+
+    case 'aiLocate':
+      result = { aiLocate: action.prompt };
+      break;
+
+    // ==================== 工具方法 ====================
+    case 'sleep':
+      result = { sleep: action.duration };
+      break;
+
+    case 'screenshot':
+      result = filterUndefined({
+        screenshot: action.name,
+      });
+      break;
+
+    case 'logText':
+      result = { logText: action.text };
+      break;
+
+    case 'logScreenshot':
+      result = filterUndefined({
+        logScreenshot: action.title || 'untitled',
+        content: action.content,
+      });
+      break;
+
+    // ==================== Web 特有 ====================
+    case 'javascript':
+      result = filterUndefined({
+        javascript: action.code,
+        name: action.name,
+      });
+      break;
+
+    // ==================== Windows 特有 ====================
+    case 'getClipboard':
+      result = { getClipboard: true };
+      break;
+
+    case 'setClipboard':
+      result = { setClipboard: action.text };
+      break;
+
+    case 'getWindowList':
+      result = { getWindowList: true };
+      break;
+
+    case 'activateWindow':
+      result = { activateWindow: action.windowHandle };
+      break;
 
     default:
-      return {};
+      return null;
   }
+
+  // 检查结果是否为空对象，如果是则返回 null
+  return isEmptyObject(result) ? null : result;
 }
 
 /**
@@ -137,10 +245,11 @@ export function buildAiScriptMessage(
   const formattedTasks = tasks.map((task) => ({
     name: task.name,
     continueOnError: task.continueOnError,
-    // 过滤掉未启用的动作（enabled 为 false 的动作）
+    // 过滤掉未启用的动作（enabled 为 false 的动作）和转换后为空的动作
     flow: task.flow
       .filter((action) => action.enabled !== false)
-      .map(flowActionToApiFormat),
+      .map(flowActionToApiFormat)
+      .filter((action): action is Record<string, unknown> => action !== null),
   }));
 
   return {

@@ -8,7 +8,13 @@ export interface FlowActionConfig {
   type: string;
   label: string;
   description: string;
-  category: 'basic' | 'query' | 'advanced' | 'utility' | 'windows-specific';
+  category:
+    | 'basic'
+    | 'query'
+    | 'advanced'
+    | 'utility'
+    | 'web-specific'
+    | 'windows-specific';
   params: Array<{
     name: string;
     label: string;
@@ -102,6 +108,7 @@ export function useClientTypeFlowActions(
       query: actions.filter((a) => a.category === 'query'),
       advanced: actions.filter((a) => a.category === 'advanced'),
       utility: actions.filter((a) => a.category === 'utility'),
+      'web-specific': actions.filter((a) => a.category === 'web-specific'),
       'windows-specific': actions.filter(
         (a) => a.category === 'windows-specific',
       ),
@@ -141,6 +148,7 @@ export function useClientTypeFlowActions(
       query: '查询操作',
       advanced: '高级操作',
       utility: '工具方法',
+      'web-specific': 'Web 特有',
       'windows-specific': 'Windows 特有',
     };
     return labels[category];

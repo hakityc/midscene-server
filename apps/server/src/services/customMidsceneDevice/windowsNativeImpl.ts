@@ -21,6 +21,7 @@ import {
   Point,
   screen,
 } from '@nut-tree/nut-js';
+import sharp from 'sharp';
 
 /**
  * 屏幕信息接口
@@ -29,6 +30,16 @@ export interface ScreenInfo {
   width: number;
   height: number;
   dpr: number;
+}
+
+/**
+ * 截图选项接口
+ */
+export interface ScreenshotOptions {
+  /** 截图格式：'png' | 'jpeg'，默认 'jpeg' */
+  format?: 'png' | 'jpeg';
+  /** JPEG 质量 (1-100)，仅当 format 为 'jpeg' 时有效，默认 90 */
+  quality?: number;
 }
 
 /**
@@ -196,28 +207,53 @@ export class WindowsNativeImpl {
 
   /**
    * 获取屏幕截图（异步版本 - 推荐使用）
+   * @param options 截图选项
    */
-  async captureScreenAsync(): Promise<string> {
+  async captureScreenAsync(options?: ScreenshotOptions): Promise<string> {
     try {
+      // 默认配置：JPEG 格式，质量 90（与 web 版本对齐）
+      const format = options?.format || 'jpeg';
+      const quality = options?.quality || 90;
+
+      const startTime = Date.now();
+      console.log(
+        `[WindowsNative] 开始截图 (格式: ${format}, 质量: ${quality})`,
+      );
+
       // 使用临时文件来保存截图
       const tempFileName = `screenshot_${Date.now()}`;
       const tempFilePath = tmpdir();
 
-      // 使用 nut-js 的 capture 方法直接保存为 PNG
+      // 1. 先用 PNG 格式截图（最高质量，无损）
       const savedPath = await screen.capture(
         tempFileName,
         FileType.PNG,
         tempFilePath,
       );
 
-      // 读取文件并转换为 base64
-      const buffer = readFileSync(savedPath);
-      const base64 = buffer.toString('base64');
+      // 2. 读取 PNG 文件
+      let buffer: Buffer = readFileSync(savedPath);
 
-      // 删除临时文件
+      // 3. 删除临时文件
       unlinkSync(savedPath);
 
-      return `data:image/png;base64,${base64}`;
+      // 4. 如果需要 JPEG，使用 sharp 转换并压缩
+      if (format === 'jpeg') {
+        buffer = await sharp(buffer)
+          .jpeg({ quality, mozjpeg: true }) // 使用 mozjpeg 引擎获得更好的压缩
+          .toBuffer();
+      }
+
+      // 5. 转换为 base64
+      const base64 = buffer.toString('base64');
+
+      const endTime = Date.now();
+      const fileSize = (base64.length * 0.75) / 1024; // 估算文件大小（KB）
+      console.log(
+        `[WindowsNative] 截图完成 - 格式: ${format}, 大小: ${fileSize.toFixed(2)}KB, 耗时: ${endTime - startTime}ms`,
+      );
+
+      return `data:image/${format};base64,${base64}`;
     } catch (error) {
       console.error('截图失败:', error);
       throw error;

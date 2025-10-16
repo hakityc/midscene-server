@@ -36,6 +36,13 @@ export interface WindowsDeviceOptions {
   windowHandle?: string;
   /** 进程 ID（用于指定特定应用） */
   processId?: number;
+  /** 截图配置 */
+  screenshot?: {
+    /** 截图格式：'png' | 'jpeg'，默认 'jpeg' */
+    format?: 'png' | 'jpeg';
+    /** JPEG 质量 (1-100)，仅当 format 为 'jpeg' 时有效，默认 90 */
+    quality?: number;
+  };
 }
 
 /**
@@ -330,11 +337,20 @@ Status: Ready
     try {
       this.assertNotDestroyed();
 
-      // 使用 robotjs 捕获真实的屏幕截图
-      this.cachedScreenshot = await windowsNative.captureScreenAsync();
+      // 准备截图配置
+      const screenshotOptions = {
+        format: this.options.screenshot?.format || 'jpeg',
+        quality: this.options.screenshot?.quality || 90,
+      };
+
+      // 使用配置捕获真实的屏幕截图
+      this.cachedScreenshot =
+        await windowsNative.captureScreenAsync(screenshotOptions);
 
       if (this.options.debug) {
-        console.log('📸 Screenshot captured');
+        console.log(
+          `📸 Screenshot captured (${screenshotOptions.format}, quality: ${screenshotOptions.quality})`,
+        );
       }
 
       // 添加调试日志：解析截图实际尺寸

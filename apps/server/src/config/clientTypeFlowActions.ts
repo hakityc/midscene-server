@@ -36,6 +36,9 @@ export type FlowActionType =
   | 'sleep' // 等待/延迟
   | 'screenshot' // 截图
   | 'logText' // 记录文本
+  | 'logScreenshot' // 记录截图到报告
+  // Web 特有
+  | 'javascript' // 执行 JavaScript 代码
   // Windows 特有
   | 'getClipboard' // 获取剪贴板
   | 'setClipboard' // 设置剪贴板
@@ -52,7 +55,13 @@ export interface FlowActionConfig {
   type: FlowActionType;
   label: string;
   description: string;
-  category: 'basic' | 'query' | 'advanced' | 'utility' | 'windows-specific';
+  category:
+    | 'basic'
+    | 'query'
+    | 'advanced'
+    | 'utility'
+    | 'web-specific'
+    | 'windows-specific';
   /** 参数定义 */
   params: {
     name: string;
@@ -186,6 +195,23 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: '例如：页面显示"登录成功"',
+            description: '要验证的条件描述',
+          },
+          {
+            name: 'errorMessage',
+            label: '错误消息',
+            type: 'string',
+            required: false,
+            placeholder: '可选，断言失败时的错误信息',
+            description: '可选，当断言失败时打印的错误信息',
+          },
+          {
+            name: 'name',
+            label: '名称',
+            type: 'string',
+            required: false,
+            placeholder: '可选，断言的名称',
+            description: '可选，给断言一个名称，会在 JSON 输出中作为 key 使用',
           },
         ],
         example: 'await agent.aiAssert("页面显示\\"登录成功\\"")',
@@ -246,16 +272,62 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: 'up/down/left/right',
+            description: '滚动方向',
+          },
+          {
+            name: 'scrollType',
+            label: '滚动类型',
+            type: 'string',
+            required: false,
+            placeholder: 'once/untilTop/untilBottom/untilLeft/untilRight',
+            description: '滚动类型：once 滚动一次，或滚动到顶部/底部/最左/最右',
           },
           {
             name: 'distance',
             label: '滚动距离',
             type: 'number',
             required: false,
-            placeholder: '像素值，默认 100',
+            placeholder: '像素值',
+            description: '可选，滚动距离，单位为像素',
+          },
+          {
+            name: 'locate',
+            label: '元素定位',
+            type: 'string',
+            required: false,
+            placeholder: '例如：滚动区域',
+            description: '可选，指定要滚动的元素',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'xpath',
+            label: 'XPath 表达式',
+            type: 'string',
+            required: false,
+            isOption: true,
+            placeholder: '//*[@class="scroll-area"]',
+            description: '可选的 XPath 选择器',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
-        example: 'await agent.aiScroll({ direction: "down", distance: 200 })',
+        example:
+          'await agent.aiScroll({ direction: "down", scrollType: "once", distance: 200 })',
       },
       {
         type: 'aiWaitFor',
@@ -269,16 +341,18 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: '例如：对话框出现',
+            description: '等待的条件描述',
           },
           {
-            name: 'timeoutMs',
+            name: 'timeout',
             label: '超时时间(ms)',
             type: 'number',
             required: false,
-            placeholder: '默认 15000',
+            placeholder: '默认 30000',
+            description: '超时时间，单位为毫秒',
           },
         ],
-        example: 'await agent.aiWaitFor("对话框出现", { timeoutMs: 5000 })',
+        example: 'await agent.aiWaitFor("对话框出现", { timeout: 5000 })',
       },
       {
         type: 'aiKeyboardPress',
@@ -434,6 +508,15 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: '例如：获取当前页面标题',
+            description: '查询的需求描述，记得在提示词中描述输出结果的格式',
+          },
+          {
+            name: 'name',
+            label: '名称',
+            type: 'string',
+            required: false,
+            placeholder: '可选，查询结果的名称',
+            description: '可选，查询结果在 JSON 输出中的 key',
           },
         ],
         example: 'const result = await agent.aiQuery("获取当前页面标题")',
@@ -580,6 +663,59 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         ],
         example: 'await agent.logText("测试步骤1完成")',
       },
+      {
+        type: 'logScreenshot',
+        label: '记录截图',
+        description: '在报告文件中记录当前截图',
+        category: 'utility',
+        params: [
+          {
+            name: 'title',
+            label: '截图标题',
+            type: 'string',
+            required: false,
+            placeholder: '可选，截图的标题',
+            description: '可选，截图的标题，如果未提供，则标题为 "untitled"',
+          },
+          {
+            name: 'content',
+            label: '截图描述',
+            type: 'string',
+            required: false,
+            placeholder: '可选，截图的描述内容',
+            description: '可选，截图的描述',
+          },
+        ],
+        example: 'await agent.logScreenshot("登录页面", "用户登录后的页面")',
+      },
+
+      // ==================== Web 特有操作 ====================
+      {
+        type: 'javascript',
+        label: '执行 JavaScript',
+        description: '在页面上下文中执行 JavaScript 代码',
+        category: 'web-specific',
+        params: [
+          {
+            name: 'code',
+            label: 'JavaScript 代码',
+            type: 'string',
+            required: true,
+            placeholder: '例如：document.title',
+            description: '要执行的 JavaScript 代码',
+          },
+          {
+            name: 'name',
+            label: '名称',
+            type: 'string',
+            required: false,
+            placeholder: '可选，返回值的名称',
+            description:
+              '可选，给返回值一个名称，会在 JSON 输出中作为 key 使用',
+          },
+        ],
+        example: 'const title = await agent.javascript("document.title")',
+      },
     ],
 
     windows: [
@@ -675,6 +811,23 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: '例如：窗口标题包含"记事本"',
+            description: '要验证的条件描述',
+          },
+          {
+            name: 'errorMessage',
+            label: '错误消息',
+            type: 'string',
+            required: false,
+            placeholder: '可选，断言失败时的错误信息',
+            description: '可选，当断言失败时打印的错误信息',
+          },
+          {
+            name: 'name',
+            label: '名称',
+            type: 'string',
+            required: false,
+            placeholder: '可选，断言的名称',
+            description: '可选，给断言一个名称，会在 JSON 输出中作为 key 使用',
           },
         ],
         example: 'await agent.aiAssert("窗口标题包含\\"记事本\\"")',
@@ -726,16 +879,53 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: 'up/down/left/right',
+            description: '滚动方向',
+          },
+          {
+            name: 'scrollType',
+            label: '滚动类型',
+            type: 'string',
+            required: false,
+            placeholder: 'once/untilTop/untilBottom/untilLeft/untilRight',
+            description: '滚动类型：once 滚动一次，或滚动到顶部/底部/最左/最右',
           },
           {
             name: 'distance',
             label: '滚动距离',
             type: 'number',
             required: false,
-            placeholder: '像素值，默认 100',
+            placeholder: '像素值',
+            description: '可选，滚动距离，单位为像素',
+          },
+          {
+            name: 'locate',
+            label: '元素定位',
+            type: 'string',
+            required: false,
+            placeholder: '例如：滚动区域',
+            description: '可选，指定要滚动的元素',
+          },
+          {
+            name: 'deepThink',
+            label: '深度思考',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否使用深度推理模式',
+          },
+          {
+            name: 'cacheable',
+            label: '可缓存',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否缓存 AI 结果',
           },
         ],
-        example: 'await agent.aiScroll({ direction: "down", distance: 200 })',
+        example:
+          'await agent.aiScroll({ direction: "down", scrollType: "once", distance: 200 })',
       },
       {
         type: 'aiWaitFor',
@@ -749,16 +939,18 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: '例如：对话框出现',
+            description: '等待的条件描述',
           },
           {
-            name: 'timeoutMs',
+            name: 'timeout',
             label: '超时时间(ms)',
             type: 'number',
             required: false,
-            placeholder: '默认 15000',
+            placeholder: '默认 30000',
+            description: '超时时间，单位为毫秒',
           },
         ],
-        example: 'await agent.aiWaitFor("对话框出现", { timeoutMs: 5000 })',
+        example: 'await agent.aiWaitFor("对话框出现", { timeout: 5000 })',
       },
       {
         type: 'aiKeyboardPress',
@@ -887,6 +1079,15 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
             type: 'string',
             required: true,
             placeholder: '例如：获取当前窗口标题',
+            description: '查询的需求描述，记得在提示词中描述输出结果的格式',
+          },
+          {
+            name: 'name',
+            label: '名称',
+            type: 'string',
+            required: false,
+            placeholder: '可选，查询结果的名称',
+            description: '可选，查询结果在 JSON 输出中的 key',
           },
         ],
         example: 'const result = await agent.aiQuery("获取当前窗口标题")',
@@ -1033,6 +1234,31 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         ],
         example: 'await agent.logText("测试步骤1完成")',
       },
+      {
+        type: 'logScreenshot',
+        label: '记录截图',
+        description: '在报告文件中记录当前截图',
+        category: 'utility',
+        params: [
+          {
+            name: 'title',
+            label: '截图标题',
+            type: 'string',
+            required: false,
+            placeholder: '可选，截图的标题',
+            description: '可选，截图的标题，如果未提供，则标题为 "untitled"',
+          },
+          {
+            name: 'content',
+            label: '截图描述',
+            type: 'string',
+            required: false,
+            placeholder: '可选，截图的描述内容',
+            description: '可选，截图的描述',
+          },
+        ],
+        example: 'await agent.logScreenshot("窗口截图", "当前窗口状态")',
+      },
 
       // ==================== Windows 特有操作 ====================
       {
@@ -1136,6 +1362,7 @@ export function getFlowActionsByCategory(clientType: ClientType) {
     query: actions.filter((a) => a.category === 'query'),
     advanced: actions.filter((a) => a.category === 'advanced'),
     utility: actions.filter((a) => a.category === 'utility'),
+    'web-specific': actions.filter((a) => a.category === 'web-specific'),
     'windows-specific': actions.filter(
       (a) => a.category === 'windows-specific',
     ),

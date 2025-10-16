@@ -89,78 +89,227 @@ function parseTasks(tasks: any[]): Task[] {
 function parseFlow(flow: any[]): FlowAction[] {
   if (!Array.isArray(flow)) return [];
 
-  return flow.map((action) => {
-    // 处理不同类型的动作
-    if (action.aiTap) {
-      return {
-        type: 'aiTap' as const,
-        locate: action.aiTap,
-        xpath: action.xpath,
-      };
-    }
+  return flow
+    .map((action): FlowAction | null => {
+      // 检查是否为空对象
+      if (
+        !action ||
+        typeof action !== 'object' ||
+        Object.keys(action).length === 0
+      ) {
+        return null;
+      }
 
-    if (action.aiInput) {
-      return {
-        type: 'aiInput' as const,
-        value: action.aiInput,
-        locate: action.locate,
-        xpath: action.xpath,
-      };
-    }
+      // ==================== 基础操作 ====================
+      if ('aiTap' in action) {
+        return {
+          type: 'aiTap' as const,
+          locate: action.aiTap,
+          xpath: action.xpath,
+          deepThink: action.deepThink,
+          cacheable: action.cacheable,
+        };
+      }
 
-    if (action.aiAssert) {
-      return {
-        type: 'aiAssert' as const,
-        assertion: action.aiAssert,
-      };
-    }
+      if ('aiInput' in action) {
+        return {
+          type: 'aiInput' as const,
+          value: action.aiInput,
+          locate: action.locate,
+          xpath: action.xpath,
+          deepThink: action.deepThink,
+          cacheable: action.cacheable,
+        };
+      }
 
-    if (action.sleep) {
-      return {
-        type: 'sleep' as const,
-        duration: action.sleep,
-      };
-    }
+      if ('aiAssert' in action) {
+        return {
+          type: 'aiAssert' as const,
+          assertion: action.aiAssert,
+          errorMessage: action.errorMessage,
+          name: action.name,
+        };
+      }
 
-    if (action.aiHover) {
-      return {
-        type: 'aiHover' as const,
-        locate: action.aiHover,
-        xpath: action.xpath,
-      };
-    }
+      if ('aiHover' in action) {
+        return {
+          type: 'aiHover' as const,
+          locate: action.aiHover,
+          xpath: action.xpath,
+          deepThink: action.deepThink,
+          cacheable: action.cacheable,
+        };
+      }
 
-    if (action.aiScroll) {
-      return {
-        type: 'aiScroll' as const,
-        direction: action.aiScroll.direction || 'down',
-        scrollType: action.aiScroll.scrollType || 'once',
-        distance: action.aiScroll.distance || 100,
-      };
-    }
+      if ('aiScroll' in action) {
+        return {
+          type: 'aiScroll' as const,
+          direction: action.aiScroll.direction || 'down',
+          scrollType: action.aiScroll.scrollType || 'once',
+          distance: action.aiScroll.distance,
+          locate: action.aiScroll.locate,
+          xpath: action.aiScroll.xpath,
+          deepThink: action.aiScroll.deepThink,
+          cacheable: action.cacheable,
+        };
+      }
 
-    if (action.aiWaitFor) {
-      return {
-        type: 'aiWaitFor' as const,
-        assertion: action.aiWaitFor,
-        timeoutMs: action.timeoutMs || 15000,
-      };
-    }
+      if ('aiWaitFor' in action) {
+        return {
+          type: 'aiWaitFor' as const,
+          assertion: action.aiWaitFor,
+          timeoutMs: action.timeout || action.timeoutMs,
+        };
+      }
 
-    if (action.aiKeyboardPress) {
-      return {
-        type: 'aiKeyboardPress' as const,
-        key: action.aiKeyboardPress.key || 'Enter',
-        locate: action.aiKeyboardPress.locate,
-      };
-    }
+      if ('aiKeyboardPress' in action) {
+        return {
+          type: 'aiKeyboardPress' as const,
+          key: action.aiKeyboardPress,
+          locate: action.locate,
+          xpath: action.xpath,
+          deepThink: action.deepThink,
+          cacheable: action.cacheable,
+        };
+      }
 
-    // 默认返回空动作
-    return {
-      type: 'aiTap' as const,
-      locate: '',
-    };
-  });
+      if ('aiDoubleClick' in action) {
+        return {
+          type: 'aiDoubleClick' as const,
+          locate: action.aiDoubleClick,
+          xpath: action.xpath,
+          deepThink: action.deepThink,
+          cacheable: action.cacheable,
+        };
+      }
+
+      if ('aiRightClick' in action) {
+        return {
+          type: 'aiRightClick' as const,
+          locate: action.aiRightClick,
+          xpath: action.xpath,
+          deepThink: action.deepThink,
+          cacheable: action.cacheable,
+        };
+      }
+
+      // ==================== 查询操作 ====================
+      if ('aiQuery' in action) {
+        return {
+          type: 'aiQuery' as const,
+          demand: action.aiQuery,
+          name: action.name,
+        };
+      }
+
+      if ('aiString' in action) {
+        return {
+          type: 'aiString' as const,
+          prompt: action.aiString,
+        };
+      }
+
+      if ('aiNumber' in action) {
+        return {
+          type: 'aiNumber' as const,
+          prompt: action.aiNumber,
+        };
+      }
+
+      if ('aiBoolean' in action) {
+        return {
+          type: 'aiBoolean' as const,
+          prompt: action.aiBoolean,
+        };
+      }
+
+      // ==================== 高级操作 ====================
+      if ('aiAction' in action) {
+        return {
+          type: 'aiAction' as const,
+          prompt: action.aiAction,
+          cacheable: action.cacheable,
+        };
+      }
+
+      if ('aiLocate' in action) {
+        return {
+          type: 'aiLocate' as const,
+          prompt: action.aiLocate,
+        };
+      }
+
+      // ==================== 工具方法 ====================
+      if ('sleep' in action) {
+        return {
+          type: 'sleep' as const,
+          duration: action.sleep,
+        };
+      }
+
+      if ('screenshot' in action) {
+        return {
+          type: 'screenshot' as const,
+          name: action.screenshot,
+        };
+      }
+
+      if ('logText' in action) {
+        return {
+          type: 'logText' as const,
+          text: action.logText,
+        };
+      }
+
+      if ('logScreenshot' in action) {
+        return {
+          type: 'logScreenshot' as const,
+          title: action.logScreenshot,
+          content: action.content,
+        };
+      }
+
+      // ==================== Web 特有 ====================
+      if ('javascript' in action) {
+        return {
+          type: 'javascript' as const,
+          code: action.javascript,
+          name: action.name,
+        };
+      }
+
+      // ==================== Windows 特有 ====================
+      if ('getClipboard' in action) {
+        return {
+          type: 'getClipboard' as const,
+        };
+      }
+
+      if ('setClipboard' in action) {
+        return {
+          type: 'setClipboard' as const,
+          text: action.setClipboard,
+        };
+      }
+
+      if ('getWindowList' in action) {
+        return {
+          type: 'getWindowList' as const,
+        };
+      }
+
+      if ('activateWindow' in action) {
+        return {
+          type: 'activateWindow' as const,
+          windowHandle: action.activateWindow,
+        };
+      }
+
+      // 未知动作类型，返回 null
+      console.warn('Unknown action type:', action);
+      return null;
+    })
+    .filter((action): action is FlowAction => action !== null);
 }
 
 /**
