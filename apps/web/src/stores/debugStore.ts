@@ -184,7 +184,11 @@ export const useDebugStore = create<DebugState>()(
           switch (currentAction) {
             case 'aiScript':
               // formData 应该是 { tasks: [...] } 结构
-              if (formData && typeof formData === 'object' && 'tasks' in formData) {
+              if (
+                formData &&
+                typeof formData === 'object' &&
+                'tasks' in formData
+              ) {
                 const tasksData = formData.tasks;
                 if (Array.isArray(tasksData)) {
                   // 为每个 task 和 action 添加前端必需的字段

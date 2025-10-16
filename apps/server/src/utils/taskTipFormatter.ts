@@ -94,8 +94,18 @@ const TASK_TIP_MAPPINGS: TaskTipMapping[] = [
     icon: '⌨️',
   },
   {
+    pattern: /^Action\s*\/\s*Input$/i,
+    template: '⌨️ 正在输入',
+    icon: '⌨️',
+  },
+  {
     pattern: /^Action\s*\/\s*KeyboardPress\s*-\s*(.+)$/i,
     template: '⌨️ 正在按键: {content}',
+    icon: '⌨️',
+  },
+  {
+    pattern: /^Action\s*\/\s*KeyboardPress$/i,
+    template: '⌨️ 正在按键',
     icon: '⌨️',
   },
   {
@@ -134,8 +144,28 @@ const TASK_TIP_MAPPINGS: TaskTipMapping[] = [
     icon: '🔄',
   },
   {
+    pattern: /^Action\s*\/\s*DragAndDrop$/i,
+    template: '🔄 正在拖拽',
+    icon: '🔄',
+  },
+  {
+    pattern: /^Action\s*\/\s*Swipe\s*-\s*(.+)$/i,
+    template: '👆 正在滑动: {content}',
+    icon: '👆',
+  },
+  {
+    pattern: /^Action\s*\/\s*Swipe$/i,
+    template: '👆 正在滑动',
+    icon: '👆',
+  },
+  {
     pattern: /^Action\s*\/\s*AndroidPull\s*-\s*(.+)$/i,
     template: '📱 正在滑动: {content}',
+    icon: '📱',
+  },
+  {
+    pattern: /^Action\s*\/\s*AndroidPull$/i,
+    template: '📱 正在滑动',
     icon: '📱',
   },
   {
