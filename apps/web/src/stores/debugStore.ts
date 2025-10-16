@@ -176,33 +176,57 @@ export const useDebugStore = create<DebugState>()(
 
       // 从 JSON 更新表单
       updateFromJson: (formData) => {
-        const updates: Partial<DebugState> = {};
+        set((state) => {
+          const updates: Partial<DebugState> = {};
+          const currentAction = state.action;
 
-        if (formData.action) updates.action = formData.action;
-        if (formData.meta) updates.meta = formData.meta;
+          // 根据当前 Action 类型解析 formData（formData 是 payload.params 的内容）
+          switch (currentAction) {
+            case 'aiScript':
+              // formData 应该是 { tasks: [...] } 结构
+              if (formData && typeof formData === 'object' && 'tasks' in formData) {
+                const tasksData = formData.tasks;
+                if (Array.isArray(tasksData)) {
+                  // 为每个 task 和 action 添加前端必需的字段
+                  updates.tasks = tasksData.map((task) => ({
+                    ...task,
+                    id: task.id || uuidv4(), // 如果没有 id 则生成新的
+                    flow: Array.isArray(task.flow)
+                      ? task.flow.map((action) => ({
+                          ...action,
+                          id: action.id || uuidv4(), // 为每个 action 添加 id
+                          enabled: action.enabled !== false, // 确保 enabled 字段存在，默认为 true
+                        }))
+                      : [],
+                  }));
+                }
+              }
+              break;
 
-        // 根据 Action 类型更新相应的状态
-        switch (formData.action) {
-          case 'aiScript':
-            if (formData.tasks) updates.tasks = formData.tasks;
-            if (typeof formData.enableLoadingShade === 'boolean') {
-              updates.enableLoadingShade = formData.enableLoadingShade;
-            }
-            break;
-          case 'ai':
-            if (formData.aiPrompt) updates.aiPrompt = formData.aiPrompt;
-            break;
-          case 'siteScript':
-            if (formData.siteScript) updates.siteScript = formData.siteScript;
-            if (formData.siteScriptCmd)
-              updates.siteScriptCmd = formData.siteScriptCmd;
-            break;
-          case 'command':
-            if (formData.params) updates.command = formData.params as string;
-            break;
-        }
+            case 'ai':
+              // formData 应该是一个字符串
+              if (typeof formData === 'string') {
+                updates.aiPrompt = formData;
+              }
+              break;
 
-        set(updates);
+            case 'siteScript':
+              // formData 应该是一个字符串
+              if (typeof formData === 'string') {
+                updates.siteScript = formData;
+              }
+              break;
+
+            case 'command':
+              // formData 应该是一个字符串
+              if (typeof formData === 'string') {
+                updates.command = formData;
+              }
+              break;
+          }
+
+          return updates;
+        });
       },
 
       // 重置表单

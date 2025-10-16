@@ -90,7 +90,8 @@ export function JsonPreview({
   onEdit,
   onFormUpdate,
 }: JsonPreviewProps) {
-  const [jsonString, setJsonString] = useState('');
+  // 局部变量：编辑时只修改这个，失焦时再同步到全局
+  const [localJsonString, setLocalJsonString] = useState('');
   const [isValid, setIsValid] = useState(true);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -117,23 +118,32 @@ export function JsonPreview({
     return params;
   }, [message, transformTasks]);
 
+  // 全局 message 变化 → 同步到局部变量
   useEffect(() => {
-    // 使用转换后的参数格式化 JSON
     const formatted = formatJsonWithDisabledActions(previewParams);
-    setJsonString(formatted);
+    setLocalJsonString(formatted);
     setIsValid(true);
     setError('');
   }, [previewParams]);
 
+  // 用户输入 → 只修改局部变量
   const handleChange = (value: string) => {
-    setJsonString(value);
+    setLocalJsonString(value);
 
     if (!editable) return;
 
+    // 实时验证但不立即更新全局，只在失焦时更新
     const validation = validateJson(value);
     setIsValid(validation.isValid);
     setError(validation.error || '');
+  };
 
+  // 失焦 → 同步局部变量到全局
+  const handleBlur = () => {
+    if (!editable || !isValid) return;
+
+    // 失焦时验证并更新全局 store
+    const validation = validateJson(localJsonString);
     if (validation.isValid && validation.parsed) {
       // 只更新 params 部分
       const updatedMessage = {
@@ -144,12 +154,12 @@ export function JsonPreview({
         },
       };
 
-      // 更新消息
+      // 更新消息（如果需要）
       if (onEdit) {
         onEdit(updatedMessage);
       }
 
-      // 解析并更新表单
+      // 同步到全局 store（表单）
       if (onFormUpdate) {
         onFormUpdate(validation.parsed);
       }
@@ -158,7 +168,7 @@ export function JsonPreview({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(jsonString);
+      await navigator.clipboard.writeText(localJsonString);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -170,7 +180,31 @@ export function JsonPreview({
     try {
       const text = await navigator.clipboard.readText();
       if (text.trim()) {
-        handleChange(text);
+        // 更新局部变量
+        setLocalJsonString(text);
+
+        // 粘贴后立即验证并同步到全局（因为用户明确想要粘贴内容）
+        const validation = validateJson(text);
+        setIsValid(validation.isValid);
+        setError(validation.error || '');
+
+        if (validation.isValid && validation.parsed) {
+          const updatedMessage = {
+            ...message,
+            payload: {
+              ...message.payload,
+              params: validation.parsed,
+            },
+          };
+
+          if (onEdit) {
+            onEdit(updatedMessage);
+          }
+
+          if (onFormUpdate) {
+            onFormUpdate(validation.parsed);
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to paste:', error);
@@ -218,8 +252,9 @@ export function JsonPreview({
       </div>
 
       <Textarea
-        value={jsonString}
+        value={localJsonString}
         onChange={(e) => handleChange(e.target.value)}
+        onBlur={handleBlur}
         readOnly={!editable}
         className={`font-mono text-xs min-h-[400px] ${
           !isValid ? 'border-destructive' : ''
@@ -236,7 +271,7 @@ export function JsonPreview({
       {editable && (
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">
-            💡 编辑参数 JSON 会同步更新表单
+            💡 编辑参数 JSON 后失焦会同步更新表单
           </p>
           <p className="text-xs text-muted-foreground">
             📋 点击"粘贴"按钮可以快速从剪贴板导入参数并更新表单
@@ -247,7 +282,7 @@ export function JsonPreview({
         </div>
       )}
 
-      {!editable && jsonString.includes('//') && (
+      {!editable && localJsonString.includes('//') && (
         <div className="p-2 rounded-md border border-amber-500 bg-amber-50 text-amber-700 text-xs font-medium">
           ℹ️ 注意：被注释掉的动作（以 {'//'} 开头）已被禁用，不会被执行
         </div>
