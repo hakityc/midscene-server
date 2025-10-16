@@ -324,6 +324,14 @@ export interface HistoryItem {
   label?: string;
 }
 
+// 任务状态
+export type TaskStatus =
+  | 'pending'
+  | 'running'
+  | 'success'
+  | 'error'
+  | 'cancelled';
+
 // 消息监控项
 export interface MonitorMessage {
   id: string;
@@ -332,6 +340,13 @@ export interface MonitorMessage {
   type: 'success' | 'error' | 'info';
   content: string;
   data?: unknown;
+  // 扩展任务属性
+  taskId?: string; // 任务 ID
+  taskStatus?: TaskStatus; // 任务状态
+  taskProgress?: number; // 任务进度 (0-100)
+  duration?: number; // 任务执行时长(毫秒)
+  errorCode?: string; // 错误代码
+  isRead?: boolean; // 是否已读
 }
 
 // 模板定义

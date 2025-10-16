@@ -13,24 +13,12 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { BookmarkPlus, Plus } from 'lucide-react';
-import { useId, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 import type { ClientType, Task } from '@/types/debug';
-import { addTemplate, createTemplateFromTasks } from '@/utils/templateStorage';
 import { TaskItem } from './TaskItem';
 
 interface AiScriptFormProps {
@@ -55,13 +43,6 @@ export function AiScriptForm({
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
-
-  // 保存为模板的对话框状态
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [templateName, setTemplateName] = useState('');
-  const [templateDescription, setTemplateDescription] = useState('');
-  const nameId = useId();
-  const descId = useId();
 
   const addTask = () => {
     const newTask: Task = {
@@ -95,38 +76,6 @@ export function AiScriptForm({
         onTasksChange(arrayMove(tasks, oldIndex, newIndex));
       }
     }
-  };
-
-  // 保存为模板
-  const handleSaveAsTemplate = () => {
-    if (!templateName.trim()) {
-      alert('请输入模板名称');
-      return;
-    }
-
-    if (tasks.length === 0) {
-      alert('任务列表为空，无法保存为模板');
-      return;
-    }
-
-    const template = createTemplateFromTasks(
-      tasks,
-      templateName.trim(),
-      templateDescription.trim() || '自定义任务模板',
-      enableLoadingShade,
-    );
-
-    addTemplate(template);
-
-    // 重置表单
-    setTemplateName('');
-    setTemplateDescription('');
-    setShowSaveDialog(false);
-
-    // 触发自定义事件通知模板列表刷新
-    window.dispatchEvent(new Event('templates-updated'));
-
-    alert('模板保存成功！');
   };
 
   return (
@@ -164,64 +113,16 @@ export function AiScriptForm({
           </SortableContext>
         </DndContext>
 
-        <div className="grid grid-cols-2 gap-3 mt-3">
+        <div className="flex mt-3 w-full">
           <Button
             onClick={addTask}
-            className="rounded-none border-2 border-black bg-cyan-300 text-black font-bold shadow-[4px_4px_0_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0_0_#000]"
+            className="rounded-none border-2 flex-1 border-black bg-cyan-300 text-black font-bold shadow-[4px_4px_0_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0_0_#000]"
           >
             <Plus className="h-4 w-4 mr-1" />
             添加任务
           </Button>
-          <Button
-            onClick={() => setShowSaveDialog(true)}
-            disabled={tasks.length === 0}
-            variant="outline"
-            className="rounded-none border-2 border-black bg-yellow-200 text-black font-bold shadow-[4px_4px_0_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0_0_#000] disabled:opacity-50"
-          >
-            <BookmarkPlus className="h-4 w-4 mr-1" />
-            保存为模板
-          </Button>
         </div>
       </div>
-
-      {/* 保存模板对话框 */}
-      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>保存为模板</DialogTitle>
-            <DialogDescription>
-              将当前任务列表保存为可复用的快速模板
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor={nameId}>模板名称 *</Label>
-              <Input
-                id={nameId}
-                placeholder="例如：登录流程"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor={descId}>模板描述</Label>
-              <Textarea
-                id={descId}
-                placeholder="简要描述这个模板的用途..."
-                value={templateDescription}
-                onChange={(e) => setTemplateDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
-              取消
-            </Button>
-            <Button onClick={handleSaveAsTemplate}>保存</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* 选项 */}
       <div className="p-3 bg-blue-50 border-2 border-black rounded-none shadow-[3px_3px_0_0_#000]">

@@ -2,9 +2,9 @@ import { History, Play, Send, Square } from 'lucide-react';
 import { useCallback } from 'react';
 import { ActionSelector } from '@/components/debug/ActionSelector';
 import { AiScriptForm } from '@/components/debug/AiScriptForm';
+import { FloatingMessageMonitor } from '@/components/debug/FloatingMessageMonitor';
 import { HistoryPanel } from '@/components/debug/HistoryPanel';
 import { JsonPreview } from '@/components/debug/JsonPreview';
-import { MessageMonitor } from '@/components/debug/MessageMonitor';
 import { MetaForm } from '@/components/debug/MetaForm';
 import {
   AiForm,
@@ -58,8 +58,15 @@ export default function MidsceneDebugPage() {
     updateFromJson,
   } = useDebugStore();
 
-  const { status, error, messages, connect, send, clearMessages } =
-    useWebSocket(endpoint);
+  const {
+    status,
+    error,
+    messages,
+    connect,
+    send,
+    clearMessages,
+    clearCompletedMessages,
+  } = useWebSocket(endpoint);
 
   // 自动连接
   // useEffect(() => {
@@ -221,6 +228,15 @@ export default function MidsceneDebugPage() {
           </CardHeader>
         </Card>
 
+        {/* 悬浮消息监控 */}
+        <FloatingMessageMonitor
+          messages={messages}
+          onClear={clearMessages}
+          onClearCompleted={clearCompletedMessages}
+          status={status}
+          onConnect={connect}
+        />
+
         {/* 主内容区 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 左侧：构建器 */}
@@ -330,19 +346,7 @@ export default function MidsceneDebugPage() {
                 />
               </div>
             ) : (
-              <>
-                <div className="h-1/2">
-                  <MessageMonitor
-                    messages={messages}
-                    onClear={clearMessages}
-                    status={status}
-                    onConnect={connect}
-                  />
-                </div>
-                <div className="h-1/2">
-                  <TemplatePanel onLoad={handleLoadTemplate} />
-                </div>
-              </>
+              <TemplatePanel onLoad={handleLoadTemplate} />
             )}
           </div>
         </div>

@@ -25,6 +25,7 @@ interface UseWebSocketReturn {
   disconnect: () => void;
   send: (message: WsInboundMessage) => void;
   clearMessages: () => void;
+  clearCompletedMessages: () => void;
 }
 
 /**
@@ -207,6 +208,18 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
     setMessages([]);
   }, []);
 
+  // 清除已完成的消息（成功和错误状态）
+  const clearCompletedMessages = useCallback(() => {
+    setMessages((prev) =>
+      prev.filter(
+        (msg) =>
+          msg.taskStatus === 'running' ||
+          msg.taskStatus === 'pending' ||
+          (!msg.taskStatus && msg.type === 'info'),
+      ),
+    );
+  }, []);
+
   // 组件卸载时清理
   useEffect(() => {
     return () => {
@@ -227,5 +240,6 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
     disconnect,
     send,
     clearMessages,
+    clearCompletedMessages,
   };
 }

@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+  BookmarkPlus,
   ChevronDown,
   ChevronRight,
   GripVertical,
@@ -28,7 +29,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { toast } from '@/components/ui/toast';
 import type { ClientType, FlowAction, Task } from '@/types/debug';
+import { addTemplate, createTemplateFromTasks } from '@/utils/templateStorage';
 import { FlowActionItem } from './FlowActionItem';
 
 interface TaskItemProps {
@@ -123,6 +126,34 @@ export function TaskItem({
     }
   };
 
+  // 保存为模板
+  const handleSaveAsTemplate = () => {
+    if (!task.name.trim()) {
+      toast.warning('保存失败', '请输入任务名称');
+      return;
+    }
+
+    if (task.flow.length === 0) {
+      toast.warning('保存失败', '任务流程为空，无法保存为模板');
+      return;
+    }
+
+    // 创建包含单个任务的模板
+    const template = createTemplateFromTasks(
+      [task], // 单个任务数组
+      task.name.trim(), // 使用任务名称作为模板名称
+      `基于任务"${task.name}"的流程模板`, // 自动生成描述
+      false, // 默认不启用加载遮罩
+    );
+
+    addTemplate(template);
+
+    // 触发自定义事件通知模板列表刷新
+    window.dispatchEvent(new Event('templates-updated'));
+
+    toast.success('模板保存成功', `任务"${task.name}"已保存为模板`);
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -156,8 +187,17 @@ export function TaskItem({
             <Button
               size="sm"
               variant="outline"
+              onClick={handleSaveAsTemplate}
+              className="rounded-none border-2 border-black bg-yellow-200   h-6 px-2 text-xs font-bold shadow-[2px_2px_0_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_0_#000] ml-auto"
+            >
+              <BookmarkPlus className="h-4 w-4 mr-1" />
+              保存为模板
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={onRemove}
-              className="rounded-none border-2 border-black bg-red-200 h-6 px-2 text-xs font-bold shadow-[2px_2px_0_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_0_#000] ml-auto"
+              className="rounded-none border-2 border-black bg-red-200 h-6 px-2 text-xs font-bold shadow-[2px_2px_0_0_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_0_#000]"
             >
               <Trash2 className="h-3 w-3 mr-1" />
               删除任务
