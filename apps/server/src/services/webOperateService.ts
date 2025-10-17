@@ -406,56 +406,46 @@ export class WebOperateService extends EventEmitter {
         // 调用原始回调（showStatusMessage），捕获所有错误
         if (originalCallback) {
           try {
-            // 尝试调用原始回调，但不 await 结果
-            // 使用 Promise.resolve 包装以处理可能的同步返回值
-            const callPromise = Promise.resolve(
-              originalCallback.call(this.agent, tip),
+            // 关键修复：在同一个表达式中调用并附加 .catch()
+            // 这样可以确保在 Promise rejection 发生的同一个 tick 中就已经有错误处理器
+            // 避免触发 Node.js 的 unhandledRejection 事件
+            Promise.resolve(originalCallback.call(this.agent, tip)).catch(
+              (error: any) => {
+                // 判断是否是连接断开错误（内部错误，不影响任务执行）
+                const isConnectionError =
+                  error?.message?.includes('Connection lost') ||
+                  error?.message?.includes('client namespace disconnect') ||
+                  error?.message?.includes('bridge client') ||
+                  error?.message?.includes('transport close') ||
+                  error?.message?.includes('timeout');
+
+                if (isConnectionError) {
+                  // 连接断开是预期的情况（项目有重连机制），完全静默处理
+                  // 不记录日志，不上报错误，当做无事发生
+                  bridgeError =
+                    error instanceof Error ? error : new Error(String(error));
+                } else {
+                  // 非连接错误，可能需要关注
+                  console.warn(`⚠️ 显示状态消息失败:`, error?.message);
+                  serviceLogger.warn(
+                    {
+                      tip,
+                      error: error?.message,
+                      stack: error?.stack,
+                    },
+                    '显示状态消息失败',
+                  );
+
+                  // 记录到错误跟踪中
+                  this.taskErrors.push({
+                    taskName: tip,
+                    error:
+                      error instanceof Error ? error : new Error(String(error)),
+                    timestamp: Date.now(),
+                  });
+                }
+              },
             );
-
-            // 立即为这个 Promise 添加错误处理，避免未捕获的 rejection
-            callPromise.catch((error: any) => {
-              // 判断是否是连接断开错误（内部错误，不影响任务执行）
-              const isConnectionError =
-                error?.message?.includes('Connection lost') ||
-                error?.message?.includes('client namespace disconnect') ||
-                error?.message?.includes('bridge client') ||
-                error?.message?.includes('timeout');
-
-              if (isConnectionError) {
-                // 这是预期的内部错误，只记录 warn 级别日志，不上报
-                serviceLogger.debug(
-                  {
-                    tip,
-                    errorType: 'bridge_connection_lost',
-                    error: error?.message,
-                  },
-                  'Bridge 连接已断开，无法显示状态消息（不影响任务执行）',
-                );
-
-                // 保存错误供内部追踪，但标记为非关键错误
-                bridgeError =
-                  error instanceof Error ? error : new Error(String(error));
-              } else {
-                // 非连接错误，可能需要关注
-                console.warn(`⚠️ 显示状态消息失败:`, error?.message);
-                serviceLogger.warn(
-                  {
-                    tip,
-                    error: error?.message,
-                    stack: error?.stack,
-                  },
-                  '显示状态消息失败',
-                );
-
-                // 记录到错误跟踪中
-                this.taskErrors.push({
-                  taskName: tip,
-                  error:
-                    error instanceof Error ? error : new Error(String(error)),
-                  timestamp: Date.now(),
-                });
-              }
-            });
           } catch (syncError: any) {
             // 捕获调用时的同步错误
             console.warn('⚠️ 调用原始回调时发生同步错误:', syncError?.message);

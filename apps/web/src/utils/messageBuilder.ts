@@ -100,20 +100,16 @@ export function flowActionToApiFormat(
       break;
 
     case 'aiScroll':
-      // direction 和 scrollType 是必填字段
-      result = {
-        aiScroll: filterUndefined({
-          direction: action.direction || 'down',
-          scrollType: action.scrollType || 'once',
-          distance: action.distance,
-          locate: action.locate,
-          xpath: action.xpath,
-          deepThink: action.deepThink,
-        }),
-        ...filterUndefined({
-          cacheable: action.cacheable,
-        }),
-      };
+      // aiScroll 的值应该是 locate prompt（可选），其他参数在外层
+      result = filterUndefined({
+        aiScroll: action.locate || undefined, // locate 作为 aiScroll 的值
+        direction: action.direction || 'down',
+        scrollType: action.scrollType, // 可选字段，不给默认值
+        distance: action.distance,
+        xpath: action.xpath,
+        deepThink: action.deepThink,
+        cacheable: action.cacheable,
+      });
       break;
 
     case 'aiWaitFor':
@@ -201,7 +197,7 @@ export function flowActionToApiFormat(
 
     case 'screenshot':
       result = filterUndefined({
-        screenshot: action.name,
+        screenshot: action.name || undefined, // 空字符串转为 undefined
       });
       break;
 
@@ -212,7 +208,7 @@ export function flowActionToApiFormat(
 
     case 'logScreenshot':
       result = filterUndefined({
-        logScreenshot: action.title || 'untitled',
+        logScreenshot: action.title, // 可选字段，不给默认值
         content: action.content,
       });
       break;

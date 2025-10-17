@@ -22,14 +22,7 @@ export function executeScriptHandler(): MessageHandler {
     // 提示：如果需要更多客户端控制功能（如 loading、toast、高亮等），
     // 可以使用 createClientCommandHelper(message, send)
 
-    wsLogger.info(
-      {
-        connectionId,
-        messageId: meta.messageId,
-        action: 'ai_request',
-      },
-      '处理 AI 请求',
-    );
+    wsLogger.info(message, '处理 AI 请求');
 
     const webOperateService = WebOperateService.getInstance();
 
@@ -74,7 +67,7 @@ export function executeScriptHandler(): MessageHandler {
           },
           {
             enabled: payload.option?.includes('LOADING_SHADE'),
-          }
+          },
         );
 
         // 将执行结果返回给客户端，包含错误信息（如果有）

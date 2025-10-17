@@ -16,14 +16,7 @@ import {
 export function createAiHandler(): MessageHandler {
   return async ({ connectionId, send }, message) => {
     const { meta, payload } = message;
-    wsLogger.info(
-      {
-        connectionId,
-        messageId: meta.messageId,
-        action: 'ai_request',
-      },
-      '处理 AI 请求',
-    );
+    wsLogger.info(message, '处理 AI 请求');
 
     const webOperateService = WebOperateService.getInstance();
 

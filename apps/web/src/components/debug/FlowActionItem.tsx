@@ -157,7 +157,13 @@ export function FlowActionItem({
               <Label className="text-xs font-bold">{label}</Label>
               <VariableTextarea
                 value={value || ''}
-                onChange={(newValue) => updateField(param.name, newValue)}
+                onChange={(newValue) => {
+                  // 非必填字段：空字符串转为 undefined
+                  // 必填字段：保留空字符串（让验证逻辑处理）
+                  const finalValue =
+                    !param.required && newValue === '' ? undefined : newValue;
+                  updateField(param.name, finalValue);
+                }}
                 placeholder={param.placeholder}
                 className={`mt-1 ${
                   hasError
@@ -186,7 +192,13 @@ export function FlowActionItem({
             <Label className="text-xs font-bold">{label}</Label>
             <VariableInput
               value={value || ''}
-              onChange={(newValue) => updateField(param.name, newValue)}
+              onChange={(newValue) => {
+                // 非必填字段：空字符串转为 undefined
+                // 必填字段：保留空字符串（让验证逻辑处理）
+                const finalValue =
+                  !param.required && newValue === '' ? undefined : newValue;
+                updateField(param.name, finalValue);
+              }}
               placeholder={param.placeholder}
               className={`mt-1 ${
                 hasError
@@ -212,8 +224,16 @@ export function FlowActionItem({
             <Label className="text-xs font-bold">{label}</Label>
             <Input
               type="number"
-              value={value ?? param.defaultValue ?? 0}
-              onChange={(e) => updateField(param.name, Number(e.target.value))}
+              value={value ?? ''}
+              onChange={(e) => {
+                const inputValue = e.target.value;
+                // 如果输入为空，设置为 undefined（不传该字段给后端）
+                if (inputValue === '') {
+                  updateField(param.name, undefined);
+                } else {
+                  updateField(param.name, Number(inputValue));
+                }
+              }}
               onBlur={() => validateField(param)}
               placeholder={param.placeholder}
               min="0"
@@ -238,7 +258,15 @@ export function FlowActionItem({
           <div key={param.name} className="flex items-center gap-2">
             <Switch
               checked={value ?? param.defaultValue ?? false}
-              onCheckedChange={(checked) => updateField(param.name, checked)}
+              onCheckedChange={(checked) => {
+                // 如果值等于默认值，设置为 undefined（不传给后端）
+                // 否则传递实际值
+                const finalValue =
+                  checked === (param.defaultValue ?? false)
+                    ? undefined
+                    : checked;
+                updateField(param.name, finalValue);
+              }}
             />
             <Label className="text-xs font-bold">{label}</Label>
             {param.description && (

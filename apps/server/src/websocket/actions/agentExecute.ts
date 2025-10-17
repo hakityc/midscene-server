@@ -10,15 +10,7 @@ import {
 export function createAgentExecuteHandler(): MessageHandler {
   return async ({ connectionId, send }, message) => {
     const { meta, payload } = message;
-    wsLogger.info(
-      {
-        connectionId,
-        messageId: meta.messageId,
-        action: payload.action,
-        params: payload.params,
-      },
-      '处理 AI 请求',
-    );
+    wsLogger.info(message, '处理 AI 请求');
 
     try {
       const browserAgent = mastra.getAgent('browserAgent');
