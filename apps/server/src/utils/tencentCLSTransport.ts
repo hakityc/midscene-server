@@ -81,7 +81,9 @@ export class TencentCLSTransport {
     const logGroup = new LogGroup('midscene-server');
 
     logs.forEach((logEntry) => {
-      const log = new Log(Math.floor(logEntry.timestamp / 1000)); // 转换为秒
+      // 转换为秒级时间戳，保留毫秒精度（小数部分）
+      const timestampInSeconds = logEntry.timestamp / 1000;
+      const log = new Log(timestampInSeconds);
 
       // 添加基本字段
       log.addContent('level', logEntry.level);
