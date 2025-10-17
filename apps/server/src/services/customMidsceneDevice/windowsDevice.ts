@@ -20,6 +20,7 @@ import {
   defineActionScroll,
   defineActionTap,
 } from '@midscene/core/device';
+import sharp from 'sharp';
 import { windowsNative } from './windowsNativeImpl';
 
 /**
@@ -353,16 +354,19 @@ Status: Ready
         );
       }
 
-      // 添加调试日志：解析截图实际尺寸
+      // 添加调试日志：使用 sharp 解析截图实际尺寸
       try {
         const base64Data = this.cachedScreenshot.replace(
           /^data:image\/\w+;base64,/,
           '',
         );
         const buffer = Buffer.from(base64Data, 'base64');
-        // PNG 文件头包含尺寸信息（偏移 16 和 20 字节）
-        const width = buffer.readUInt32BE(16);
-        const height = buffer.readUInt32BE(20);
+
+        // 使用 sharp 获取图片元数据（支持 JPEG、PNG 等多种格式）
+        const metadata = await sharp(buffer).metadata();
+        const width = metadata.width || 0;
+        const height = metadata.height || 0;
+
         console.log(`[DEBUG] screenshot 实际尺寸: ${width}x${height}`);
         console.log(
           `[DEBUG] cachedSize: ${this.cachedSize?.width}x${this.cachedSize?.height}`,
