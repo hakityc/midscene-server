@@ -76,18 +76,50 @@ export class TencentCLSTransport {
     }
   }
 
+  // 序列化值为字符串
+  private serializeValue(value: any): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    // 对于对象、数组等复杂类型，使用 JSON 序列化
+    try {
+      return JSON.stringify(value);
+    } catch {
+      // 如果序列化失败（如循环引用），返回类型信息
+      return `[${typeof value}]`;
+    }
+  }
+
+  // 移除 Emoji 和特殊字符，避免编码问题
+  private sanitizeString(str: string): string {
+    if (!str) return '';
+    // 移除 Emoji 表情符号
+    return str.replace(
+      /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
+      '',
+    );
+  }
+
   // 发送日志到腾讯云
   private async sendLogs(logs: LogEntry[]): Promise<void> {
     const logGroup = new LogGroup('midscene-server');
 
     logs.forEach((logEntry) => {
-      // 转换为秒级时间戳，保留毫秒精度（小数部分）
-      const timestampInSeconds = logEntry.timestamp / 1000;
+      // 使用带毫秒精度的浮点数时间戳（CLS 标准用法）
+      // 例如: 1729169970232 ms -> 1729169970.232 s
+      const timestampInSeconds = logEntry.timestamp;
+      //TODO 这里 log 一直没法用毫秒，会报错
       const log = new Log(timestampInSeconds);
 
-      // 添加基本字段
+      // 添加基本字段（移除 Emoji）
       log.addContent('level', logEntry.level);
-      log.addContent('message', logEntry.message);
+      log.addContent('message', this.sanitizeString(logEntry.message || ''));
 
       // 添加模块信息
       if (logEntry.module) {
@@ -97,14 +129,14 @@ export class TencentCLSTransport {
       // 添加数据字段
       if (logEntry.data) {
         Object.entries(logEntry.data).forEach(([key, value]) => {
-          log.addContent(key, String(value));
+          log.addContent(key, this.serializeValue(value));
         });
       }
 
       // 添加附加字段
       if (this.appendFieldsFn) {
         Object.entries(this.appendFieldsFn()).forEach(([key, value]) => {
-          log.addContent(key, String(value));
+          log.addContent(key, this.serializeValue(value));
         });
       }
 
