@@ -642,11 +642,14 @@ export class WebOperateService extends EventEmitter {
       }
       //@ts-expect-error
       const tabs = await this.agent.getBrowserTabList({});
-      serviceLogger.info({ tabs }, '浏览器标签页列表');
+      serviceLogger.info({ tabList: JSON.stringify(tabs) }, '浏览器标签页列表');
       if (tabs.length > 0) {
         const tab = tabs[tabs.length - 1];
         await this.agent.setActiveTabId(tab.id);
-        serviceLogger.info({ tab }, '浏览器标签页连接成功');
+        serviceLogger.info(
+          { tab: JSON.stringify(tab) },
+          '浏览器标签页连接成功',
+        );
       }
     } catch (error: any) {
       serviceLogger.error({ error }, '浏览器标签页连接失败');
