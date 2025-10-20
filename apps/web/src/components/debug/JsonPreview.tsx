@@ -1,5 +1,5 @@
 import { CheckCircle2, Clipboard, Copy, XCircle } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -97,6 +97,9 @@ export function JsonPreview({
   const [copied, setCopied] = useState(false);
   const { transformTasks } = useVariableTransform();
 
+  // 用于防止 handleBlur 后立即触发 useEffect 重新格式化
+  const skipNextEffectRef = useRef(false);
+
   // 转换变量为占位符后的参数（用于预览）
   const previewParams = useMemo(() => {
     const params = message.payload?.params || {};
@@ -120,6 +123,12 @@ export function JsonPreview({
 
   // 全局 message 变化 → 同步到局部变量
   useEffect(() => {
+    // 如果标志位为 true，跳过本次更新（用户刚刚手动编辑并提交）
+    if (skipNextEffectRef.current) {
+      skipNextEffectRef.current = false;
+      return;
+    }
+
     const formatted = formatJsonWithDisabledActions(previewParams);
     setLocalJsonString(formatted);
     setIsValid(true);
@@ -161,6 +170,8 @@ export function JsonPreview({
 
       // 同步到全局 store（表单）
       if (onFormUpdate) {
+        // 设置标志：跳过下一次 useEffect 更新
+        skipNextEffectRef.current = true;
         onFormUpdate(validation.parsed);
       }
     }
@@ -202,6 +213,8 @@ export function JsonPreview({
           }
 
           if (onFormUpdate) {
+            // 设置标志：跳过下一次 useEffect 更新
+            skipNextEffectRef.current = true;
             onFormUpdate(validation.parsed);
           }
         }

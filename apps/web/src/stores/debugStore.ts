@@ -8,6 +8,7 @@ import type {
   WebSocketAction,
   WsInboundMessage,
 } from '@/types/debug';
+import { parseFlow } from '@/utils/jsonParser';
 
 const MAX_HISTORY = 10;
 
@@ -191,12 +192,13 @@ export const useDebugStore = create<DebugState>()(
               ) {
                 const tasksData = formData.tasks;
                 if (Array.isArray(tasksData)) {
-                  // 为每个 task 和 action 添加前端必需的字段
+                  // 转换 API 格式到 FlowAction 格式
                   updates.tasks = tasksData.map((task) => ({
-                    ...task,
                     id: task.id || uuidv4(), // 如果没有 id 则生成新的
+                    name: task.name || '新任务',
+                    continueOnError: task.continueOnError ?? false,
                     flow: Array.isArray(task.flow)
-                      ? task.flow.map((action) => ({
+                      ? parseFlow(task.flow).map((action) => ({
                           ...action,
                           id: action.id || uuidv4(), // 为每个 action 添加 id
                           enabled: action.enabled !== false, // 确保 enabled 字段存在，默认为 true

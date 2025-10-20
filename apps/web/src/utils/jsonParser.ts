@@ -86,7 +86,7 @@ function parseTasks(tasks: any[]): Task[] {
 /**
  * 解析流程动作
  */
-function parseFlow(flow: any[]): FlowAction[] {
+export function parseFlow(flow: any[]): FlowAction[] {
   if (!Array.isArray(flow)) return [];
 
   return flow

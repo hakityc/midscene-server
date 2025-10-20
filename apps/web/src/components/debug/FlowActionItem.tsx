@@ -151,7 +151,11 @@ export function FlowActionItem({
     switch (param.type) {
       case 'string':
         // 对于较长的文本，使用 VariableTextarea（支持变量）
-        if (param.name === 'assertion' || param.description?.includes('描述')) {
+        if (
+          param.name === 'assertion' ||
+          param.description?.includes('描述') ||
+          param.name === 'code'
+        ) {
           return (
             <div key={param.name}>
               <Label className="text-xs font-bold">{label}</Label>
@@ -165,12 +169,12 @@ export function FlowActionItem({
                   updateField(param.name, finalValue);
                 }}
                 placeholder={param.placeholder}
-                className={`mt-1 ${
+                className={`mt-1 font-mono text-xs ${
                   hasError
                     ? 'border-red-500 [&>div]:focus-within:ring-red-500'
                     : ''
                 }`}
-                rows={3}
+                rows={param.name === 'code' ? 8 : 3}
               />
               {hasError && (
                 <p className="text-xs text-red-500 mt-1 flex items-center gap-1">

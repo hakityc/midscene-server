@@ -1,5 +1,5 @@
 import { History, Play, Send, Square } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActionSelector } from '@/components/debug/ActionSelector';
 import { AiScriptForm } from '@/components/debug/AiScriptForm';
 import { FloatingMessageMonitor } from '@/components/debug/FloatingMessageMonitor';
@@ -182,7 +182,20 @@ export default function MidsceneDebugPage() {
   );
 
   // 当前消息预览（显示原始消息，包含变量）
-  const currentMessage = buildMessage('original');
+  const currentMessage = useMemo(
+    () => buildMessage('original'),
+    [
+      action,
+      meta,
+      tasks,
+      enableLoadingShade,
+      aiPrompt,
+      siteScript,
+      siteScriptCmd,
+      command,
+      buildMessage,
+    ],
+  );
 
   // 渲染表单
   const renderForm = () => {
