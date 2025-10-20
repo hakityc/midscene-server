@@ -40,8 +40,8 @@ export class EnhancedBrowserAgent {
     try {
       logger.info('🚀 正在初始化增强浏览器自动化助手...');
 
-      // 根据环境优化配置
-      if (process.env.NODE_ENV === 'development') {
+      // 根据环境优化配置（使用方括号语法避免 tsup 静态替换）
+      if (process.env['NODE_ENV'] === 'development') {
         globalConfig.updateConfig(configUtils.optimizeForDevelopment());
         logger.info('📝 已应用开发环境配置');
       } else {

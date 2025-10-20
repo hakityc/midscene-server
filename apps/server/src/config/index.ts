@@ -12,9 +12,10 @@ export interface Config {
   };
 }
 
+// 使用方括号语法避免 tsup 静态替换
 export const config: Config = {
   port: parseInt(process.env.PORT || '3000', 10),
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv: process.env['NODE_ENV'] || 'development',
   database: process.env.DATABASE_URL
     ? {
         url: process.env.DATABASE_URL,

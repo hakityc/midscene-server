@@ -15,9 +15,10 @@ interface LogContext {
 const logContextStorage = new AsyncLocalStorage<LogContext>();
 
 // 日志级别配置
+// 使用方括号语法避免 tsup 静态替换
 const logLevel =
   process.env.LOG_LEVEL ||
-  (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+  (process.env['NODE_ENV'] === 'production' ? 'info' : 'debug');
 
 // 创建腾讯云CLS传输器（仅在配置了CLS相关环境变量时启用）
 let clsTransport: TencentCLSTransport | null = null;
@@ -28,12 +29,16 @@ if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
       topicId: process.env.CLS_TOPIC_ID,
       maxCount: parseInt(process.env.CLS_MAX_COUNT || '100', 10),
       maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
-      appendFieldsFn: () => ({
-        appId: process.env.APP_ID || 'midscene-server',
-        version: process.env.npm_package_version || '1.0.0',
-        environment: process.env.NODE_ENV || 'development',
-        hostname: hostname(),
-      }),
+      appendFieldsFn: () => {
+        // 动态读取环境变量，避免被 tsup 静态替换
+        const nodeEnv = process.env['NODE_ENV'] || 'development';
+        return {
+          appId: process.env.APP_ID || 'midscene-server',
+          version: process.env.npm_package_version || '1.0.0',
+          environment: nodeEnv,
+          hostname: hostname(),
+        };
+      },
     });
     console.log('✅ CLS传输器初始化成功');
   } catch (error) {
@@ -51,11 +56,13 @@ if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
 }
 
 // 创建 Pino 实例
+// 使用方括号语法避免 tsup 静态替换
+const nodeEnv = process.env['NODE_ENV'] || 'development';
 const logger = pino({
   level: logLevel,
   // 开发环境使用 pino-pretty 进行美化输出
   transport:
-    process.env.NODE_ENV === 'development'
+    nodeEnv === 'development'
       ? {
           target: 'pino-pretty',
           options: {
@@ -67,7 +74,7 @@ const logger = pino({
         }
       : undefined,
   // 生产环境配置
-  ...(process.env.NODE_ENV === 'production' && {
+  ...(nodeEnv === 'production' && {
     formatters: {
       level: (label) => {
         return { level: label };

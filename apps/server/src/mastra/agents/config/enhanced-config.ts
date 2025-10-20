@@ -91,7 +91,8 @@ export const DEFAULT_CONFIG: EnhancedBrowserAgentConfig = {
   },
 
   monitoring: {
-    detailedLogging: process.env.NODE_ENV === 'development',
+    // 使用方括号语法避免 tsup 静态替换
+    detailedLogging: process.env['NODE_ENV'] === 'development',
     performanceMetrics: true,
     errorReporting: true,
     toolCallTracking: true,

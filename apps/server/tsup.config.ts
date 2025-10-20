@@ -117,10 +117,10 @@ export default defineConfig((options) => {
     // 不进行 tree-shaking（保持原始代码结构）
     treeshake: false,
 
-    // 环境变量
-    env: {
-      NODE_ENV: process.env.NODE_ENV || 'development',
-    },
+    // 移除环境变量静态替换，让其在运行时动态读取
+    // env: {
+    //   NODE_ENV: process.env.NODE_ENV || 'development',
+    // },
 
     // 不压缩代码（便于调试和日志追踪）
     minify: false,
