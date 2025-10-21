@@ -347,6 +347,10 @@ export interface MonitorMessage {
   duration?: number; // 任务执行时长(毫秒)
   errorCode?: string; // 错误代码
   isRead?: boolean; // 是否已读
+  // 新增字段
+  icon?: string; // emoji 图标
+  detail?: string; // 原始详细内容（用于展开显示）
+  hint?: string; // 补充提示
 }
 
 // 模板定义

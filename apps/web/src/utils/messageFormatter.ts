@@ -7,6 +7,8 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
   title: string;
   description?: string;
   icon?: string;
+  detail?: string;
+  hint?: string;
 } {
   const { action, status, result, error } = data.payload;
   const actionType = action as WebSocketAction;
@@ -27,12 +29,15 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
       // AI 任务的步骤回调
       if (result && typeof result === 'object' && 'data' in result) {
         const stepResult = result as { data: string; meta?: any };
-        const stageName = stepResult.meta?.stage || '执行中';
-        const hasError = stepResult.meta?.bridgeError;
+        const meta = stepResult.meta || {};
+        const stageName = meta.stage || '执行中';
+        const hasError = meta.bridgeError;
         return {
           title: hasError ? '⚠️ 任务步骤异常' : '🔄 任务步骤进度',
           description: `[${stageName}] ${stepResult.data}`,
-          icon: hasError ? '⚠️' : '🔄',
+          icon: meta.icon || (hasError ? '⚠️' : '🔄'), // 使用后端传来的 icon
+          detail: meta.content, // 原始详细内容
+          hint: meta.hint, // 补充提示
         };
       }
       return {

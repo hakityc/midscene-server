@@ -67,15 +67,15 @@ export function FloatingMessageMonitor({
     }
   }, [messages, isExpanded]);
 
-  // 展开状态自动收起
-  useEffect(() => {
-    if (isExpanded && messages.length > 0) {
-      const timer = setTimeout(() => {
-        setIsExpanded(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isExpanded, messages.length]);
+  // 暂时不需要，展开状态自动收起
+  // useEffect(() => {
+  //   if (isExpanded && messages.length > 0) {
+  //     const timer = setTimeout(() => {
+  //       setIsExpanded(false);
+  //     }, 3000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [isExpanded, messages.length]);
 
   // 获取任务状态指示器
   const getTaskIndicator = (message: MonitorMessage) => {
@@ -132,6 +132,7 @@ export function FloatingMessageMonitor({
           className="h-6 px-2 text-xs"
           onClick={(e) => {
             e.stopPropagation();
+
             // 查看详情
           }}
         >
@@ -252,7 +253,7 @@ export function FloatingMessageMonitor({
               role="button"
               tabIndex={0}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 w-full">
                 {getTaskIndicator(message)}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate text-gray-900 dark:text-gray-100">
@@ -281,7 +282,7 @@ export function FloatingMessageMonitor({
   // 渲染展开状态
   const renderExpandedView = () => {
     return (
-      <div className="backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 w-80 max-h-[600px] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+      <div className="backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 w-4/5 max-h-[600px] flex flex-col animate-in fade-in zoom-in-95 duration-200">
         {/* 头部 */}
         <div className="flex items-center justify-between p-3 border-b border-gray-200/50 dark:border-gray-700/50">
           <div className="flex items-center gap-2">
@@ -335,6 +336,7 @@ export function FloatingMessageMonitor({
             messages.map((message) => {
               const status =
                 message.taskStatus || getStatusFromType(message.type);
+              console.log(message);
               const isHighlight =
                 Date.now() - message.timestamp < 1000 && status === 'success';
 
@@ -363,6 +365,16 @@ export function FloatingMessageMonitor({
                           <p className="text-xs font-medium text-gray-900 dark:text-gray-100 break-words">
                             {message.content}
                           </p>
+                          {message.detail && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-words">
+                              详情: {message.detail}
+                            </p>
+                          )}
+                          {message.hint && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 break-words">
+                              💡 {message.hint}
+                            </p>
+                          )}
                         </div>
                         {getTaskActions(message)}
                       </div>
@@ -555,8 +567,7 @@ export function FloatingMessageMonitor({
         {/* 消息列表 */}
         <div
           ref={containerRef}
-          className="relative z-40"
-          style={{ maxWidth: isExpanded ? '320px' : '280px' }}
+          className="relative z-40 w-full flex justify-center"
         >
           {isExpanded ? renderExpandedView() : renderStackedView()}
         </div>

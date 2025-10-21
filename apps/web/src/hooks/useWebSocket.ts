@@ -48,6 +48,11 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
       type: 'success' | 'error' | 'info',
       content: string,
       data?: unknown,
+      extra?: {
+        icon?: string;
+        detail?: string;
+        hint?: string;
+      },
     ) => {
       const message: MonitorMessage = {
         id: `msg-${++messageIdRef.current}`,
@@ -56,6 +61,9 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
         type,
         content,
         data,
+        icon: extra?.icon,
+        detail: extra?.detail,
+        hint: extra?.hint,
       };
       setMessages((prev) => [message, ...prev].slice(0, 100)); // 保留最近 100 条
     },
@@ -133,6 +141,11 @@ export function useWebSocket(endpoint: string): UseWebSocketReturn {
             formatted.title +
               (formatted.description ? `: ${formatted.description}` : ''),
             data,
+            {
+              icon: formatted.icon,
+              detail: formatted.detail,
+              hint: formatted.hint,
+            },
           );
         } catch {
           addMessage('received', 'info', '收到消息', event.data);

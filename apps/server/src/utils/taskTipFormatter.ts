@@ -3,6 +3,16 @@
  * 将技术性的任务提示转换为用户友好的消息
  */
 
+import {
+  getTaskTipConfig,
+  resetTaskTipConfig,
+  setTaskTipConfig,
+  type TaskTipConfig,
+} from './taskTipConfig';
+
+// 导出配置相关函数供外部使用
+export { setTaskTipConfig, resetTaskTipConfig, type TaskTipConfig };
+
 export interface TaskTipMapping {
   pattern: RegExp;
   template: string;
@@ -16,198 +26,198 @@ const TASK_TIP_MAPPINGS: TaskTipMapping[] = [
   // Planning 阶段
   {
     pattern: /^Planning\s*\/\s*LoadYaml\s*-\s*(.+)$/i,
-    template: '📋 正在解析任务配置: {content}',
+    template: '正在准备任务',
     icon: '📋',
   },
   {
     pattern: /^Planning\s*\/\s*Plan\s*-\s*(.+)$/i,
-    template: '🎯 正在制定执行计划: {content}',
+    template: '正在规划操作步骤',
     icon: '🎯',
   },
   {
     pattern: /^Planning\s*-\s*(.+)$/i,
-    template: '🎯 正在规划任务: {content}',
+    template: '正在准备操作',
     icon: '🎯',
   },
 
   // Insight 阶段
   {
     pattern: /^Insight\s*\/\s*Locate\s*-\s*(.+)$/i,
-    template: '🔍 正在定位元素: {content}',
+    template: '正在查找页面元素',
     icon: '🔍',
   },
   {
     pattern: /^Insight\s*\/\s*Query\s*-\s*(.+)$/i,
-    template: '📊 正在查询信息: {content}',
+    template: '正在读取页面信息',
     icon: '📊',
   },
   {
     pattern: /^Insight\s*\/\s*Boolean\s*-\s*(.+)$/i,
-    template: '🔍 正在检查条件: {content}',
+    template: '正在检查页面内容',
     icon: '🔍',
   },
   {
     pattern: /^Insight\s*\/\s*Number\s*-\s*(.+)$/i,
-    template: '🔢 正在提取数值: {content}',
+    template: '正在读取数值',
     icon: '🔢',
   },
   {
     pattern: /^Insight\s*\/\s*String\s*-\s*(.+)$/i,
-    template: '📝 正在提取文本: {content}',
+    template: '正在读取文本',
     icon: '📝',
   },
   {
     pattern: /^Insight\s*\/\s*Assert\s*-\s*(.+)$/i,
-    template: '✅ 正在断言验证: {content}',
+    template: '正在检查页面内容',
     icon: '✅',
   },
   {
     pattern: /^Insight\s*-\s*(.+)$/i,
-    template: '🔍 正在感知分析: {content}',
+    template: '正在识别页面元素',
     icon: '🔍',
   },
 
   // Action 阶段
   {
     pattern: /^Action\s*\/\s*Tap\s*-\s*(.+)$/i,
-    template: '👆 正在点击: {content}',
+    template: '正在点击',
     icon: '👆',
   },
   {
     pattern: /^Action\s*\/\s*Tap$/i,
-    template: '👆 正在点击',
+    template: '正在点击',
     icon: '👆',
   },
   {
     pattern: /^Action\s*\/\s*Hover\s*-\s*(.+)$/i,
-    template: '🖱️ 正在悬停: {content}',
+    template: '正在悬停',
     icon: '🖱️',
   },
   {
     pattern: /^Action\s*\/\s*Hover$/i,
-    template: '🖱️ 正在悬停',
+    template: '正在悬停',
     icon: '🖱️',
   },
   {
     pattern: /^Action\s*\/\s*Input\s*-\s*(.+)$/i,
-    template: '⌨️ 正在输入: {content}',
+    template: '正在输入',
     icon: '⌨️',
   },
   {
     pattern: /^Action\s*\/\s*Input$/i,
-    template: '⌨️ 正在输入',
+    template: '正在输入',
     icon: '⌨️',
   },
   {
     pattern: /^Action\s*\/\s*KeyboardPress\s*-\s*(.+)$/i,
-    template: '⌨️ 正在按键: {content}',
+    template: '正在按键',
     icon: '⌨️',
   },
   {
     pattern: /^Action\s*\/\s*KeyboardPress$/i,
-    template: '⌨️ 正在按键',
+    template: '正在按键',
     icon: '⌨️',
   },
   {
     pattern: /^Action\s*\/\s*RightClick\s*-\s*(.+)$/i,
-    template: '🖱️ 正在右键点击: {content}',
+    template: '正在右键点击',
     icon: '🖱️',
   },
   {
     pattern: /^Action\s*\/\s*RightClick$/i,
-    template: '🖱️ 正在右键点击',
+    template: '正在右键点击',
     icon: '🖱️',
   },
   {
     pattern: /^Action\s*\/\s*Scroll\s*-\s*(.+)$/i,
-    template: '📜 正在滚动: {content}',
+    template: '正在滚动页面',
     icon: '📜',
   },
   {
     pattern: /^Action\s*\/\s*Scroll$/i,
-    template: '📜 正在滚动页面',
+    template: '正在滚动页面',
     icon: '📜',
   },
   {
     pattern: /^Action\s*\/\s*Sleep\s*-\s*(.+)$/i,
-    template: '⏳ 正在等待: {content}',
+    template: '正在等待',
     icon: '⏳',
   },
   {
     pattern: /^Action\s*\/\s*Sleep$/i,
-    template: '⏳ 正在等待',
+    template: '正在等待',
     icon: '⏳',
   },
   {
     pattern: /^Action\s*\/\s*DragAndDrop\s*-\s*(.+)$/i,
-    template: '🔄 正在拖拽: {content}',
+    template: '正在拖拽',
     icon: '🔄',
   },
   {
     pattern: /^Action\s*\/\s*DragAndDrop$/i,
-    template: '🔄 正在拖拽',
+    template: '正在拖拽',
     icon: '🔄',
   },
   {
     pattern: /^Action\s*\/\s*Swipe\s*-\s*(.+)$/i,
-    template: '👆 正在滑动: {content}',
+    template: '正在滑动',
     icon: '👆',
   },
   {
     pattern: /^Action\s*\/\s*Swipe$/i,
-    template: '👆 正在滑动',
+    template: '正在滑动',
     icon: '👆',
   },
   {
     pattern: /^Action\s*\/\s*AndroidPull\s*-\s*(.+)$/i,
-    template: '📱 正在滑动: {content}',
+    template: '正在滑动页面',
     icon: '📱',
   },
   {
     pattern: /^Action\s*\/\s*AndroidPull$/i,
-    template: '📱 正在滑动',
+    template: '正在滑动页面',
     icon: '📱',
   },
   {
     pattern: /^Action\s*\/\s*Error\s*-\s*(.+)$/i,
-    template: '❌ 操作出错: {content}',
+    template: '操作遇到问题，正在自动重试',
     icon: '❌',
   },
   {
     pattern: /^Action\s*\/\s*Finished\s*-\s*(.+)$/i,
-    template: '🎉 操作完成: {content}',
+    template: '操作完成',
     icon: '🎉',
   },
   {
     pattern: /^Action\s*\/\s*Finished$/i,
-    template: '🎉 操作完成',
+    template: '操作完成',
     icon: '🎉',
   },
   {
     pattern: /^Action\s*\/\s*(.+)\s*-\s*(.+)$/i,
-    template: '⚡ 正在{content}',
+    template: '正在执行操作',
     icon: '⚡',
   },
   {
     pattern: /^Action\s*\/\s*(.+)$/i,
-    template: '⚡ 正在执行: {content}',
+    template: '正在执行操作',
     icon: '⚡',
   },
 
   // Log 阶段
   {
     pattern: /^Log\s*\/\s*Screenshot\s*-\s*(.+)$/i,
-    template: '📸 正在截图记录: {content}',
+    template: '正在保存截图',
     icon: '📸',
   },
   {
     pattern: /^Log\s*\/\s*Screenshot$/i,
-    template: '📸 正在截图记录',
+    template: '正在保存截图',
     icon: '📸',
   },
   {
     pattern: /^Log\s*-\s*(.+)$/i,
-    template: '📝 正在记录日志: {content}',
+    template: '正在记录操作',
     icon: '📝',
   },
 ];
@@ -221,62 +231,51 @@ export function formatTaskTip(rawTip: string): {
   formatted: string;
   icon: string;
   category: string;
+  content: string;
+  hint: string;
 } {
   if (!rawTip || typeof rawTip !== 'string') {
+    const config = getTaskTipConfig();
     return {
-      formatted: '🤖 AI正在处理中...',
+      formatted: `${config.botName}正在处理中...`,
       icon: '🤖',
       category: 'unknown',
+      content: '',
+      hint: '',
     };
   }
 
   const trimmedTip = rawTip.trim();
+  const config = getTaskTipConfig();
 
   // 遍历映射规则
   for (const mapping of TASK_TIP_MAPPINGS) {
     const match = trimmedTip.match(mapping.pattern);
     if (match) {
-      const content = match[1] || match[2] || ''; // 支持多个捕获组
-      let formatted = mapping.template;
-
-      // 智能内容替换
-      if (content) {
-        // 如果模板已经包含冒号，直接替换内容
-        if (mapping.template.includes(': {content}')) {
-          formatted = mapping.template.replace('{content}', content);
-        }
-        // 如果模板以{content}结尾，添加冒号和内容
-        else if (mapping.template.endsWith('{content}')) {
-          formatted = mapping.template.replace('{content}', `: ${content}`);
-        }
-        // 其他情况直接替换
-        else {
-          formatted = mapping.template.replace('{content}', content);
-        }
-      } else {
-        // 没有内容时，移除{content}占位符
-        formatted = mapping.template
-          .replace('{content}', '')
-          .replace(/:\s*$/, '')
-          .trim();
-      }
+      // 支持多个捕获组，提取原始详细内容
+      // 优先使用第二个捕获组（通常是更详细的描述），然后是第一个捕获组
+      const content = match[2] || match[1] || '';
 
       // 确定类别
       const category = getCategoryFromPattern(mapping.pattern);
 
       return {
-        formatted: formatted.trim(),
+        formatted: `${config.botName}${mapping.template}`, // 添加机器人名字前缀
         icon: mapping.icon,
         category,
+        content, // 保留原始详细内容用于日志
+        hint: '', // 预留字段，暂时返回空字符串
       };
     }
   }
 
   // 如果没有匹配的规则，返回默认格式
   return {
-    formatted: `🤖 ${trimmedTip}`,
+    formatted: `${config.botName}${trimmedTip}`,
     icon: '🤖',
     category: 'general',
+    content: trimmedTip,
+    hint: '',
   };
 }
 

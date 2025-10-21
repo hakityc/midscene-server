@@ -158,6 +158,8 @@ export class WebOperateService extends EventEmitter {
       formatted: string;
       icon: string;
       category: string;
+      content: string;
+      hint: string;
     };
     getTaskStageDescription: (category: string) => string;
     WebSocketAction: any;
@@ -176,8 +178,8 @@ export class WebOperateService extends EventEmitter {
 
     return (tip: string, bridgeError?: Error | null) => {
       try {
-        // 格式化任务提示
-        const { formatted, category } = formatTaskTip(tip);
+        // 格式化任务提示（完整提取所有字段）
+        const { formatted, category, icon, content, hint } = formatTaskTip(tip);
         const timestamp = new Date().toLocaleTimeString('zh-CN', {
           hour12: false,
           hour: '2-digit',
@@ -220,17 +222,18 @@ export class WebOperateService extends EventEmitter {
           );
         }
 
-        // 发送格式化后的用户友好消息（移除 emoji）
+        // 发送格式化后的用户友好消息（icon 已独立，不需要移除 emoji）
         const response = createSuccessResponseWithMeta(
           message,
-          formatted
-            .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
-            .trim(),
+          formatted,
           {
             originalTip: tip,
             category,
             timestamp,
             stage: getTaskStageDescription(category),
+            icon, // 添加独立的 icon 字段
+            content, // 添加原始详细内容
+            hint, // 添加补充提示
             bridgeError: bridgeError
               ? {
                   message: bridgeError.message,
@@ -546,11 +549,14 @@ export class WebOperateService extends EventEmitter {
    */
   private handleTaskStartTip(tip: string, bridgeError?: Error | null): void {
     try {
-      const { formatted, category, icon } = formatTaskTip(tip);
+      const { formatted, category, icon, content, hint } = formatTaskTip(tip);
       const stageDescription = getTaskStageDescription(category);
 
       console.log(`🤖 AI 任务开始: ${tip}`);
       console.log(`${icon} ${formatted} (${stageDescription})`);
+      if (content) {
+        console.log(`📝 详细内容: ${content}`);
+      }
 
       // 如果有 bridge 错误，记录到错误跟踪中
       if (bridgeError) {
@@ -569,6 +575,8 @@ export class WebOperateService extends EventEmitter {
           formatted,
           category,
           icon,
+          content,
+          hint,
           stage: stageDescription,
           bridgeError: bridgeError
             ? {
