@@ -503,6 +503,96 @@ export class WindowsOperateService extends EventEmitter {
     }
   }
 
+  // ==================== 窗口管理方法 ====================
+
+  /**
+   * 连接到指定 Windows 窗口
+   * 连接后，所有截图和操作都将针对该窗口
+   */
+  async connectWindow(params: {
+    windowId?: number;
+    windowTitle?: string;
+  }): Promise<{ id: number; title: string; width: number; height: number }> {
+    try {
+      if (!this.agent) {
+        throw new Error('Agent 未初始化');
+      }
+
+      // 调用 agent 的 device.connectWindow
+      const device = this.agent.page;
+      if (!device || typeof device.connectWindow !== 'function') {
+        throw new AppError('当前设备不支持窗口连接功能', 400);
+      }
+
+      const windowInfo = await device.connectWindow(params);
+
+      serviceLogger.info(
+        {
+          windowId: windowInfo.id,
+          windowTitle: windowInfo.title,
+        },
+        '窗口连接成功',
+      );
+
+      return windowInfo;
+    } catch (error: any) {
+      serviceLogger.error({ error }, '窗口连接失败');
+      throw new AppError(`窗口连接失败: ${error.message}`, 500);
+    }
+  }
+
+  /**
+   * 断开窗口连接
+   */
+  async disconnectWindow(): Promise<void> {
+    try {
+      if (!this.agent) {
+        throw new Error('Agent 未初始化');
+      }
+
+      const device = this.agent.page;
+      if (device && typeof device.disconnectWindow === 'function') {
+        device.disconnectWindow();
+        serviceLogger.info('窗口连接已断开');
+      }
+    } catch (error: any) {
+      serviceLogger.error({ error }, '断开窗口连接失败');
+      throw new AppError(`断开窗口连接失败: ${error.message}`, 500);
+    }
+  }
+
+  /**
+   * 获取所有窗口列表
+   */
+  async getWindowList(): Promise<
+    Array<{
+      id: number;
+      title: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>
+  > {
+    try {
+      if (!this.agent) {
+        throw new Error('Agent 未初始化');
+      }
+
+      const device = this.agent.page;
+      if (!device || typeof device.getWindowList !== 'function') {
+        throw new AppError('当前设备不支持窗口列表功能', 400);
+      }
+
+      return await device.getWindowList();
+    } catch (error: any) {
+      serviceLogger.error({ error }, '获取窗口列表失败');
+      throw new AppError(`获取窗口列表失败: ${error.message}`, 500);
+    }
+  }
+
+  // ==================== AI 执行方法 ====================
+
   /**
    * 执行 AI 任务
    * @param prompt - 自然语言任务描述，如 "点击开始菜单"

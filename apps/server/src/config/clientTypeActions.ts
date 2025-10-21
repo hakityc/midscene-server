@@ -60,6 +60,12 @@ export const CLIENT_TYPE_ACTIONS: Record<ClientType, ActionConfig[]> = {
   ],
   windows: [
     {
+      action: WebSocketAction.CONNECT_WINDOW,
+      name: '连接窗口',
+      description: '连接指定的 Windows 窗口',
+      category: 'system',
+    },
+    {
       action: WebSocketAction.AI,
       name: 'AI 执行',
       description: '执行 Windows 桌面 AI 指令',

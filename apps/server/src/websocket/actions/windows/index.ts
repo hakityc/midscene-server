@@ -4,6 +4,7 @@
  * 此模块包含所有 Windows 客户端特定的操作处理器
  */
 
+export { createConnectWindowHandler } from '../connectWindow';
 export { createWindowsCommandHandler } from './command';
 export { createWindowsAiHandler } from './execute';
 export { executeWindowsScriptHandler } from './executeScript';

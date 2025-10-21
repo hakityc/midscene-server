@@ -13,10 +13,11 @@ import {
 
 // Windows 端 Actions
 import {
+  createConnectWindowHandler,
   createWindowsAiHandler,
   createWindowsCommandHandler,
+  executeTestHandler,
   executeWindowsScriptHandler,
-  executeTestHandler
 } from '../actions/windows';
 
 /**
@@ -45,6 +46,7 @@ export function createWindowsMessageHandlers(): Partial<
   Record<WebSocketAction, MessageHandler>
 > {
   return {
+    [WebSocketAction.CONNECT_WINDOW]: createConnectWindowHandler(),
     [WebSocketAction.AI]: createWindowsAiHandler(),
     [WebSocketAction.AI_SCRIPT]: executeWindowsScriptHandler(),
     [WebSocketAction.COMMAND]: createWindowsCommandHandler(),

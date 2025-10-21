@@ -1,6 +1,7 @@
 // WebSocket Action 类型
 export type WebSocketAction =
   | 'connectTab'
+  | 'connectWindow'
   | 'ai'
   | 'aiCallbackStep'
   | 'agent'

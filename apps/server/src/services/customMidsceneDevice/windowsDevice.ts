@@ -82,6 +82,14 @@ export default class WindowsDevice implements AbstractInterface {
   private description: string | undefined;
   private customActions?: DeviceAction<any>[];
 
+  // 当前连接的窗口信息（持久化模式）
+  private connectedWindow: {
+    id: number;
+    title: string;
+    width: number;
+    height: number;
+  } | null = null;
+
   // ==================== 公开属性 ====================
   interfaceType: InterfaceType = 'windows';
   uri: string | undefined;
@@ -352,6 +360,28 @@ Status: Ready
         format: this.options.screenshot?.format || 'jpeg',
         quality: this.options.screenshot?.quality || 90,
       };
+
+      // 如果已连接到特定窗口，自动使用窗口截图模式
+      if (this.connectedWindow) {
+        if (this.options.debug) {
+          console.log(
+            `📸 使用连接的窗口截图: "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id})`,
+          );
+        }
+        this.cachedScreenshot = await windowsNative.captureWindowAsync(
+          this.connectedWindow.id,
+          screenshotOptions,
+        );
+
+        // 更新缓存尺寸为窗口尺寸
+        this.cachedSize = {
+          width: this.connectedWindow.width,
+          height: this.connectedWindow.height,
+          dpr: 1, // 窗口截图不涉及 DPI 缩放
+        };
+
+        return this.cachedScreenshot;
+      }
 
       const mode = this.options.screenshot?.mode || 'screen';
 
@@ -627,6 +657,102 @@ Status: Ready
     }
 
     return windowsNative.getAllWindows();
+  }
+
+  /**
+   * 连接到指定窗口（持久化模式）
+   * 连接后，所有截图操作都将针对该窗口
+   *
+   * @param params.windowId - 窗口 ID（优先）
+   * @param params.windowTitle - 窗口标题（其次）
+   */
+  async connectWindow(params: {
+    windowId?: number;
+    windowTitle?: string;
+  }): Promise<{ id: number; title: string; width: number; height: number }> {
+    this.assertNotDestroyed();
+
+    const { windowId, windowTitle } = params;
+
+    if (!windowId && !windowTitle) {
+      throw new Error('必须提供 windowId 或 windowTitle 参数');
+    }
+
+    if (this.options.debug) {
+      console.log(`🪟 尝试连接窗口: ID=${windowId}, 标题=${windowTitle}`);
+    }
+
+    // 获取窗口列表
+    const windows = await this.getWindowList();
+
+    // 优先通过 ID 查找
+    let targetWindow = windowId
+      ? windows.find((w) => w.id === windowId)
+      : undefined;
+
+    // 如果通过 ID 未找到，尝试通过标题查找
+    if (!targetWindow && windowTitle) {
+      targetWindow = windows.find((w) =>
+        w.title.toLowerCase().includes(windowTitle.toLowerCase()),
+      );
+    }
+
+    if (!targetWindow) {
+      const searchInfo = windowId
+        ? `ID: ${windowId}`
+        : `标题: "${windowTitle}"`;
+      throw new Error(`未找到匹配的窗口 (${searchInfo})`);
+    }
+
+    // 检查是否正在切换窗口
+    const isSwitching = this.connectedWindow !== null;
+    const previousWindow = this.connectedWindow;
+
+    // 保存连接的窗口信息（覆盖旧值，实现窗口切换）
+    this.connectedWindow = {
+      id: targetWindow.id,
+      title: targetWindow.title,
+      width: targetWindow.width,
+      height: targetWindow.height,
+    };
+
+    if (this.options.debug) {
+      if (isSwitching) {
+        console.log(
+          `🔄 切换窗口: "${previousWindow!.title}" (ID: ${previousWindow!.id}) → "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id})`,
+        );
+      } else {
+        console.log(
+          `✅ 已连接到窗口: "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id})`,
+        );
+      }
+    }
+
+    return this.connectedWindow;
+  }
+
+  /**
+   * 断开窗口连接，恢复全屏模式
+   */
+  disconnectWindow(): void {
+    if (this.connectedWindow && this.options.debug) {
+      console.log(
+        `🔌 断开窗口连接: "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id})`,
+      );
+    }
+    this.connectedWindow = null;
+  }
+
+  /**
+   * 获取当前连接的窗口信息
+   */
+  getConnectedWindow(): {
+    id: number;
+    title: string;
+    width: number;
+    height: number;
+  } | null {
+    return this.connectedWindow;
   }
 
   /**
