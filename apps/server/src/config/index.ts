@@ -16,6 +16,7 @@ export interface Config {
     bucket: string;
     region: string;
     reportPath: string;
+    url?: string; // 自定义域名 URL 前缀
   };
 }
 
@@ -44,6 +45,7 @@ export const config: Config = {
           bucket: process.env.COS_BUCKET,
           region: process.env.COS_REGION,
           reportPath: process.env.COS_REPORT_PATH || 'midscene-reports',
+          url: process.env.COS_URL, // 自定义域名 URL 前缀
         }
       : undefined,
 };

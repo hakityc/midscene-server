@@ -27,12 +27,13 @@ COS_REGION=ap-guangzhou                   # COS 地域，如：ap-guangzhou, ap-
 
 # 可选配置
 COS_REPORT_PATH=midscene-reports          # 报告存储路径，默认：midscene-reports
+COS_URL=https://your-custom-domain.com    # 自定义域名前缀（可选，不要末尾斜杠），默认使用 COS 默认域名
 ```
 
 ### 获取腾讯云 COS 配置
 
 1. **登录腾讯云控制台**
-   - 访问：https://console.cloud.tencent.com/
+   - 访问：<https://console.cloud.tencent.com/>
 
 2. **创建存储桶**
    - 进入「对象存储 COS」控制台
@@ -47,6 +48,11 @@ COS_REPORT_PATH=midscene-reports          # 报告存储路径，默认：midsce
    - 如果需要公开访问报告，配置存储桶为公有读私有写
    - 或配置特定的访问策略
 
+5. **配置自定义域名**（可选）
+   - 在腾讯云 COS 控制台配置自定义域名
+   - 在 `.env` 中设置 `COS_URL` 环境变量
+   - 未设置时将使用 COS 默认域名：`https://{bucket}.cos.{region}.myqcloud.com/`
+
 ## 使用示例
 
 ### 开发环境配置
@@ -58,6 +64,7 @@ COS_SECRET_KEY=xxxxxxxxxxxxxxxx
 COS_BUCKET=midscene-dev
 COS_REGION=ap-guangzhou
 COS_REPORT_PATH=reports/dev
+COS_URL=https://dev.your-domain.com
 ```
 
 ### 生产环境配置
@@ -69,6 +76,22 @@ COS_SECRET_KEY=xxxxxxxxxxxxxxxx
 COS_BUCKET=midscene-prod
 COS_REGION=ap-guangzhou
 COS_REPORT_PATH=reports/prod
+COS_URL=https://prod.your-domain.com
+```
+
+### URL 格式说明
+
+**使用自定义域名时（推荐）：**
+
+```bash
+配置：COS_URL=https://tangyicong-test.hpplay.cn
+生成 URL：https://tangyicong-test.hpplay.cn/midscene-reports/report-2025-10-21.html
+```
+
+**不配置自定义域名时（使用 COS 默认域名）：**
+
+```bash
+生成 URL：https://your-bucket.cos.ap-guangzhou.myqcloud.com/midscene-reports/report-2025-10-21.html
 ```
 
 ## 工作流程
@@ -104,7 +127,7 @@ sequenceDiagram
   "level": "info",
   "message": "AI 任务执行完成",
   "module": "service",
-  "reportUrl": "https://your-bucket.cos.ap-guangzhou.myqcloud.com/midscene-reports/windows-2025-10-21_11-04-38-5903e2ab.html",
+  "reportUrl": "https://tangyicong-test.hpplay.cn/midscene-reports/windows-2025-10-21_11-04-38-5903e2ab.html",
   "timestamp": 1729486478000
 }
 ```
@@ -159,6 +182,7 @@ const status = ossService.getStatus();
 ### 问题：上传失败
 
 **检查步骤：**
+
 1. 确认环境变量配置是否正确
 2. 检查 COS 密钥是否有效
 3. 确认存储桶名称和地域是否正确
@@ -167,6 +191,7 @@ const status = ossService.getStatus();
 ### 问题：日志中没有 reportUrl
 
 **可能原因：**
+
 1. COS 配置未启用
 2. report 文件生成失败
 3. 上传失败
@@ -180,10 +205,15 @@ const status = ossService.getStatus();
 
 ## 更新日志
 
+### v1.1.0 (2025-10-21)
+
+- ✨ 新增 `COS_URL` 配置，支持自定义域名
+- 🎯 简化 URL 生成逻辑（`COS_URL` 配置不需要末尾斜杠）
+- 📝 更新文档，添加自定义域名配置说明
+
 ### v1.0.0 (2025-10-21)
+
 - ✨ 新增 Report 自动上传到 COS 功能
 - ✨ 日志系统集成最新 reportUrl
 - ✨ 支持 Web 和 Windows 平台
 - ✨ 完整的错误处理和日志记录
-
-

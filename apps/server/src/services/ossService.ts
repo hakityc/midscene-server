@@ -32,6 +32,7 @@ export class OssService {
   private bucket: string = '';
   private region: string = '';
   private reportPath: string = '';
+  private customUrl?: string; // 自定义域名 URL 前缀
 
   private constructor() {
     this.initialize();
@@ -73,6 +74,7 @@ export class OssService {
       this.bucket = config.cos.bucket;
       this.region = config.cos.region;
       this.reportPath = config.cos.reportPath;
+      this.customUrl = config.cos.url;
 
       this.isEnabled = true;
       serviceLogger.info(
@@ -80,6 +82,7 @@ export class OssService {
           bucket: this.bucket,
           region: this.region,
           reportPath: this.reportPath,
+          customUrl: this.customUrl,
         },
         '✅ OSS 服务初始化成功',
       );
@@ -178,8 +181,16 @@ export class OssService {
           }
 
           // 构造访问 URL
-          // 格式：https://{bucket}.cos.{region}.myqcloud.com/{key}
-          const url = `https://${this.bucket}.cos.${this.region}.myqcloud.com/${key}`;
+          let url: string;
+          if (this.customUrl) {
+            // 使用自定义域名
+            // 格式：https://custom-domain.com/{key}
+            url = `${this.customUrl}/${key}`;
+          } else {
+            // 使用默认 COS 域名
+            // 格式：https://{bucket}.cos.{region}.myqcloud.com/{key}
+            url = `https://${this.bucket}.cos.${this.region}.myqcloud.com/${key}`;
+          }
           resolve(url);
         },
       );
