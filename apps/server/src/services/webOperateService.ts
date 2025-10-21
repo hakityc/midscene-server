@@ -17,6 +17,7 @@ export class WebOperateService extends EventEmitter {
   // ==================== 核心属性 ====================
   public agent: AgentOverChromeBridge | null = null;
   private isInitialized: boolean = false;
+  private isStarting: boolean = false; // 防止并发启动
 
   // ==================== 重连机制属性 ====================
   private reconnectAttempts: number = 0;
@@ -76,6 +77,7 @@ export class WebOperateService extends EventEmitter {
    */
   public static resetInstance(): void {
     if (WebOperateService.instance) {
+      WebOperateService.instance.isStarting = false; // 清除启动标志
       WebOperateService.instance.stop().catch(console.error);
       WebOperateService.instance = null;
     }
@@ -282,12 +284,38 @@ export class WebOperateService extends EventEmitter {
    * @param option 连接选项
    */
   public async start(): Promise<void> {
+    // 如果已启动，直接返回
     if (this.isInitialized && this.agent) {
       console.log('🔄 WebOperateService 已启动，跳过重复启动');
       return;
     }
 
-    // 清除停止标志，允许重新启动
+    // 如果正在启动中，等待启动完成
+    if (this.isStarting) {
+      console.log('⏳ WebOperateService 正在启动中，等待启动完成...');
+      const maxWaitTime = 30000; // 最多等待 30 秒
+      const startTime = Date.now();
+
+      while (this.isStarting && Date.now() - startTime < maxWaitTime) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      // 超时检查
+      if (this.isStarting) {
+        throw new Error('等待 WebOperateService 启动超时');
+      }
+
+      // 启动完成后，检查状态
+      if (this.isInitialized && this.agent) {
+        console.log('✅ WebOperateService 启动完成（等待其他启动完成）');
+        return;
+      }
+
+      throw new Error('WebOperateService 启动失败');
+    }
+
+    // 设置启动中标志
+    this.isStarting = true;
     this.isStopping = false;
 
     console.log('🚀 启动 WebOperateService...');
@@ -303,6 +331,9 @@ export class WebOperateService extends EventEmitter {
     } catch (error) {
       console.error('❌ WebOperateService 启动失败:', error);
       throw error;
+    } finally {
+      // 确保启动标志被清除
+      this.isStarting = false;
     }
   }
 
@@ -314,6 +345,7 @@ export class WebOperateService extends EventEmitter {
 
     // 设置停止标志，防止重连
     this.isStopping = true;
+    this.isStarting = false; // 清除启动标志
 
     try {
       // 停止自动重连
