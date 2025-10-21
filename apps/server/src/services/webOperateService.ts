@@ -1055,6 +1055,12 @@ export class WebOperateService extends EventEmitter {
       return;
     }
 
+    // 如果 agent 已销毁，静默跳过（可能是 stop() 被提前调用）
+    if (this.agent.destroyed) {
+      serviceLogger.info('Agent 已销毁，跳过 report 生成和上传');
+      return;
+    }
+
     try {
       // 生成 report 文件
       this.agent.writeOutActionDumps();
@@ -1075,8 +1081,16 @@ export class WebOperateService extends EventEmitter {
       } else {
         serviceLogger.warn('Report 上传失败或 OSS 未启用');
       }
-    } catch (error) {
-      // 上传失败不应该影响主流程，只记录日志
+    } catch (error: any) {
+      // 检查是否是 agent 已销毁的错误
+      if (error?.message?.includes('PageAgent has been destroyed')) {
+        serviceLogger.info(
+          'Agent 已在 report 生成过程中被销毁，跳过 report 保存（可能是服务正在停止）',
+        );
+        return;
+      }
+
+      // 其他错误：上传失败不应该影响主流程，只记录日志
       serviceLogger.error({ error }, '❌ Report 上传过程出错');
     }
   }
