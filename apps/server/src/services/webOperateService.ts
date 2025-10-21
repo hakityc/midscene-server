@@ -8,6 +8,7 @@ import {
   formatTaskTip,
   getTaskStageDescription,
 } from '../utils/taskTipFormatter';
+import { ossService } from './ossService';
 
 export class WebOperateService extends EventEmitter {
   // ==================== 单例模式相关 ====================
@@ -1005,6 +1006,42 @@ export class WebOperateService extends EventEmitter {
   }
 
   /**
+   * 生成并上传 report 到 OSS
+   * 在 AI 任务执行完成后调用
+   */
+  private async generateAndUploadReport(): Promise<void> {
+    if (!this.agent) {
+      serviceLogger.warn('Agent 未初始化，跳过 report 上传');
+      return;
+    }
+
+    try {
+      // 生成 report 文件
+      this.agent.writeOutActionDumps();
+
+      const reportFile = this.agent.reportFile;
+      if (!reportFile) {
+        serviceLogger.warn('Report 文件未生成，跳过上传');
+        return;
+      }
+
+      serviceLogger.info({ reportFile }, '开始上传 report 到 OSS');
+
+      // 上传到 OSS
+      const reportUrl = await ossService.uploadReport(reportFile);
+
+      if (reportUrl) {
+        serviceLogger.info({ reportUrl, reportFile }, '✅ Report 上传成功');
+      } else {
+        serviceLogger.warn('Report 上传失败或 OSS 未启用');
+      }
+    } catch (error) {
+      // 上传失败不应该影响主流程，只记录日志
+      serviceLogger.error({ error }, '❌ Report 上传过程出错');
+    }
+  }
+
+  /**
    * 执行 AI 任务
    */
   async execute(prompt: string, maxRetries: number = 3): Promise<void> {
@@ -1026,6 +1063,9 @@ export class WebOperateService extends EventEmitter {
     await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
       this.executeWithRetry(prompt, attempt, max),
     );
+
+    // 执行完成后生成并上传 report
+    await this.generateAndUploadReport();
   }
 
   private async executeWithRetry(
@@ -1170,6 +1210,10 @@ export class WebOperateService extends EventEmitter {
           }
         },
       );
+
+      // 执行完成后生成并上传 report
+      await this.generateAndUploadReport();
+
       return result;
     } catch (error: any) {
       // 如果提供了 originalCmd，则先尝试兜底执行

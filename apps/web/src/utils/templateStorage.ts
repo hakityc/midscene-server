@@ -36,14 +36,21 @@ export function createTemplateFromTasks(
   name: string,
   description: string,
   enableLoadingShade: boolean,
+  clientType?: 'web' | 'windows',
 ): Template {
+  const meta = generateMeta();
+  if (clientType) {
+    meta.clientType = clientType;
+  }
+
   return {
     id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name,
     description,
     action: 'aiScript',
+    clientType,
     message: {
-      meta: generateMeta(),
+      meta,
       payload: {
         action: 'aiScript',
         params: {
@@ -101,4 +108,40 @@ export function getAllTemplates(): Template[] {
 export function getTemplateById(id: string): Template | undefined {
   const templates = loadTemplatesFromStorage();
   return templates.find((t) => t.id === id);
+}
+
+/**
+ * 批量更新模板的客户端类型
+ * @param templateNames 模板名称数组（支持部分匹配）
+ * @param clientType 要设置的客户端类型
+ */
+export function updateTemplatesClientType(
+  templateNames: string[],
+  clientType: 'web' | 'windows',
+): number {
+  const templates = loadTemplatesFromStorage();
+  let updatedCount = 0;
+
+  templates.forEach((template) => {
+    // 检查模板名称是否匹配（支持部分匹配）
+    const isMatch = templateNames.some((name) =>
+      template.name.toLowerCase().includes(name.toLowerCase()),
+    );
+
+    if (isMatch) {
+      template.clientType = clientType;
+      // 同时更新消息元数据中的 clientType
+      if (template.message.meta) {
+        template.message.meta.clientType = clientType;
+      }
+      updatedCount++;
+    }
+  });
+
+  if (updatedCount > 0) {
+    saveTemplatesToStorage(templates);
+    window.dispatchEvent(new Event('templates-updated'));
+  }
+
+  return updatedCount;
 }

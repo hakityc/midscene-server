@@ -10,6 +10,13 @@ export interface Config {
     apiKey: string;
     baseUrl: string;
   };
+  cos?: {
+    secretId: string;
+    secretKey: string;
+    bucket: string;
+    region: string;
+    reportPath: string;
+  };
 }
 
 // 使用方括号语法避免 tsup 静态替换
@@ -26,4 +33,17 @@ export const config: Config = {
     apiKey: process.env.OPENAI_API_KEY || '',
     baseUrl: process.env.OPENAI_BASE_URL || '',
   },
+  cos:
+    process.env.COS_SECRET_ID &&
+    process.env.COS_SECRET_KEY &&
+    process.env.COS_BUCKET &&
+    process.env.COS_REGION
+      ? {
+          secretId: process.env.COS_SECRET_ID,
+          secretKey: process.env.COS_SECRET_KEY,
+          bucket: process.env.COS_BUCKET,
+          region: process.env.COS_REGION,
+          reportPath: process.env.COS_REPORT_PATH || 'midscene-reports',
+        }
+      : undefined,
 };

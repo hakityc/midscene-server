@@ -356,4 +356,5 @@ export interface Template {
   description: string;
   action: WebSocketAction;
   message: WsInboundMessage;
+  clientType?: ClientType; // 客户端类型：web 或 windows
 }

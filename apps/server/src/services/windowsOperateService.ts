@@ -8,6 +8,7 @@ import {
 import AgentOverWindows, {
   type AgentOverWindowsOpt,
 } from './customMidsceneDevice/agentOverWindows';
+import { ossService } from './ossService';
 
 /**
  * WindowsOperateService - Windows 应用操作服务
@@ -442,6 +443,45 @@ export class WindowsOperateService extends EventEmitter {
   // ==================== 执行相关方法 ====================
 
   /**
+   * 生成并上传 report 到 OSS
+   * 在 AI 任务执行完成后调用
+   */
+  private async generateAndUploadReport(): Promise<void> {
+    if (!this.agent) {
+      serviceLogger.warn('Agent 未初始化，跳过 report 上传');
+      return;
+    }
+
+    try {
+      // 生成 report 文件
+      this.agent.writeOutActionDumps();
+
+      const reportFile = this.agent.reportFile;
+      if (!reportFile) {
+        serviceLogger.warn('Report 文件未生成，跳过上传');
+        return;
+      }
+
+      serviceLogger.info({ reportFile }, '开始上传 Windows report 到 OSS');
+
+      // 上传到 OSS
+      const reportUrl = await ossService.uploadReport(reportFile);
+
+      if (reportUrl) {
+        serviceLogger.info(
+          { reportUrl, reportFile },
+          '✅ Windows Report 上传成功',
+        );
+      } else {
+        serviceLogger.warn('Windows Report 上传失败或 OSS 未启用');
+      }
+    } catch (error) {
+      // 上传失败不应该影响主流程，只记录日志
+      serviceLogger.error({ error }, '❌ Windows Report 上传过程出错');
+    }
+  }
+
+  /**
    * 执行 AI 任务
    * @param prompt - 自然语言任务描述，如 "点击开始菜单"
    */
@@ -462,6 +502,9 @@ export class WindowsOperateService extends EventEmitter {
       // 使用 aiAction 方法执行任务
       await this.agent.aiAction(prompt);
       console.log(`✅ Windows AI 任务执行完成: ${prompt}`);
+
+      // 执行完成后生成并上传 report
+      await this.generateAndUploadReport();
     } catch (error: any) {
       console.log(`❌ Windows AI 任务执行失败: ${error.message}`);
       if (error.message?.includes('ai')) {
@@ -518,6 +561,10 @@ export class WindowsOperateService extends EventEmitter {
     try {
       const yamlResult = await this.agent.runYaml(yamlContent);
       serviceLogger.info({ yamlContent }, 'Windows YAML 脚本执行完成');
+
+      // 执行完成后生成并上传 report
+      await this.generateAndUploadReport();
+
       return yamlResult;
     } catch (error: any) {
       // 如果提供了 originalCmd，则先尝试兜底执行

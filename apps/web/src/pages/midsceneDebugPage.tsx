@@ -171,9 +171,14 @@ export default function MidsceneDebugPage() {
         }
       }
 
-      // 更新元数据
+      // 更新元数据，包括客户端类型
       if (msg.meta) {
-        setMeta(msg.meta);
+        // 如果模板有 clientType，使用模板的；否则使用消息元数据中的；都没有则默认为 web
+        const clientType = template.clientType || msg.meta.clientType || 'web';
+        setMeta({
+          ...msg.meta,
+          clientType,
+        });
       }
 
       refreshMessageId(); // 生成新的 messageId

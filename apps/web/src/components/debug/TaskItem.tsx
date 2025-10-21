@@ -144,6 +144,7 @@ export function TaskItem({
       task.name.trim(), // 使用任务名称作为模板名称
       `基于任务"${task.name}"的流程模板`, // 自动生成描述
       false, // 默认不启用加载遮罩
+      clientType, // 传入客户端类型
     );
 
     addTemplate(template);
