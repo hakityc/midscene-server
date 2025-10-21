@@ -43,6 +43,12 @@ export interface WindowsDeviceOptions {
     format?: 'png' | 'jpeg';
     /** JPEG 质量 (1-100)，仅当 format 为 'jpeg' 时有效，默认 90 */
     quality?: number;
+    /** 截图模式：'screen'（全屏） | 'window'（窗口），默认 'screen' */
+    mode?: 'screen' | 'window';
+    /** 当 mode 为 'window' 时，指定窗口 ID */
+    windowId?: number;
+    /** 当 mode 为 'window' 时，可以通过窗口标题匹配（支持部分匹配） */
+    windowTitle?: string;
   };
 }
 
@@ -257,17 +263,20 @@ Status: Ready
         const { direction, distance } = param;
         const element = param.locate;
 
+        // direction 默认为 'down'
+        const scrollDirection = direction || 'down';
+
         if (element) {
           // 滚动特定元素区域
           await this.scrollAt(
             element.center[0],
             element.center[1],
-            direction,
+            scrollDirection,
             distance || 100,
           );
         } else {
           // 全局滚动
-          await this.scrollGlobal(direction, distance || 100);
+          await this.scrollGlobal(scrollDirection, distance || 100);
         }
       }),
 
@@ -344,13 +353,48 @@ Status: Ready
         quality: this.options.screenshot?.quality || 90,
       };
 
-      // 使用配置捕获真实的屏幕截图
-      this.cachedScreenshot =
-        await windowsNative.captureScreenAsync(screenshotOptions);
+      const mode = this.options.screenshot?.mode || 'screen';
+
+      // 根据模式选择截图方式
+      if (mode === 'window') {
+        // 窗口截图模式
+        const windowId = this.options.screenshot?.windowId;
+        const windowTitle = this.options.screenshot?.windowTitle;
+
+        if (windowId) {
+          // 通过窗口 ID 截图
+          if (this.options.debug) {
+            console.log(`📸 窗口截图 (ID: ${windowId})`);
+          }
+          this.cachedScreenshot = await windowsNative.captureWindowAsync(
+            windowId,
+            screenshotOptions,
+          );
+        } else if (windowTitle) {
+          // 通过窗口标题截图
+          if (this.options.debug) {
+            console.log(`📸 窗口截图 (标题: ${windowTitle})`);
+          }
+          this.cachedScreenshot = await windowsNative.captureWindowByTitleAsync(
+            windowTitle,
+            screenshotOptions,
+          );
+        } else {
+          console.warn(
+            '⚠️ 窗口截图模式需要指定 windowId 或 windowTitle，回退到全屏截图',
+          );
+          this.cachedScreenshot =
+            await windowsNative.captureScreenAsync(screenshotOptions);
+        }
+      } else {
+        // 全屏截图模式（默认）
+        this.cachedScreenshot =
+          await windowsNative.captureScreenAsync(screenshotOptions);
+      }
 
       if (this.options.debug) {
         console.log(
-          `📸 Screenshot captured (${screenshotOptions.format}, quality: ${screenshotOptions.quality})`,
+          `📸 Screenshot captured (${mode} mode, ${screenshotOptions.format}, quality: ${screenshotOptions.quality})`,
         );
       }
 
@@ -372,23 +416,29 @@ Status: Ready
           `[DEBUG] cachedSize: ${this.cachedSize?.width}x${this.cachedSize?.height}`,
         );
 
-        if (
-          this.cachedSize &&
-          (width !== this.cachedSize.width || height !== this.cachedSize.height)
-        ) {
-          console.warn(
-            `⚠️ 警告：截图尺寸 (${width}x${height}) 与 size() 返回的尺寸 (${this.cachedSize.width}x${this.cachedSize.height}) 不一致！`,
-          );
-          // 主动刷新 size，与截图保持一致
-          const screenInfo = await windowsNative.getScreenSizeAsync();
-          this.cachedSize = {
-            width: screenInfo.width,
-            height: screenInfo.height,
-            dpr: screenInfo.dpr,
-          };
-          console.log('[DEBUG] size 已按截图刷新为:', this.cachedSize);
+        // 仅在全屏模式下检查尺寸一致性
+        if (mode === 'screen') {
+          if (
+            this.cachedSize &&
+            (width !== this.cachedSize.width ||
+              height !== this.cachedSize.height)
+          ) {
+            console.warn(
+              `⚠️ 警告：截图尺寸 (${width}x${height}) 与 size() 返回的尺寸 (${this.cachedSize.width}x${this.cachedSize.height}) 不一致！`,
+            );
+            // 主动刷新 size，与截图保持一致
+            const screenInfo = await windowsNative.getScreenSizeAsync();
+            this.cachedSize = {
+              width: screenInfo.width,
+              height: screenInfo.height,
+              dpr: screenInfo.dpr,
+            };
+            console.log('[DEBUG] size 已按截图刷新为:', this.cachedSize);
+          } else {
+            console.log('✓ 截图尺寸与 size() 一致');
+          }
         } else {
-          console.log('✓ 截图尺寸与 size() 一致');
+          console.log(`[DEBUG] 窗口模式，截图尺寸: ${width}x${height}`);
         }
       } catch (parseError) {
         console.warn('无法解析截图尺寸:', parseError);
@@ -558,14 +608,16 @@ Status: Ready
 
   /**
    * 获取窗口列表
-   * 注意：需要安装 node-window-manager 才能使用此功能
+   * 使用 node-screenshots 获取所有窗口信息
    */
   async getWindowList(): Promise<
     Array<{
-      handle: string;
+      id: number;
       title: string;
-      processId: number;
-      isActive: boolean;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
     }>
   > {
     this.assertNotDestroyed();
@@ -574,20 +626,7 @@ Status: Ready
       console.log('🪟 Get window list');
     }
 
-    // TODO: 需要安装并集成 node-window-manager
-    // const { windowManager } = require('node-window-manager');
-    // const windows = windowManager.getWindows();
-    // return windows.map(w => ({
-    //   handle: w.getHWND().toString(),
-    //   title: w.getTitle(),
-    //   processId: w.processId,
-    //   isActive: w === windowManager.getActiveWindow()
-    // }));
-
-    console.warn(
-      '⚠️ getWindowList not implemented yet, requires node-window-manager',
-    );
-    return [];
+    return windowsNative.getAllWindows();
   }
 
   /**

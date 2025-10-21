@@ -10,18 +10,25 @@
  * - 活跃维护
  */
 
-import { readFileSync, unlinkSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import {
-  Button,
-  FileType,
-  Key,
-  keyboard,
-  mouse,
-  Point,
-  screen,
-} from '@nut-tree/nut-js';
+import { Button, Key, keyboard, mouse, Point, screen } from '@nut-tree/nut-js';
+import type { Monitor, Window } from 'node-screenshots';
+import * as screenshots from 'node-screenshots';
 import sharp from 'sharp';
+
+/**
+ * 兼容层：处理 node-screenshots 在不同平台的 API 差异
+ * - Windows/Linux: 方法调用形式 id()
+ * - macOS: getter 属性形式 id
+ */
+function getMonitorProperty<T>(monitor: Monitor, prop: string): T {
+  const value = (monitor as any)[prop];
+  return typeof value === 'function' ? value.call(monitor) : value;
+}
+
+function getWindowProperty<T>(window: Window, prop: string): T {
+  const value = (window as any)[prop];
+  return typeof value === 'function' ? value.call(window) : value;
+}
 
 /**
  * 屏幕信息接口
@@ -76,7 +83,8 @@ export class WindowsNativeImpl {
    * 实现 API 文档 1.1
    *
    * 修复 DPI 缩放问题：
-   * - 通过比较截图分辨率和逻辑分辨率来计算真实 DPR
+   * - 使用 node-screenshots 获取物理分辨率
+   * - 通过 nut-js 获取逻辑分辨率来计算真实 DPR
    * - 返回物理分辨率（截图的分辨率）
    * - AI 会基于物理分辨率返回坐标
    */
@@ -89,60 +97,50 @@ export class WindowsNativeImpl {
 
     console.log('[WindowsNative] 开始检测屏幕信息...');
 
-    // nut-js 的 screen.width/height 是异步的
-    // 使用同步包装
-    const result = this.runSync(async () => {
-      const logicalWidth = await screen.width();
-      const logicalHeight = await screen.height();
+    // 获取所有显示器（同步方法）
+    const monitors = screenshots.Monitor.all();
 
-      console.log(
-        `[WindowsNative] 逻辑分辨率检测: ${logicalWidth}x${logicalHeight}`,
-      );
+    // 获取主显示器
+    const primaryMonitor =
+      monitors.find((m) => getMonitorProperty<boolean>(m, 'isPrimary')) ||
+      monitors[0];
 
-      // 通过临时截图获取物理分辨率
-      // screen.grab() 返回的图片尺寸是实际的物理分辨率
-      console.log('[WindowsNative] 正在捕获截图以检测物理分辨率...');
-      const screenshot = await screen.grab();
-      const physicalWidth = screenshot.width;
-      const physicalHeight = screenshot.height;
-
-      console.log(
-        `[WindowsNative] 物理分辨率检测: ${physicalWidth}x${physicalHeight}`,
-      );
-
-      // 计算 DPR (Device Pixel Ratio)
-      const dpr = physicalWidth / logicalWidth;
-
-      console.log('[WindowsNative] 屏幕信息检测:');
-      console.log(`  逻辑分辨率: ${logicalWidth}x${logicalHeight}`);
-      console.log(`  物理分辨率: ${physicalWidth}x${physicalHeight}`);
-      console.log(`  DPR: ${dpr.toFixed(4)}`);
-
-      if (Math.abs(dpr - 1.0) > 0.01) {
-        console.log(`  ⚠️ 检测到 DPI 缩放: ${Math.round(dpr * 100)}%`);
-        console.log(`  坐标转换已启用: 物理坐标 → 逻辑坐标`);
-      }
-
-      return {
-        width: physicalWidth, // 返回物理分辨率（截图分辨率）
-        height: physicalHeight,
-        dpr,
-      };
-    });
-
-    if (!result) {
-      console.error('[WindowsNative] ❌ 检测失败，使用默认值');
+    if (!primaryMonitor) {
+      console.error('[WindowsNative] ❌ 未找到显示器，使用默认值');
       this.cachedScreenInfo = { width: 1920, height: 1080, dpr: 1 };
-    } else {
-      console.log('[WindowsNative] ✅ 检测成功，缓存结果:', result);
-      this.cachedScreenInfo = result;
+      return this.cachedScreenInfo;
     }
 
-    return this.cachedScreenInfo;
+    // 物理分辨率（通过 node-screenshots）
+    const physicalWidth = getMonitorProperty<number>(primaryMonitor, 'width');
+    const physicalHeight = getMonitorProperty<number>(primaryMonitor, 'height');
+    console.log(
+      `[WindowsNative] 物理分辨率: ${physicalWidth}x${physicalHeight}`,
+    );
+
+    // 逻辑分辨率需要异步获取，这里使用上次的缓存或默认假设 DPR=1
+    // 建议优先使用 getScreenSizeAsync()
+    const dpr = 1; // 默认值，实际值在 getScreenSizeAsync 中计算
+
+    console.log('[WindowsNative] 屏幕信息检测（同步）:');
+    console.log(`  物理分辨率: ${physicalWidth}x${physicalHeight}`);
+    console.log(
+      `  DPR: ${dpr.toFixed(4)} (默认值，请使用 getScreenSizeAsync 获取准确值)`,
+    );
+
+    const result: ScreenInfo = {
+      width: physicalWidth,
+      height: physicalHeight,
+      dpr,
+    };
+
+    this.cachedScreenInfo = result;
+    return result;
   }
 
   /**
    * 异步：获取屏幕尺寸（首选）
+   * - 使用 node-screenshots 获取主显示器信息
    * - 纯异步实现，避免 runSync 超时与错误回退缓存
    */
   async getScreenSizeAsync(): Promise<ScreenInfo> {
@@ -150,22 +148,42 @@ export class WindowsNativeImpl {
       return this.cachedScreenInfo;
     }
 
-    // 逻辑分辨率
+    // 获取所有显示器
+    const monitors = screenshots.Monitor.all();
+
+    // 获取主显示器（第一个显示器或标记为主显示器的）
+    const primaryMonitor =
+      monitors.find((m) => getMonitorProperty<boolean>(m, 'isPrimary')) ||
+      monitors[0];
+
+    if (!primaryMonitor) {
+      console.error('[WindowsNative] 未找到显示器，使用默认值');
+      const fallback: ScreenInfo = { width: 1920, height: 1080, dpr: 1 };
+      this.cachedScreenInfo = fallback;
+      return fallback;
+    }
+
+    // 逻辑分辨率（通过 nut-js）
     const logicalWidth = await screen.width();
     const logicalHeight = await screen.height();
+    console.log(`[WindowsNative] 逻辑分辨率: ${logicalWidth}x${logicalHeight}`);
+
+    // 物理分辨率（通过 node-screenshots）
+    const physicalWidth = getMonitorProperty<number>(primaryMonitor, 'width');
+    const physicalHeight = getMonitorProperty<number>(primaryMonitor, 'height');
     console.log(
-      `[WindowsNative] Async 逻辑分辨率: ${logicalWidth}x${logicalHeight}`,
+      `[WindowsNative] 物理分辨率: ${physicalWidth}x${physicalHeight}`,
     );
 
-    // 物理分辨率（通过抓图）
-    const shot = await screen.grab();
-    const physicalWidth = shot.width;
-    const physicalHeight = shot.height;
-    console.log(
-      `[WindowsNative] Async 物理分辨率: ${physicalWidth}x${physicalHeight}`,
-    );
+    // 计算 DPR
+    const dpr = physicalWidth / logicalWidth;
+    console.log(`[WindowsNative] DPR: ${dpr.toFixed(4)}`);
 
-    const dpr = physicalWidth / logicalWidth; // logicalHeight reserved for completeness
+    if (Math.abs(dpr - 1.0) > 0.01) {
+      console.log(
+        `[WindowsNative] ⚠️ 检测到 DPI 缩放: ${Math.round(dpr * 100)}%`,
+      );
+    }
 
     const result: ScreenInfo = {
       width: physicalWidth,
@@ -220,31 +238,50 @@ export class WindowsNativeImpl {
         `[WindowsNative] 开始截图 (格式: ${format}, 质量: ${quality})`,
       );
 
-      // 使用临时文件来保存截图
-      const tempFileName = `screenshot_${Date.now()}`;
-      const tempFilePath = tmpdir();
+      // 获取所有显示器
+      const monitors = screenshots.Monitor.all();
 
-      // 1. 先用 PNG 格式截图（最高质量，无损）
-      const savedPath = await screen.capture(
-        tempFileName,
-        FileType.PNG,
-        tempFilePath,
-      );
+      // 获取主显示器
+      const primaryMonitor =
+        monitors.find((m) => getMonitorProperty<boolean>(m, 'isPrimary')) ||
+        monitors[0];
 
-      // 2. 读取 PNG 文件
-      let buffer: Buffer = readFileSync(savedPath);
-
-      // 3. 删除临时文件
-      unlinkSync(savedPath);
-
-      // 4. 如果需要 JPEG，使用 sharp 转换并压缩
-      if (format === 'jpeg') {
-        buffer = await sharp(buffer)
-          .jpeg({ quality, mozjpeg: true }) // 使用 mozjpeg 引擎获得更好的压缩
-          .toBuffer();
+      if (!primaryMonitor) {
+        throw new Error('未找到显示器');
       }
 
-      // 5. 转换为 base64
+      const monitorId = getMonitorProperty<number>(primaryMonitor, 'id');
+      const monitorWidth = getMonitorProperty<number>(primaryMonitor, 'width');
+      const monitorHeight = getMonitorProperty<number>(
+        primaryMonitor,
+        'height',
+      );
+
+      console.log(
+        `[WindowsNative] 使用显示器: ${monitorId} (${monitorWidth}x${monitorHeight})`,
+      );
+
+      // 1. 使用 node-screenshots 捕获图像
+      const image = await primaryMonitor.captureImage();
+
+      // 2. 根据格式转换图像
+      let buffer: Buffer;
+      if (format === 'jpeg') {
+        // 转换为 JPEG 格式
+        buffer = await image.toJpeg();
+
+        // 使用 sharp 进一步压缩（如果质量不是 100）
+        if (quality < 100) {
+          buffer = await sharp(buffer)
+            .jpeg({ quality, mozjpeg: true })
+            .toBuffer();
+        }
+      } else {
+        // PNG 格式
+        buffer = await image.toPng();
+      }
+
+      // 3. 转换为 base64
       const base64 = buffer.toString('base64');
 
       const endTime = Date.now();
@@ -256,6 +293,137 @@ export class WindowsNativeImpl {
       return `data:image/${format};base64,${base64}`;
     } catch (error) {
       console.error('截图失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取所有窗口列表
+   */
+  getAllWindows(): Array<{
+    id: number;
+    title: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }> {
+    try {
+      const windows = screenshots.Window.all();
+      return windows.map((w) => ({
+        id: getWindowProperty<number>(w, 'id'),
+        title: getWindowProperty<string>(w, 'title'),
+        x: getWindowProperty<number>(w, 'x'),
+        y: getWindowProperty<number>(w, 'y'),
+        width: getWindowProperty<number>(w, 'width'),
+        height: getWindowProperty<number>(w, 'height'),
+      }));
+    } catch (error) {
+      console.error('获取窗口列表失败:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 根据窗口 ID 截图
+   * @param windowId 窗口 ID
+   * @param options 截图选项
+   */
+  async captureWindowAsync(
+    windowId: number,
+    options?: ScreenshotOptions,
+  ): Promise<string> {
+    try {
+      const format = options?.format || 'jpeg';
+      const quality = options?.quality || 90;
+
+      const startTime = Date.now();
+      console.log(
+        `[WindowsNative] 开始窗口截图 (ID: ${windowId}, 格式: ${format}, 质量: ${quality})`,
+      );
+
+      // 获取所有窗口
+      const windows = screenshots.Window.all();
+      const targetWindow = windows.find(
+        (w) => getWindowProperty<number>(w, 'id') === windowId,
+      );
+
+      if (!targetWindow) {
+        throw new Error(`未找到窗口 ID: ${windowId}`);
+      }
+
+      const windowTitle = getWindowProperty<string>(targetWindow, 'title');
+      const windowWidth = getWindowProperty<number>(targetWindow, 'width');
+      const windowHeight = getWindowProperty<number>(targetWindow, 'height');
+
+      console.log(
+        `[WindowsNative] 窗口信息: "${windowTitle}" (${windowWidth}x${windowHeight})`,
+      );
+
+      // 捕获窗口图像
+      const image = await targetWindow.captureImage();
+
+      // 根据格式转换图像
+      let buffer: Buffer;
+      if (format === 'jpeg') {
+        buffer = await image.toJpeg();
+        if (quality < 100) {
+          buffer = await sharp(buffer)
+            .jpeg({ quality, mozjpeg: true })
+            .toBuffer();
+        }
+      } else {
+        buffer = await image.toPng();
+      }
+
+      // 转换为 base64
+      const base64 = buffer.toString('base64');
+
+      const endTime = Date.now();
+      const fileSize = (base64.length * 0.75) / 1024;
+      console.log(
+        `[WindowsNative] 窗口截图完成 - 格式: ${format}, 大小: ${fileSize.toFixed(2)}KB, 耗时: ${endTime - startTime}ms`,
+      );
+
+      return `data:image/${format};base64,${base64}`;
+    } catch (error) {
+      console.error('窗口截图失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 根据窗口标题查找并截图
+   * @param titlePattern 窗口标题的匹配模式（支持部分匹配）
+   * @param options 截图选项
+   */
+  async captureWindowByTitleAsync(
+    titlePattern: string,
+    options?: ScreenshotOptions,
+  ): Promise<string> {
+    try {
+      console.log(`[WindowsNative] 查找窗口: "${titlePattern}"`);
+
+      const windows = screenshots.Window.all();
+      const targetWindow = windows.find((w) => {
+        const title = getWindowProperty<string>(w, 'title');
+        return title.toLowerCase().includes(titlePattern.toLowerCase());
+      });
+
+      if (!targetWindow) {
+        throw new Error(`未找到匹配的窗口: "${titlePattern}"`);
+      }
+
+      const windowTitle = getWindowProperty<string>(targetWindow, 'title');
+      const windowId = getWindowProperty<number>(targetWindow, 'id');
+
+      console.log(
+        `[WindowsNative] 找到窗口: "${windowTitle}" (ID: ${windowId})`,
+      );
+
+      return await this.captureWindowAsync(windowId, options);
+    } catch (error) {
+      console.error('根据标题截图失败:', error);
       throw error;
     }
   }
