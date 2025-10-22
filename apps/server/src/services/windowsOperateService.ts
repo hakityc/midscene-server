@@ -483,8 +483,13 @@ export class WindowsOperateService extends EventEmitter {
 
       if (reportUrl) {
         serviceLogger.info(
-          { reportUrl, reportFile },
-          '✅ Windows Report 上传成功',
+          {
+            reportUrl,
+            reportFile,
+            type: 'REPORT_UPLOADED', // 添加类型标记
+            timestamp: Date.now(),
+          },
+          '📊 Windows Report 已生成并上传，查看地址',
         );
       } else {
         serviceLogger.warn('Windows Report 上传失败或 OSS 未启用');

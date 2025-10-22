@@ -52,7 +52,7 @@ export class WebOperateService extends EventEmitter {
     cacheId: 'midscene',
     generateReport: true,
     autoPrintReportMsg: true,
-    aiActionContext: '如果出现任何弹窗，将其关闭',
+    aiActionContext: '如果当前需要用户登录或者扫码，抛出异常，提示用户手动操作',
   };
 
   private constructor() {
@@ -1077,7 +1077,15 @@ export class WebOperateService extends EventEmitter {
       const reportUrl = await ossService.uploadReport(reportFile);
 
       if (reportUrl) {
-        serviceLogger.info({ reportUrl, reportFile }, '✅ Report 上传成功');
+        serviceLogger.info(
+          {
+            reportUrl,
+            reportFile,
+            type: 'REPORT_UPLOADED', // 添加类型标记
+            timestamp: Date.now(),
+          },
+          '📊 Report 已生成并上传，查看地址',
+        );
       } else {
         serviceLogger.warn('Report 上传失败或 OSS 未启用');
       }

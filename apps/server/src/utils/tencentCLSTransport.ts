@@ -110,15 +110,6 @@ export class TencentCLSTransport {
   private async sendLogs(logs: LogEntry[]): Promise<void> {
     const logGroup = new LogGroup('midscene-server');
 
-    // 获取最新的 report URL（延迟导入避免循环依赖）
-    let latestReportUrl: string | null = null;
-    try {
-      const { ossService } = await import('../services/ossService.js');
-      latestReportUrl = ossService.getLatestReportUrl();
-    } catch {
-      // 忽略导入错误，不影响日志上报
-    }
-
     logs.forEach((logEntry) => {
       // 使用带毫秒精度的浮点数时间戳（CLS 标准用法）
       // 例如: 1729169970232 ms -> 1729169970.232 s
@@ -147,11 +138,6 @@ export class TencentCLSTransport {
         Object.entries(this.appendFieldsFn()).forEach(([key, value]) => {
           log.addContent(key, this.serializeValue(value));
         });
-      }
-
-      // 添加最新的 report URL（如果有）
-      if (latestReportUrl) {
-        log.addContent('reportUrl', latestReportUrl);
       }
 
       logGroup.addLog(log);
