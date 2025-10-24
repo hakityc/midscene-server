@@ -10,6 +10,14 @@ import AgentOverWindows, {
 } from './customMidsceneDevice/agentOverWindows';
 import { ossService } from './ossService';
 
+// ==================== 服务状态枚举 ====================
+enum WindowsServiceState {
+  STOPPED = 'stopped', // 服务已停止
+  STARTING = 'starting', // 正在启动
+  RUNNING = 'running', // 正常运行
+  STOPPING = 'stopping', // 正在停止
+}
+
 /**
  * WindowsOperateService - Windows 应用操作服务
  *
@@ -23,7 +31,7 @@ export class WindowsOperateService extends EventEmitter {
 
   // ==================== 核心属性 ====================
   public agent: AgentOverWindows | null = null;
-  private isInitialized: boolean = false;
+  private state: WindowsServiceState = WindowsServiceState.STOPPED;
 
   // ==================== 回调机制属性 ====================
   private taskTipCallbacks: Array<
@@ -51,6 +59,67 @@ export class WindowsOperateService extends EventEmitter {
     // 延迟初始化 agent
   }
 
+  // ==================== 状态管理辅助方法 ====================
+
+  /**
+   * 设置服务状态
+   * @param newState 新状态
+   */
+  private setState(newState: WindowsServiceState): void {
+    const oldState = this.state;
+    this.state = newState;
+    serviceLogger.info(
+      { oldState, newState },
+      `Windows State transition: ${oldState} -> ${newState}`,
+    );
+  }
+
+  /**
+   * 检查当前状态
+   * @param state 要检查的状态
+   * @returns 是否匹配
+   */
+  private isState(state: WindowsServiceState): boolean {
+    return this.state === state;
+  }
+
+  /**
+   * 获取当前状态
+   * @returns 当前状态
+   */
+  public getState(): WindowsServiceState {
+    return this.state;
+  }
+
+  /**
+   * 等待状态变化
+   * @param currentState 当前状态
+   * @param timeout 超时时间（毫秒）
+   */
+  private async waitForStateChange(
+    currentState: WindowsServiceState,
+    timeout: number,
+  ): Promise<void> {
+    const startTime = Date.now();
+
+    while (this.isState(currentState) && Date.now() - startTime < timeout) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    if (this.isState(currentState)) {
+      throw new Error(`等待状态变化超时: ${currentState}`);
+    }
+
+    if (this.isState(WindowsServiceState.RUNNING)) {
+      serviceLogger.info('Windows 服务启动完成（等待其他启动完成）');
+      return;
+    }
+
+    if (this.isState(WindowsServiceState.STOPPED)) {
+      throw new Error('Windows 服务启动失败');
+    }
+  }
+
   // ==================== 单例模式方法 ====================
 
   /**
@@ -68,7 +137,12 @@ export class WindowsOperateService extends EventEmitter {
    */
   public static resetInstance(): void {
     if (WindowsOperateService.instance) {
-      WindowsOperateService.instance.stop().catch(console.error);
+      WindowsOperateService.instance.setState(WindowsServiceState.STOPPED);
+      WindowsOperateService.instance
+        .stop()
+        .catch((error) =>
+          serviceLogger.error({ error }, '重置实例时停止服务失败'),
+        );
       WindowsOperateService.instance = null;
     }
   }
@@ -79,20 +153,38 @@ export class WindowsOperateService extends EventEmitter {
    * 启动服务 - 创建并初始化 AgentOverWindows
    */
   public async start(): Promise<void> {
-    if (this.isInitialized && this.agent) {
-      console.log('🔄 WindowsOperateService 已启动，跳过重复启动');
+    // 如果已运行，直接返回
+    if (this.isState(WindowsServiceState.RUNNING) && this.agent) {
+      serviceLogger.info('WindowsOperateService 已启动，跳过重复启动');
       return;
     }
 
-    console.log('🚀 启动 WindowsOperateService...');
+    // 如果正在启动中，等待启动完成
+    if (this.isState(WindowsServiceState.STARTING)) {
+      serviceLogger.info('WindowsOperateService 正在启动中，等待启动完成...');
+      await this.waitForStateChange(WindowsServiceState.STARTING, 30000);
+      return;
+    }
+
+    // 如果正在停止中，先等待停止完成
+    if (this.isState(WindowsServiceState.STOPPING)) {
+      serviceLogger.info('WindowsOperateService 正在停止中，等待停止完成...');
+      await this.waitForStateChange(WindowsServiceState.STOPPING, 10000);
+    }
+
+    this.setState(WindowsServiceState.STARTING);
+
+    serviceLogger.info('启动 WindowsOperateService...');
 
     try {
       // 创建并初始化 AgentOverWindows（合并了创建和初始化流程）
       await this.createAgent();
 
-      console.log('✅ WindowsOperateService 启动成功');
+      this.setState(WindowsServiceState.RUNNING);
+      serviceLogger.info('WindowsOperateService 启动成功');
     } catch (error) {
-      console.error('❌ WindowsOperateService 启动失败:', error);
+      this.setState(WindowsServiceState.STOPPED);
+      serviceLogger.error({ error }, 'WindowsOperateService 启动失败');
       throw error;
     }
   }
@@ -101,7 +193,14 @@ export class WindowsOperateService extends EventEmitter {
    * 停止服务 - 销毁 AgentOverWindows
    */
   public async stop(): Promise<void> {
-    console.log('🛑 停止 WindowsOperateService...');
+    serviceLogger.info('停止 WindowsOperateService...');
+
+    if (this.isState(WindowsServiceState.STOPPED)) {
+      serviceLogger.info('服务已经停止');
+      return;
+    }
+
+    this.setState(WindowsServiceState.STOPPING);
 
     try {
       // 销毁 agent
@@ -110,13 +209,13 @@ export class WindowsOperateService extends EventEmitter {
         this.agent = null;
       }
 
-      // 重置状态
-      this.isInitialized = false;
-
-      console.log('✅ WindowsOperateService 已停止');
+      serviceLogger.info('WindowsOperateService 已停止');
     } catch (error) {
-      console.error('❌ 停止 WindowsOperateService 时出错:', error);
+      serviceLogger.error({ error }, '停止 WindowsOperateService 时出错');
       throw error;
+    } finally {
+      // 确保状态总是被重置为 STOPPED
+      this.setState(WindowsServiceState.STOPPED);
     }
   }
 
@@ -124,14 +223,14 @@ export class WindowsOperateService extends EventEmitter {
    * 检查服务是否已启动
    */
   public isStarted(): boolean {
-    return this.isInitialized && this.agent !== null;
+    return this.isState(WindowsServiceState.RUNNING) && this.agent !== null;
   }
 
   /**
    * 检查是否已初始化（向后兼容）
    */
   public isReady(): boolean {
-    return this.isInitialized && this.agent !== null;
+    return this.isState(WindowsServiceState.RUNNING) && this.agent !== null;
   }
 
   /**
@@ -148,30 +247,27 @@ export class WindowsOperateService extends EventEmitter {
    * 合并了创建和初始化流程，简化代码
    */
   private async createAgent(): Promise<void> {
-    // 如果已经初始化，直接返回
-    if (this.isInitialized && this.agent) {
-      console.log('🔄 AgentOverWindows 已初始化，跳过重复创建');
-      return;
-    }
-
     // 销毁旧实例
     if (this.agent) {
-      console.log('🔄 AgentOverWindows 已存在，先销毁旧实例');
+      serviceLogger.info('AgentOverWindows 已存在，先销毁旧实例');
       try {
         await this.agent.destroy(true);
       } catch (error) {
-        console.warn('销毁旧 AgentOverWindows 时出错:', error);
+        serviceLogger.warn({ error }, '销毁旧 AgentOverWindows 时出错');
       }
     }
 
-    console.log('🔧 正在创建并初始化 AgentOverWindows...');
+    serviceLogger.info('正在创建并初始化 AgentOverWindows...');
 
     const maxRetries = 3;
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`🔄 尝试创建 Agent (${attempt}/${maxRetries})...`);
+        serviceLogger.info(
+          { attempt, maxRetries },
+          `尝试创建 Agent (${attempt}/${maxRetries})...`,
+        );
 
         // 创建 Agent（本地模式）
         // onTaskStartTip 在这里动态传入，确保 this 正确绑定
@@ -185,14 +281,13 @@ export class WindowsOperateService extends EventEmitter {
         // 立即启动 Agent
         await this.agent.launch();
 
-        this.isInitialized = true;
-        console.log('✅ AgentOverWindows 创建并初始化成功');
+        serviceLogger.info('AgentOverWindows 创建并初始化成功');
         return;
       } catch (error) {
         lastError = error as Error;
-        console.error(
-          `❌ AgentOverWindows 创建失败 (尝试 ${attempt}/${maxRetries}):`,
-          error,
+        serviceLogger.error(
+          { error, attempt, maxRetries },
+          `AgentOverWindows 创建失败 (尝试 ${attempt}/${maxRetries})`,
         );
 
         // 清理失败的 agent
@@ -207,14 +302,14 @@ export class WindowsOperateService extends EventEmitter {
 
         if (attempt < maxRetries) {
           const delay = attempt * 2000; // 递增延迟：2s, 4s
-          console.log(`⏳ ${delay / 1000}秒后重试...`);
+          serviceLogger.info({ delay }, `${delay / 1000}秒后重试...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
 
     // 所有重试都失败了
-    console.error('❌ AgentOverWindows 创建最终失败，所有重试已用尽');
+    serviceLogger.error('AgentOverWindows 创建最终失败，所有重试已用尽');
     throw new Error(
       `创建失败，已重试 ${maxRetries} 次。最后错误: ${lastError?.message}`,
     );
@@ -228,10 +323,12 @@ export class WindowsOperateService extends EventEmitter {
       const { formatted, category, icon, content, hint } = formatTaskTip(tip);
       const stageDescription = getTaskStageDescription(category);
 
-      console.log(`🤖 AI 任务开始: ${tip}`);
-      console.log(`${icon} ${formatted} (${stageDescription})`);
+      serviceLogger.info(
+        { tip, icon, formatted, stageDescription },
+        'Windows AI 任务开始',
+      );
       if (content) {
-        console.log(`📝 详细内容: ${content}`);
+        serviceLogger.info({ content }, '详细内容');
       }
 
       serviceLogger.info(
@@ -260,7 +357,6 @@ export class WindowsOperateService extends EventEmitter {
       this.triggerTaskTipCallbacks(tip, error);
     } catch (handlerError: any) {
       // 捕获任何错误，防止影响主流程
-      console.error('❌ handleTaskStartTip 执行失败:', handlerError);
       serviceLogger.error(
         {
           tip,
@@ -280,9 +376,9 @@ export class WindowsOperateService extends EventEmitter {
         );
       } catch (notifyError) {
         // 如果通知也失败了，只记录日志
-        console.error(
-          '❌ 无法通知客户端 handleTaskStartTip 错误:',
-          notifyError,
+        serviceLogger.error(
+          { notifyError },
+          '无法通知客户端 handleTaskStartTip 错误',
         );
       }
     }
@@ -298,7 +394,7 @@ export class WindowsOperateService extends EventEmitter {
       try {
         callback(tip, error);
       } catch (callbackError) {
-        console.error('任务提示回调执行失败:', callbackError);
+        serviceLogger.error({ callbackError }, '任务提示回调执行失败');
       }
     });
   }
@@ -389,7 +485,7 @@ export class WindowsOperateService extends EventEmitter {
           second: '2-digit',
         });
 
-        console.log(`🎯 WebSocket 监听到 Windows 任务提示: ${tip}`);
+        serviceLogger.info({ tip }, 'WebSocket 监听到 Windows 任务提示');
 
         // 如果有错误，先发送警告消息
         if (bridgeError) {
@@ -475,9 +571,6 @@ export class WindowsOperateService extends EventEmitter {
         serviceLogger.warn('Report 文件未生成，跳过上传');
         return;
       }
-
-      serviceLogger.info({ reportFile }, '开始上传 Windows report 到 OSS');
-
       // 上传到 OSS
       const reportUrl = await ossService.uploadReport(reportFile);
 
@@ -485,7 +578,6 @@ export class WindowsOperateService extends EventEmitter {
         serviceLogger.info(
           {
             reportUrl,
-            reportFile,
             type: 'REPORT_UPLOADED', // 添加类型标记
             timestamp: Date.now(),
           },

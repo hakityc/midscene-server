@@ -75,8 +75,10 @@ export class WebOperateService extends EventEmitter {
   private setState(newState: ServiceState): void {
     const oldState = this.state;
     this.state = newState;
-    console.log(`State transition: ${oldState} -> ${newState}`);
-    serviceLogger.info({ oldState, newState }, 'Service state changed');
+    serviceLogger.info(
+      { oldState, newState },
+      `State transition: ${oldState} -> ${newState}`,
+    );
   }
 
   /**
@@ -116,7 +118,7 @@ export class WebOperateService extends EventEmitter {
     }
 
     if (this.isState(ServiceState.RUNNING)) {
-      console.log('服务启动完成（等待其他启动完成）');
+      serviceLogger.info('服务启动完成（等待其他启动完成）');
       return;
     }
 
@@ -143,7 +145,11 @@ export class WebOperateService extends EventEmitter {
   public static resetInstance(): void {
     if (WebOperateService.instance) {
       WebOperateService.instance.setState(ServiceState.STOPPED); // 重置状态
-      WebOperateService.instance.stop().catch(console.error);
+      WebOperateService.instance
+        .stop()
+        .catch((error) =>
+          serviceLogger.error({ error }, '重置实例时停止服务失败'),
+        );
       WebOperateService.instance = null;
     }
   }
@@ -252,7 +258,7 @@ export class WebOperateService extends EventEmitter {
           second: '2-digit',
         });
 
-        console.log(`🎯 WebSocket 监听到任务提示: ${tip}`);
+        serviceLogger.info({ tip }, 'WebSocket 监听到任务提示');
 
         // 如果有 bridge 错误，先发送警告消息（不是致命错误，任务继续执行）
         if (bridgeError) {
@@ -340,7 +346,7 @@ export class WebOperateService extends EventEmitter {
       try {
         callback(tip, bridgeError);
       } catch (error) {
-        console.error('任务提示回调执行失败:', error);
+        serviceLogger.error({ error }, '任务提示回调执行失败');
       }
     });
   }
@@ -356,28 +362,28 @@ export class WebOperateService extends EventEmitter {
     if (this.isState(ServiceState.RUNNING) && this.agent) {
       const isConnected = await this.quickConnectionCheck();
       if (isConnected) {
-        console.log('WebOperateService 已启动且连接正常，跳过重复启动');
+        serviceLogger.info('WebOperateService 已启动且连接正常，跳过重复启动');
         return;
       }
-      console.log('检测到连接异常，将重新启动');
+      serviceLogger.warn('检测到连接异常，将重新启动');
     }
 
     // 如果正在启动中，等待启动完成
     if (this.isState(ServiceState.STARTING)) {
-      console.log('WebOperateService 正在启动中，等待启动完成...');
+      serviceLogger.info('WebOperateService 正在启动中，等待启动完成...');
       await this.waitForStateChange(ServiceState.STARTING, 30000);
       return;
     }
 
     // 如果正在停止中，先等待停止完成
     if (this.isState(ServiceState.STOPPING)) {
-      console.log('WebOperateService 正在停止中，等待停止完成...');
+      serviceLogger.info('WebOperateService 正在停止中，等待停止完成...');
       await this.waitForStateChange(ServiceState.STOPPING, 10000);
     }
 
     this.setState(ServiceState.STARTING);
 
-    console.log('启动 WebOperateService...');
+    serviceLogger.info('启动 WebOperateService...');
 
     try {
       // 创建 AgentOverChromeBridge 实例
@@ -387,10 +393,10 @@ export class WebOperateService extends EventEmitter {
       await this.initialize();
 
       this.setState(ServiceState.RUNNING);
-      console.log('WebOperateService 启动成功');
+      serviceLogger.info('WebOperateService 启动成功');
     } catch (error) {
       this.setState(ServiceState.STOPPED);
-      console.error('WebOperateService 启动失败:', error);
+      serviceLogger.error({ error }, 'WebOperateService 启动失败');
       throw error;
     }
   }
@@ -399,10 +405,10 @@ export class WebOperateService extends EventEmitter {
    * 停止服务 - 销毁 AgentOverChromeBridge
    */
   public async stop(): Promise<void> {
-    console.log('停止 WebOperateService...');
+    serviceLogger.info('停止 WebOperateService...');
 
     if (this.isState(ServiceState.STOPPED)) {
-      console.log('服务已经停止');
+      serviceLogger.info('服务已经停止');
       return;
     }
 
@@ -422,9 +428,9 @@ export class WebOperateService extends EventEmitter {
       this.resetReconnectState();
       setBrowserConnected(false);
 
-      console.log('WebOperateService 已停止');
+      serviceLogger.info('WebOperateService 已停止');
     } catch (error) {
-      console.error('停止 WebOperateService 时出错:', error);
+      serviceLogger.error({ error }, '停止 WebOperateService 时出错');
       throw error;
     } finally {
       // 确保状态总是被重置为 STOPPED
@@ -460,16 +466,16 @@ export class WebOperateService extends EventEmitter {
    */
   private async createAgent(): Promise<void> {
     if (this.agent) {
-      console.log('🔄 AgentOverChromeBridge 已存在，先销毁旧实例');
+      serviceLogger.info('AgentOverChromeBridge 已存在，先销毁旧实例');
       try {
         await this.agent.destroy();
       } catch (error) {
-        console.warn('销毁旧 AgentOverChromeBridge 时出错:', error);
+        serviceLogger.warn({ error }, '销毁旧 AgentOverChromeBridge 时出错');
       }
     }
 
-    console.log(
-      '🔧 正在创建 AgentOverChromeBridge，绑定 onTaskStartTip 回调...',
+    serviceLogger.info(
+      '正在创建 AgentOverChromeBridge，绑定 onTaskStartTip 回调...',
     );
 
     this.agent = new AgentOverChromeBridge(this.defaultAgentConfig);
@@ -477,7 +483,7 @@ export class WebOperateService extends EventEmitter {
     // 设置任务开始提示回调
     this.setupTaskStartTipCallback();
 
-    console.log('✅ AgentOverChromeBridge 创建完成，onTaskStartTip 已绑定');
+    serviceLogger.info('AgentOverChromeBridge 创建完成，onTaskStartTip 已绑定');
   }
 
   /**
@@ -522,7 +528,6 @@ export class WebOperateService extends EventEmitter {
                     error instanceof Error ? error : new Error(String(error));
                 } else {
                   // 非连接错误，可能需要关注
-                  console.warn(`⚠️ 显示状态消息失败:`, error?.message);
                   serviceLogger.warn(
                     {
                       tip,
@@ -544,7 +549,6 @@ export class WebOperateService extends EventEmitter {
             );
           } catch (syncError: any) {
             // 捕获调用时的同步错误
-            console.warn('⚠️ 调用原始回调时发生同步错误:', syncError?.message);
             serviceLogger.warn(
               {
                 tip,
@@ -562,7 +566,6 @@ export class WebOperateService extends EventEmitter {
           this.handleTaskStartTip(tip, bridgeError);
         } catch (handlerError: any) {
           // 如果我们自己的处理逻辑失败，记录错误
-          console.error('❌ handleTaskStartTip 执行失败:', handlerError);
           serviceLogger.error(
             {
               tip,
@@ -577,7 +580,6 @@ export class WebOperateService extends EventEmitter {
       // 执行安全调用包装器，并捕获任何顶层错误
       safeCall().catch((error: any) => {
         // 最后的安全网：确保任何未预期的错误都被捕获
-        console.error('❌ onTaskStartTip 回调执行失败:', error);
         serviceLogger.error(
           {
             tip,
@@ -595,7 +597,7 @@ export class WebOperateService extends EventEmitter {
           );
         } catch (notifyError) {
           // 如果通知也失败了，只记录日志，不再抛出
-          console.error('❌ 无法通知客户端错误:', notifyError);
+          serviceLogger.error({ notifyError }, '无法通知客户端错误');
         }
       });
 
@@ -612,10 +614,12 @@ export class WebOperateService extends EventEmitter {
       const { formatted, category, icon, content, hint } = formatTaskTip(tip);
       const stageDescription = getTaskStageDescription(category);
 
-      console.log(`🤖 AI 任务开始: ${tip}`);
-      console.log(`${icon} ${formatted} (${stageDescription})`);
+      serviceLogger.info(
+        { tip, icon, formatted, stageDescription },
+        'AI 任务开始',
+      );
       if (content) {
-        console.log(`📝 详细内容: ${content}`);
+        serviceLogger.info({ content }, '详细内容');
       }
 
       // 如果有 bridge 错误，记录到错误跟踪中
@@ -626,7 +630,7 @@ export class WebOperateService extends EventEmitter {
           timestamp: Date.now(),
         });
 
-        console.warn(`⚠️ 记录任务错误: ${tip} - ${bridgeError.message}`);
+        serviceLogger.warn({ tip, error: bridgeError.message }, '记录任务错误');
       }
 
       serviceLogger.info(
@@ -657,7 +661,6 @@ export class WebOperateService extends EventEmitter {
       this.triggerTaskTipCallbacks(tip, bridgeError);
     } catch (error: any) {
       // 捕获任何错误，防止影响主流程
-      console.error('❌ handleTaskStartTip 执行失败:', error);
       serviceLogger.error(
         {
           tip,
@@ -675,9 +678,9 @@ export class WebOperateService extends EventEmitter {
         );
       } catch (notifyError) {
         // 如果通知也失败了，只记录日志
-        console.error(
-          '❌ 无法通知客户端 handleTaskStartTip 错误:',
-          notifyError,
+        serviceLogger.error(
+          { notifyError },
+          '无法通知客户端 handleTaskStartTip 错误',
         );
       }
     }
@@ -698,29 +701,32 @@ export class WebOperateService extends EventEmitter {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`尝试初始化连接 (${attempt}/${maxRetries})...`);
+        serviceLogger.info(
+          { attempt, maxRetries },
+          `尝试初始化连接 (${attempt}/${maxRetries})...`,
+        );
         await this.connectLastTab();
         setBrowserConnected(true);
-        console.log('AgentOverChromeBridge 初始化成功');
+        serviceLogger.info('AgentOverChromeBridge 初始化成功');
         return;
       } catch (error) {
         lastError = error as Error;
-        console.error(
-          `AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries}):`,
-          error,
+        serviceLogger.error(
+          { error, attempt, maxRetries },
+          `AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries})`,
         );
         setBrowserConnected(false);
 
         if (attempt < maxRetries) {
           const delay = attempt * 2000; // 递增延迟：2s, 4s
-          console.log(`${delay / 1000}秒后重试...`);
+          serviceLogger.info({ delay }, `${delay / 1000}秒后重试...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
 
     // 所有重试都失败了
-    console.error('AgentOverChromeBridge 初始化最终失败，所有重试已用尽');
+    serviceLogger.error('AgentOverChromeBridge 初始化最终失败，所有重试已用尽');
     setBrowserConnected(false);
     throw new Error(
       `初始化失败，已重试${maxRetries}次。最后错误: ${lastError?.message}`,
@@ -768,14 +774,14 @@ export class WebOperateService extends EventEmitter {
       return;
     }
 
-    console.log('启动自动重连机制...');
+    serviceLogger.info('启动自动重连机制...');
     this.reconnectTimer = setInterval(async () => {
       // 如果服务正在停止，不进行重连
       if (
         this.isState(ServiceState.STOPPING) ||
         this.isState(ServiceState.STOPPED)
       ) {
-        console.log('服务已停止，取消自动重连');
+        serviceLogger.info('服务已停止，取消自动重连');
         this.stopAutoReconnect();
         return;
       }
@@ -788,7 +794,7 @@ export class WebOperateService extends EventEmitter {
       }
 
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.log('已达到最大重连次数，停止自动重连');
+        serviceLogger.warn('已达到最大重连次数，停止自动重连');
         this.stopAutoReconnect();
         setBrowserConnected(false);
         return;
@@ -798,13 +804,17 @@ export class WebOperateService extends EventEmitter {
       this.reconnectAttempts++;
 
       try {
-        console.log(
+        serviceLogger.info(
+          {
+            reconnectAttempts: this.reconnectAttempts,
+            maxReconnectAttempts: this.maxReconnectAttempts,
+          },
           `自动重连尝试 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`,
         );
         await this.initialize();
 
         if (this.isState(ServiceState.RECONNECTING)) {
-          console.log('自动重连成功');
+          serviceLogger.info('自动重连成功');
           this.reconnectAttempts = 0;
           this.stopAutoReconnect();
           this.setState(ServiceState.RUNNING);
@@ -812,9 +822,13 @@ export class WebOperateService extends EventEmitter {
           this.emit('reconnected');
         }
       } catch (error) {
-        console.error(
-          `自动重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts}):`,
-          error,
+        serviceLogger.error(
+          {
+            error,
+            reconnectAttempts: this.reconnectAttempts,
+            maxReconnectAttempts: this.maxReconnectAttempts,
+          },
+          `自动重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
         );
         this.setState(ServiceState.STOPPED);
         setBrowserConnected(false);
@@ -846,7 +860,7 @@ export class WebOperateService extends EventEmitter {
   public async checkAndReconnect(): Promise<boolean> {
     // 如果服务正在停止，不进行重连
     if (this.isState(ServiceState.STOPPING)) {
-      console.log('服务正在停止，不进行重连检查');
+      serviceLogger.info('服务正在停止，不进行重连检查');
       return false;
     }
 
@@ -858,7 +872,7 @@ export class WebOperateService extends EventEmitter {
       }
     }
 
-    console.log('检测到连接断开，启动重连机制');
+    serviceLogger.warn('检测到连接断开，启动重连机制');
     this.setState(ServiceState.STOPPED);
     setBrowserConnected(false);
     this.startAutoReconnect();
@@ -871,23 +885,23 @@ export class WebOperateService extends EventEmitter {
   public async forceReconnect(): Promise<void> {
     // 如果服务正在停止，不允许强制重连
     if (this.isState(ServiceState.STOPPING)) {
-      console.log('服务正在停止，不允许强制重连');
+      serviceLogger.warn('服务正在停止，不允许强制重连');
       throw new AppError('服务正在停止，无法重连', 503);
     }
 
-    console.log('强制重连...');
+    serviceLogger.info('强制重连...');
     this.resetReconnectState();
     this.setState(ServiceState.STOPPED);
     setBrowserConnected(false);
 
     try {
       await this.initialize();
-      console.log('强制重连成功');
+      serviceLogger.info('强制重连成功');
       this.setState(ServiceState.RUNNING);
       setBrowserConnected(true);
       this.emit('reconnected');
     } catch (error) {
-      console.error('强制重连失败:', error);
+      serviceLogger.error({ error }, '强制重连失败');
       this.setState(ServiceState.STOPPED);
       setBrowserConnected(false);
       this.startAutoReconnect();
@@ -901,12 +915,12 @@ export class WebOperateService extends EventEmitter {
   private async reconnect(): Promise<void> {
     // 如果服务正在停止，不进行重连
     if (this.isState(ServiceState.STOPPING)) {
-      console.log('服务正在停止，取消重新连接');
+      serviceLogger.info('服务正在停止，取消重新连接');
       throw new Error('服务正在停止，无法重新连接');
     }
 
     try {
-      console.log('尝试重新连接...');
+      serviceLogger.info('尝试重新连接...');
       this.setState(ServiceState.STOPPED);
       setBrowserConnected(false);
 
@@ -916,9 +930,9 @@ export class WebOperateService extends EventEmitter {
 
       this.setState(ServiceState.RUNNING);
       setBrowserConnected(true);
-      console.log('重新连接成功');
+      serviceLogger.info('重新连接成功');
     } catch (error) {
-      console.error('重新连接失败:', error);
+      serviceLogger.error({ error }, '重新连接失败');
       this.setState(ServiceState.STOPPED);
       setBrowserConnected(false);
       throw error;
@@ -954,7 +968,7 @@ export class WebOperateService extends EventEmitter {
         message.includes('Connection lost') ||
         message.includes('timeout')
       ) {
-        console.log('🔍 检测到连接断开:', message);
+        serviceLogger.warn({ message }, '检测到连接断开');
         setBrowserConnected(false);
         return false;
       }
@@ -1005,7 +1019,7 @@ export class WebOperateService extends EventEmitter {
 
     // 如果服务未启动，先启动服务
     if (!this.isStarted()) {
-      console.log('服务未启动，开始启动...');
+      serviceLogger.info('服务未启动，开始启动...');
       await this.start();
       return;
     }
@@ -1013,7 +1027,7 @@ export class WebOperateService extends EventEmitter {
     // 使用轻量级检测检查连接是否真的有效
     const isConnected = await this.quickConnectionCheck();
     if (!isConnected) {
-      console.log('连接已断开，尝试重新连接...');
+      serviceLogger.warn('连接已断开，尝试重新连接...');
       await this.reconnect();
     }
   }
@@ -1029,13 +1043,15 @@ export class WebOperateService extends EventEmitter {
       if (!this.agent) {
         throw new Error('Agent 未初始化');
       }
-      console.log('✅ 确保当前标签页连接成功');
+      serviceLogger.info('确保当前标签页连接成功');
     } catch (error: any) {
-      console.warn('⚠️ 连接当前标签页时出现警告:', error.message);
+      serviceLogger.warn({ error: error.message }, '连接当前标签页时出现警告');
       // 如果是"Another debugger is already attached"错误，我们忽略它
       // 因为这意味着连接已经存在
       if (!error.message?.includes('Another debugger is already attached')) {
-        this.reconnect().catch(console.error);
+        this.reconnect().catch((err) =>
+          serviceLogger.error({ err }, '重连失败'),
+        );
         throw error;
       }
     }
@@ -1061,8 +1077,9 @@ export class WebOperateService extends EventEmitter {
         lastError = error;
 
         if (this.isConnectionError(error) && attempt < maxRetries) {
-          console.log(
-            `🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`,
+          serviceLogger.warn(
+            { attempt, maxRetries },
+            `检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`,
           );
           await this.handleConnectionError();
           continue;
@@ -1094,13 +1111,13 @@ export class WebOperateService extends EventEmitter {
    */
   private async handleConnectionError(): Promise<void> {
     try {
-      console.log('🔧 处理连接错误，尝试重新连接...');
+      serviceLogger.info('处理连接错误，尝试重新连接...');
       await this.reconnect();
 
       // 等待一段时间确保连接稳定
       await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
-      console.error('❌ 处理连接错误失败:', error);
+      serviceLogger.error({ error }, '处理连接错误失败');
       throw error;
     }
   }
@@ -1131,8 +1148,6 @@ export class WebOperateService extends EventEmitter {
         return;
       }
 
-      serviceLogger.info({ reportFile }, '开始上传 report 到 OSS');
-
       // 上传到 OSS
       const reportUrl = await ossService.uploadReport(reportFile);
 
@@ -1140,7 +1155,6 @@ export class WebOperateService extends EventEmitter {
         serviceLogger.info(
           {
             reportUrl,
-            reportFile,
             type: 'REPORT_UPLOADED', // 添加类型标记
             timestamp: Date.now(),
           },
@@ -1169,7 +1183,7 @@ export class WebOperateService extends EventEmitter {
   async execute(prompt: string, maxRetries: number = 3): Promise<void> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
-      console.log('🔄 服务未启动，自动启动 WebOperateService...');
+      serviceLogger.info('服务未启动，自动启动 WebOperateService...');
       await this.start();
     }
 
@@ -1201,15 +1215,16 @@ export class WebOperateService extends EventEmitter {
     }
 
     try {
-      console.log(`🚀 开始执行 AI 任务: ${prompt}`);
-      console.log(
-        `🔍 当前 agent.onTaskStartTip 是否已设置: ${typeof this.agent.onTaskStartTip}`,
+      serviceLogger.info({ prompt }, '开始执行 AI 任务');
+      serviceLogger.info(
+        { onTaskStartTipType: typeof this.agent.onTaskStartTip },
+        '当前 agent.onTaskStartTip 是否已设置',
       );
 
       await this.agent.ai(prompt);
-      console.log(`✅ AI 任务执行完成: ${prompt}`);
+      serviceLogger.info({ prompt }, 'AI 任务执行完成');
     } catch (error: any) {
-      console.log(`❌ AI 任务执行失败: ${error.message}`);
+      serviceLogger.error({ prompt, error: error.message }, 'AI 任务执行失败');
       if (error.message?.includes('ai')) {
         throw new AppError(`AI 执行失败: ${error.message}`, 500);
       }
@@ -1223,7 +1238,7 @@ export class WebOperateService extends EventEmitter {
   async expect(prompt: string, maxRetries: number = 3): Promise<void> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
-      console.log('🔄 服务未启动，自动启动 WebOperateService...');
+      serviceLogger.info('服务未启动，自动启动 WebOperateService...');
       await this.start();
     }
 
@@ -1293,7 +1308,7 @@ export class WebOperateService extends EventEmitter {
   ): Promise<any> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
-      console.log('🔄 服务未启动，自动启动 WebOperateService...');
+      serviceLogger.info('服务未启动，自动启动 WebOperateService...');
       await this.start();
     }
 
@@ -1380,7 +1395,7 @@ export class WebOperateService extends EventEmitter {
     try {
       // 如果服务未启动，自动启动
       if (!this.isStarted()) {
-        console.log('🔄 服务未启动，自动启动 WebOperateService...');
+        serviceLogger.info('服务未启动，自动启动 WebOperateService...');
         await this.start();
       }
 
