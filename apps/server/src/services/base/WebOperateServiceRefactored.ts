@@ -70,22 +70,22 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
   protected async createAgent(): Promise<void> {
     if (this.agent) {
-      console.log('🔄 AgentOverChromeBridge 已存在，先销毁旧实例');
+      serviceLogger.info('AgentOverChromeBridge 已存在，先销毁旧实例');
       try {
         await this.agent.destroy();
       } catch (error) {
-        console.warn('销毁旧 AgentOverChromeBridge 时出错:', error);
+        serviceLogger.warn({ error }, '销毁旧 AgentOverChromeBridge 时出错');
       }
     }
 
-    console.log('🔧 正在创建 AgentOverChromeBridge...');
+    serviceLogger.info('正在创建 AgentOverChromeBridge...');
 
     this.agent = new AgentOverChromeBridge(this.defaultAgentConfig);
 
     // 设置任务开始提示回调
     this.setupTaskStartTipCallback();
 
-    console.log('✅ AgentOverChromeBridge 创建完成');
+    serviceLogger.info('AgentOverChromeBridge 创建完成');
   }
 
   protected async initializeConnection(): Promise<void> {
@@ -94,28 +94,31 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`尝试初始化连接 (${attempt}/${maxRetries})...`);
+        serviceLogger.info(
+          { attempt, maxRetries },
+          `尝试初始化连接 (${attempt}/${maxRetries})...`,
+        );
         await this.connectLastTab();
         setBrowserConnected(true);
-        console.log('AgentOverChromeBridge 初始化成功');
+        serviceLogger.info('AgentOverChromeBridge 初始化成功');
         return;
       } catch (error) {
         lastError = error as Error;
-        console.error(
-          `AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries}):`,
-          error,
+        serviceLogger.error(
+          { error, attempt, maxRetries },
+          `AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries})`,
         );
         setBrowserConnected(false);
 
         if (attempt < maxRetries) {
           const delay = attempt * 2000;
-          console.log(`${delay / 1000}秒后重试...`);
+          serviceLogger.info({ delay }, `${delay / 1000}秒后重试...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
 
-    console.error('AgentOverChromeBridge 初始化最终失败，所有重试已用尽');
+    serviceLogger.error('AgentOverChromeBridge 初始化最终失败，所有重试已用尽');
     setBrowserConnected(false);
     throw new Error(
       `初始化失败，已重试${maxRetries}次。最后错误: ${lastError?.message}`,
@@ -166,7 +169,6 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
                   bridgeError =
                     error instanceof Error ? error : new Error(String(error));
                 } else {
-                  console.warn(`⚠️ 显示状态消息失败:`, error?.message);
                   serviceLogger.warn(
                     {
                       tip,
@@ -186,7 +188,6 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
               },
             );
           } catch (syncError: any) {
-            console.warn('⚠️ 调用原始回调时发生同步错误:', syncError?.message);
             serviceLogger.warn(
               {
                 tip,
@@ -201,7 +202,6 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         try {
           this.handleTaskStartTip(tip, bridgeError);
         } catch (handlerError: any) {
-          console.error('❌ handleTaskStartTip 执行失败:', handlerError);
           serviceLogger.error(
             {
               tip,
@@ -214,7 +214,6 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       };
 
       safeCall().catch((error: any) => {
-        console.error('❌ onTaskStartTip 回调执行失败:', error);
         serviceLogger.error(
           {
             tip,
@@ -230,7 +229,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
             error instanceof Error ? error : new Error(String(error)),
           );
         } catch (notifyError) {
-          console.error('❌ 无法通知客户端错误:', notifyError);
+          serviceLogger.error({ notifyError }, '无法通知客户端错误');
         }
       });
     };
@@ -272,13 +271,13 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       return;
     }
 
-    console.log('启动自动重连机制...');
+    serviceLogger.info('启动自动重连机制...');
     this.reconnectTimer = setInterval(async () => {
       if (
         this.isState(OperateServiceState.STOPPING) ||
         this.isState(OperateServiceState.STOPPED)
       ) {
-        console.log('服务已停止，取消自动重连');
+        serviceLogger.info('服务已停止，取消自动重连');
         this.stopAutoReconnect();
         return;
       }
@@ -291,7 +290,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       }
 
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.log('已达到最大重连次数，停止自动重连');
+        serviceLogger.warn('已达到最大重连次数，停止自动重连');
         this.stopAutoReconnect();
         setBrowserConnected(false);
         return;
@@ -301,13 +300,17 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       this.reconnectAttempts++;
 
       try {
-        console.log(
+        serviceLogger.info(
+          {
+            reconnectAttempts: this.reconnectAttempts,
+            maxReconnectAttempts: this.maxReconnectAttempts,
+          },
           `自动重连尝试 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`,
         );
         await this.initializeConnection();
 
         if (this.isState(OperateServiceState.RECONNECTING)) {
-          console.log('自动重连成功');
+          serviceLogger.info('自动重连成功');
           this.reconnectAttempts = 0;
           this.stopAutoReconnect();
           this.setState(OperateServiceState.RUNNING);
@@ -315,9 +318,13 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
           this.emit('reconnected');
         }
       } catch (error) {
-        console.error(
-          `自动重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts}):`,
-          error,
+        serviceLogger.error(
+          {
+            error,
+            reconnectAttempts: this.reconnectAttempts,
+            maxReconnectAttempts: this.maxReconnectAttempts,
+          },
+          `自动重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
         );
         this.setState(OperateServiceState.STOPPED);
         setBrowserConnected(false);
@@ -339,7 +346,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
   public async checkAndReconnect(): Promise<boolean> {
     if (this.isState(OperateServiceState.STOPPING)) {
-      console.log('服务正在停止，不进行重连检查');
+      serviceLogger.info('服务正在停止，不进行重连检查');
       return false;
     }
 
@@ -350,7 +357,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       }
     }
 
-    console.log('检测到连接断开，启动重连机制');
+    serviceLogger.warn('检测到连接断开，启动重连机制');
     this.setState(OperateServiceState.STOPPED);
     setBrowserConnected(false);
     this.startAutoReconnect();
@@ -359,23 +366,23 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
   public async forceReconnect(): Promise<void> {
     if (this.isState(OperateServiceState.STOPPING)) {
-      console.log('服务正在停止，不允许强制重连');
+      serviceLogger.warn('服务正在停止，不允许强制重连');
       throw new AppError('服务正在停止，无法重连', 503);
     }
 
-    console.log('强制重连...');
+    serviceLogger.info('强制重连...');
     this.resetReconnectState();
     this.setState(OperateServiceState.STOPPED);
     setBrowserConnected(false);
 
     try {
       await this.initializeConnection();
-      console.log('强制重连成功');
+      serviceLogger.info('强制重连成功');
       this.setState(OperateServiceState.RUNNING);
       setBrowserConnected(true);
       this.emit('reconnected');
     } catch (error) {
-      console.error('强制重连失败:', error);
+      serviceLogger.error({ error }, '强制重连失败');
       this.setState(OperateServiceState.STOPPED);
       setBrowserConnected(false);
       this.startAutoReconnect();
@@ -410,23 +417,23 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
   private async ensureCurrentTabConnection(): Promise<void> {
     try {
       if (!this.isStarted()) {
-        console.log('服务未启动，开始启动...');
+        serviceLogger.info('服务未启动，开始启动...');
         await this.start();
         return;
       }
 
       const isConnected = await this.quickConnectionCheck();
       if (!isConnected) {
-        console.log('连接已断开，尝试重新连接...');
+        serviceLogger.warn('连接已断开，尝试重新连接...');
         await this.forceReconnect();
       }
 
       if (!this.agent) {
         throw new Error('Agent 未初始化');
       }
-      console.log('✅ 确保当前标签页连接成功');
+      serviceLogger.info('确保当前标签页连接成功');
     } catch (error: any) {
-      console.warn('⚠️ 连接当前标签页时出现警告:', error.message);
+      serviceLogger.warn({ error: error.message }, '连接当前标签页时出现警告');
       if (!error.message?.includes('Another debugger is already attached')) {
         throw error;
       }
@@ -448,7 +455,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
   async execute(prompt: string, maxRetries: number = 3): Promise<void> {
     if (!this.isStarted()) {
-      console.log('🔄 服务未启动，自动启动 WebOperateService...');
+      serviceLogger.info('服务未启动，自动启动 WebOperateService...');
       await this.start();
     }
 
@@ -466,20 +473,24 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
           throw new AppError('服务启动失败，无法执行任务', 503);
         }
 
-        console.log(`🚀 开始执行 AI 任务: ${prompt}`);
+        serviceLogger.info({ prompt }, '开始执行 AI 任务');
         await this.agent.ai(prompt);
-        console.log(`✅ AI 任务执行完成: ${prompt}`);
+        serviceLogger.info({ prompt }, 'AI 任务执行完成');
 
         // 执行完成后生成并上传 report
         await this.generateAndUploadReport();
         return;
       } catch (error: any) {
         lastError = error;
-        console.log(`❌ AI 任务执行失败: ${error.message}`);
+        serviceLogger.error(
+          { prompt, error: error.message },
+          'AI 任务执行失败',
+        );
 
         if (this.isConnectionError(error) && attempt < maxRetries) {
-          console.log(
-            `🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`,
+          serviceLogger.warn(
+            { attempt, maxRetries },
+            `检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`,
           );
           await this.forceReconnect();
           await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -498,7 +509,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
   async expect(prompt: string, maxRetries: number = 3): Promise<void> {
     if (!this.isStarted()) {
-      console.log('🔄 服务未启动，自动启动 WebOperateService...');
+      serviceLogger.info('服务未启动，自动启动 WebOperateService...');
       await this.start();
     }
 
@@ -517,8 +528,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         lastError = error;
 
         if (this.isConnectionError(error) && attempt < maxRetries) {
-          console.log(
-            `🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`,
+          serviceLogger.warn(
+            { attempt, maxRetries },
+            `检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`,
           );
           await this.forceReconnect();
           await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -541,7 +553,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
     originalCmd?: string,
   ): Promise<any> {
     if (!this.isStarted()) {
-      console.log('🔄 服务未启动，自动启动 WebOperateService...');
+      serviceLogger.info('服务未启动，自动启动 WebOperateService...');
       await this.start();
     }
 
@@ -579,8 +591,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
           lastError = error;
 
           if (this.isConnectionError(error) && attempt < maxRetries) {
-            console.log(
-              `🔄 检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`,
+            serviceLogger.warn(
+              { attempt, maxRetries },
+              `检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`,
             );
             await this.forceReconnect();
             await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -633,7 +646,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
   ): Promise<any> {
     try {
       if (!this.isStarted()) {
-        console.log('🔄 服务未启动，自动启动 WebOperateService...');
+        serviceLogger.info('服务未启动，自动启动 WebOperateService...');
         await this.start();
       }
 
@@ -643,9 +656,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         throw new AppError('服务启动失败，无法执行脚本', 503);
       }
 
-      serviceLogger.info(`当前执行脚本：${script}`);
+      serviceLogger.info({ script }, '当前执行脚本');
       const evaluateResult = await this.agent.evaluateJavaScript(script);
-      serviceLogger.info(evaluateResult, 'evaluateJavaScript 执行完成');
+      serviceLogger.info({ evaluateResult }, 'evaluateJavaScript 执行完成');
 
       const type = evaluateResult?.exceptionDetails?.exception?.subtype;
       if (type === 'error') {

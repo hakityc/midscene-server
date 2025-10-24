@@ -64,22 +64,25 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
   protected async createAgent(): Promise<void> {
     // 销毁旧实例
     if (this.agent) {
-      console.log('AgentOverWindows 已存在，先销毁旧实例');
+      serviceLogger.info('AgentOverWindows 已存在，先销毁旧实例');
       try {
         await this.agent.destroy(true);
       } catch (error) {
-        console.warn('销毁旧 AgentOverWindows 时出错:', error);
+        serviceLogger.warn({ error }, '销毁旧 AgentOverWindows 时出错');
       }
     }
 
-    console.log('正在创建并初始化 AgentOverWindows...');
+    serviceLogger.info('正在创建并初始化 AgentOverWindows...');
 
     const maxRetries = 3;
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`尝试创建 Agent (${attempt}/${maxRetries})...`);
+        serviceLogger.info(
+          { attempt, maxRetries },
+          `尝试创建 Agent (${attempt}/${maxRetries})...`,
+        );
 
         // 创建 Agent，动态传入 onTaskStartTip 回调
         this.agent = new AgentOverWindows({
@@ -89,13 +92,13 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
           },
         });
 
-        console.log('AgentOverWindows 创建成功');
+        serviceLogger.info('AgentOverWindows 创建成功');
         return;
       } catch (error) {
         lastError = error as Error;
-        console.error(
-          `AgentOverWindows 创建失败 (尝试 ${attempt}/${maxRetries}):`,
-          error,
+        serviceLogger.error(
+          { error, attempt, maxRetries },
+          `AgentOverWindows 创建失败 (尝试 ${attempt}/${maxRetries})`,
         );
 
         // 清理失败的 agent
@@ -110,13 +113,13 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
 
         if (attempt < maxRetries) {
           const delay = attempt * 2000;
-          console.log(`${delay / 1000}秒后重试...`);
+          serviceLogger.info({ delay }, `${delay / 1000}秒后重试...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
 
-    console.error('AgentOverWindows 创建最终失败，所有重试已用尽');
+    serviceLogger.error('AgentOverWindows 创建最终失败，所有重试已用尽');
     throw new Error(
       `创建失败，已重试 ${maxRetries} 次。最后错误: ${lastError?.message}`,
     );
@@ -127,9 +130,9 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
       throw new Error('Agent 未创建，无法初始化连接');
     }
 
-    console.log('启动 WindowsDevice...');
+    serviceLogger.info('启动 WindowsDevice...');
     await this.agent.launch();
-    console.log('WindowsDevice 启动成功');
+    serviceLogger.info('WindowsDevice 启动成功');
   }
 
   // ==================== Windows 特定方法 ====================
@@ -223,7 +226,7 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
   async execute(prompt: string): Promise<void> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
-      console.log('🔄 服务未启动，自动启动 WindowsOperateService...');
+      serviceLogger.info('服务未启动，自动启动 WindowsOperateService...');
       await this.start();
     }
 
@@ -232,16 +235,19 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
     }
 
     try {
-      console.log(`🚀 开始执行 Windows AI 任务: ${prompt}`);
+      serviceLogger.info({ prompt }, '开始执行 Windows AI 任务');
 
       // 使用 aiAction 方法执行任务
       await this.agent.aiAction(prompt);
-      console.log(`✅ Windows AI 任务执行完成: ${prompt}`);
+      serviceLogger.info({ prompt }, 'Windows AI 任务执行完成');
 
       // 执行完成后生成并上传 report
       await this.generateAndUploadReport();
     } catch (error: any) {
-      console.log(`❌ Windows AI 任务执行失败: ${error.message}`);
+      serviceLogger.error(
+        { prompt, error: error.message },
+        'Windows AI 任务执行失败',
+      );
       if (error.message?.includes('ai')) {
         throw new AppError(`AI 执行失败: ${error.message}`, 500);
       }
@@ -252,7 +258,7 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
   async expect(prompt: string): Promise<void> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
-      console.log('🔄 服务未启动，自动启动 WindowsOperateService...');
+      serviceLogger.info('服务未启动，自动启动 WindowsOperateService...');
       await this.start();
     }
 
@@ -262,9 +268,12 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
 
     try {
       await this.agent.aiAssert(prompt);
-      console.log(`✅ Windows AI 断言成功: ${prompt}`);
+      serviceLogger.info({ prompt }, 'Windows AI 断言成功');
     } catch (error: any) {
-      console.log(`❌ Windows AI 断言失败: ${error.message}`);
+      serviceLogger.error(
+        { prompt, error: error.message },
+        'Windows AI 断言失败',
+      );
       if (error.message?.includes('ai')) {
         throw new AppError(`AI 断言失败: ${error.message}`, 500);
       }
@@ -279,7 +288,7 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
   ): Promise<any> {
     // 如果服务未启动，自动启动
     if (!this.isStarted()) {
-      console.log('🔄 服务未启动，自动启动 WindowsOperateService...');
+      serviceLogger.info('服务未启动，自动启动 WindowsOperateService...');
       await this.start();
     }
 
