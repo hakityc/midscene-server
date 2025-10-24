@@ -1,0 +1,1444 @@
+import { EventEmitter } from 'node:events';
+import type { AgentOpt } from '@midscene/web';
+import { AgentOverChromeBridge } from '@midscene/web/bridge-mode';
+import { setBrowserConnected } from '../routes/health';
+import { AppError } from '../utils/error';
+import { serviceLogger } from '../utils/logger';
+import {
+  formatTaskTip,
+  getTaskStageDescription,
+} from '../utils/taskTipFormatter';
+import { ossService } from './ossService';
+
+// ==================== 服务状态枚举 ====================
+enum ServiceState {
+  STOPPED = 'stopped', // 服务已停止
+  STARTING = 'starting', // 正在启动
+  RUNNING = 'running', // 正常运行
+  STOPPING = 'stopping', // 正在停止
+  RECONNECTING = 'reconnecting', // 正在重连
+}
+
+export class WebOperateService extends EventEmitter {
+  // ==================== 单例模式相关 ====================
+  private static instance: WebOperateService | null = null;
+
+  // ==================== 核心属性 ====================
+  public agent: AgentOverChromeBridge | null = null;
+  private state: ServiceState = ServiceState.STOPPED;
+
+  // ==================== 重连机制属性 ====================
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
+  private reconnectInterval: number = 5000; // 5秒
+  private reconnectTimer: NodeJS.Timeout | null = null;
+
+  // ==================== 回调机制属性 ====================
+  private taskTipCallbacks: Array<
+    (tip: string, bridgeError?: Error | null) => void
+  > = [];
+
+  // ==================== 错误跟踪属性 ====================
+  private taskErrors: Array<{
+    taskName: string;
+    error: Error;
+    timestamp: number;
+  }> = [];
+
+  // ==================== AgentOverChromeBridge 默认配置 ====================
+  private readonly defaultAgentConfig: Partial<
+    AgentOpt & {
+      closeNewTabsAfterDisconnect?: boolean;
+      serverListeningTimeout?: number | false;
+      closeConflictServer?: boolean;
+    }
+  > = {
+    closeNewTabsAfterDisconnect: false,
+    closeConflictServer: true,
+    cacheId: 'midscene',
+    generateReport: true,
+    autoPrintReportMsg: true,
+    aiActionContext: '如果当前需要用户登录或者扫码，抛出异常，提示用户手动操作',
+  };
+
+  private constructor() {
+    super();
+    // 注意：不在构造函数中初始化 agent，改为延迟初始化
+  }
+
+  // ==================== 状态管理辅助方法 ====================
+
+  /**
+   * 设置服务状态
+   * @param newState 新状态
+   */
+  private setState(newState: ServiceState): void {
+    const oldState = this.state;
+    this.state = newState;
+    serviceLogger.info(
+      { oldState, newState },
+      `State transition: ${oldState} -> ${newState}`,
+    );
+  }
+
+  /**
+   * 检查当前状态
+   * @param state 要检查的状态
+   * @returns 是否匹配
+   */
+  private isState(state: ServiceState): boolean {
+    return this.state === state;
+  }
+
+  /**
+   * 获取当前状态
+   * @returns 当前状态
+   */
+  public getState(): ServiceState {
+    return this.state;
+  }
+
+  /**
+   * 等待状态变化
+   * @param currentState 当前状态
+   * @param timeout 超时时间（毫秒）
+   */
+  private async waitForStateChange(
+    currentState: ServiceState,
+    timeout: number,
+  ): Promise<void> {
+    const startTime = Date.now();
+
+    while (this.isState(currentState) && Date.now() - startTime < timeout) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    if (this.isState(currentState)) {
+      throw new Error(`等待状态变化超时: ${currentState}`);
+    }
+
+    if (this.isState(ServiceState.RUNNING)) {
+      serviceLogger.info('服务启动完成（等待其他启动完成）');
+      return;
+    }
+
+    if (this.isState(ServiceState.STOPPED)) {
+      throw new Error('服务启动失败');
+    }
+  }
+
+  // ==================== 单例模式方法 ====================
+
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): WebOperateService {
+    if (!WebOperateService.instance) {
+      WebOperateService.instance = new WebOperateService();
+    }
+    return WebOperateService.instance;
+  }
+
+  /**
+   * 重置单例实例（用于测试或强制重新初始化）
+   */
+  public static resetInstance(): void {
+    if (WebOperateService.instance) {
+      WebOperateService.instance.setState(ServiceState.STOPPED); // 重置状态
+      WebOperateService.instance
+        .stop()
+        .catch((error) =>
+          serviceLogger.error({ error }, '重置实例时停止服务失败'),
+        );
+      WebOperateService.instance = null;
+    }
+  }
+
+  // ==================== 回调机制方法 ====================
+
+  /**
+   * 注册任务提示回调
+   * @param callback 任务提示回调函数
+   */
+  public onTaskTip(
+    callback: (tip: string, bridgeError?: Error | null) => void,
+  ): void {
+    this.taskTipCallbacks.push(callback);
+  }
+
+  /**
+   * 移除任务提示回调
+   * @param callback 要移除的回调函数
+   */
+  public offTaskTip(
+    callback: (tip: string, bridgeError?: Error | null) => void,
+  ): void {
+    const index = this.taskTipCallbacks.indexOf(callback);
+    if (index > -1) {
+      this.taskTipCallbacks.splice(index, 1);
+    }
+  }
+
+  /**
+   * 清空所有任务提示回调
+   */
+  public clearTaskTipCallbacks(): void {
+    this.taskTipCallbacks = [];
+  }
+
+  /**
+   * 清空错误跟踪
+   */
+  public clearTaskErrors(): void {
+    this.taskErrors = [];
+  }
+
+  /**
+   * 获取任务错误列表
+   */
+  public getTaskErrors(): Array<{
+    taskName: string;
+    error: Error;
+    timestamp: number;
+  }> {
+    return [...this.taskErrors];
+  }
+
+  /**
+   * 创建任务提示回调（封装通用逻辑，供 WebSocket handler 使用）
+   * @param config 配置对象
+   * @returns 配置好的任务提示回调函数
+   */
+  public createTaskTipCallback<T>(config: {
+    send: (response: any) => boolean;
+    message: T;
+    connectionId: string;
+    wsLogger: any;
+    createSuccessResponseWithMeta: (
+      message: T,
+      data: any,
+      meta: any,
+      action?: any,
+    ) => any;
+    createErrorResponse: (
+      message: T,
+      error: Error,
+      errorMessage: string,
+    ) => any;
+    formatTaskTip: (tip: string) => {
+      formatted: string;
+      icon: string;
+      category: string;
+      content: string;
+      hint: string;
+    };
+    getTaskStageDescription: (category: string) => string;
+    WebSocketAction: any;
+  }): (tip: string, bridgeError?: Error | null) => void {
+    const {
+      send,
+      message,
+      connectionId,
+      wsLogger,
+      createSuccessResponseWithMeta,
+      createErrorResponse,
+      formatTaskTip,
+      getTaskStageDescription,
+      WebSocketAction,
+    } = config;
+
+    return (tip: string, bridgeError?: Error | null) => {
+      try {
+        // 格式化任务提示（完整提取所有字段）
+        const { formatted, category, icon, content, hint } = formatTaskTip(tip);
+        const timestamp = new Date().toLocaleTimeString('zh-CN', {
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+
+        serviceLogger.info({ tip }, 'WebSocket 监听到任务提示');
+
+        // 如果有 bridge 错误，先发送警告消息（不是致命错误，任务继续执行）
+        if (bridgeError) {
+          // 判断错误类型
+          const errorType = bridgeError.message.includes('Connection lost')
+            ? 'connection_lost'
+            : bridgeError.message.includes('timeout')
+              ? 'bridge_timeout'
+              : 'bridge_error';
+
+          const errorMessage =
+            errorType === 'connection_lost'
+              ? '⚠️ 浏览器扩展连接已断开，但任务继续在服务端执行'
+              : `⚠️ Bridge 通信异常: ${bridgeError.message}`;
+
+          const errorResponse = createErrorResponse(
+            message,
+            bridgeError,
+            errorMessage,
+          );
+          send(errorResponse);
+
+          wsLogger.warn(
+            {
+              connectionId,
+              tip,
+              error: bridgeError.message,
+              stack: bridgeError.stack,
+              errorType,
+            },
+            'Bridge 调用失败，但任务继续执行',
+          );
+        }
+
+        // 发送格式化后的用户友好消息（icon 已独立，不需要移除 emoji）
+        const response = createSuccessResponseWithMeta(
+          message,
+          formatted,
+          {
+            originalTip: tip,
+            category,
+            timestamp,
+            stage: getTaskStageDescription(category),
+            icon, // 添加独立的 icon 字段
+            content, // 添加原始详细内容
+            hint, // 添加补充提示
+            bridgeError: bridgeError
+              ? {
+                  message: bridgeError.message,
+                  type: bridgeError.message.includes('Connection lost')
+                    ? 'connection_lost'
+                    : bridgeError.message.includes('timeout')
+                      ? 'bridge_timeout'
+                      : 'bridge_error',
+                }
+              : undefined,
+          },
+          WebSocketAction.CALLBACK_AI_STEP,
+        );
+        send(response);
+      } catch (error) {
+        // 捕获回调执行过程中的任何错误，避免影响主流程
+        wsLogger.warn(
+          {
+            connectionId,
+            tip,
+            error,
+          },
+          '任务提示回调执行失败，但不影响主任务',
+        );
+      }
+    };
+  }
+
+  /**
+   * 触发任务提示回调
+   * @param tip 任务提示内容
+   * @param bridgeError Bridge 调用错误（如果有）
+   */
+  private triggerTaskTipCallbacks(
+    tip: string,
+    bridgeError?: Error | null,
+  ): void {
+    this.taskTipCallbacks.forEach((callback) => {
+      try {
+        callback(tip, bridgeError);
+      } catch (error) {
+        serviceLogger.error({ error }, '任务提示回调执行失败');
+      }
+    });
+  }
+
+  // ==================== 生命周期方法 ====================
+
+  /**
+   * 启动服务 - 初始化 AgentOverChromeBridge
+   * @param option 连接选项
+   */
+  public async start(): Promise<void> {
+    // 如果已运行，验证连接是否真的有效
+    if (this.isState(ServiceState.RUNNING) && this.agent) {
+      const isConnected = await this.quickConnectionCheck();
+      if (isConnected) {
+        serviceLogger.info('WebOperateService 已启动且连接正常，跳过重复启动');
+        return;
+      }
+      serviceLogger.warn('检测到连接异常，将重新启动');
+    }
+
+    // 如果正在启动中，等待启动完成
+    if (this.isState(ServiceState.STARTING)) {
+      serviceLogger.info('WebOperateService 正在启动中，等待启动完成...');
+      await this.waitForStateChange(ServiceState.STARTING, 30000);
+      return;
+    }
+
+    // 如果正在停止中，先等待停止完成
+    if (this.isState(ServiceState.STOPPING)) {
+      serviceLogger.info('WebOperateService 正在停止中，等待停止完成...');
+      await this.waitForStateChange(ServiceState.STOPPING, 10000);
+    }
+
+    this.setState(ServiceState.STARTING);
+
+    serviceLogger.info('启动 WebOperateService...');
+
+    try {
+      // 创建 AgentOverChromeBridge 实例
+      await this.createAgent();
+
+      // 初始化连接
+      await this.initialize();
+
+      this.setState(ServiceState.RUNNING);
+      serviceLogger.info('WebOperateService 启动成功');
+    } catch (error) {
+      this.setState(ServiceState.STOPPED);
+      serviceLogger.error({ error }, 'WebOperateService 启动失败');
+      throw error;
+    }
+  }
+
+  /**
+   * 停止服务 - 销毁 AgentOverChromeBridge
+   */
+  public async stop(): Promise<void> {
+    serviceLogger.info('停止 WebOperateService...');
+
+    if (this.isState(ServiceState.STOPPED)) {
+      serviceLogger.info('服务已经停止');
+      return;
+    }
+
+    this.setState(ServiceState.STOPPING);
+
+    try {
+      // 停止自动重连
+      this.stopAutoReconnect();
+
+      // 销毁 agent
+      if (this.agent) {
+        await this.agent.destroy();
+        this.agent = null;
+      }
+
+      // 重置状态
+      this.resetReconnectState();
+      setBrowserConnected(false);
+
+      serviceLogger.info('WebOperateService 已停止');
+    } catch (error) {
+      serviceLogger.error({ error }, '停止 WebOperateService 时出错');
+      throw error;
+    } finally {
+      // 确保状态总是被重置为 STOPPED
+      this.setState(ServiceState.STOPPED);
+    }
+  }
+
+  /**
+   * 检查服务是否已启动
+   */
+  public isStarted(): boolean {
+    return this.isState(ServiceState.RUNNING) && this.agent !== null;
+  }
+
+  /**
+   * 检查是否已初始化（向后兼容）
+   */
+  public isReady(): boolean {
+    return this.isState(ServiceState.RUNNING) && this.agent !== null;
+  }
+
+  /**
+   * 销毁服务（向后兼容）
+   */
+  async destroy(): Promise<void> {
+    return this.stop();
+  }
+
+  // ==================== AgentOverChromeBridge 管理 ====================
+
+  /**
+   * 创建 AgentOverChromeBridge 实例
+   */
+  private async createAgent(): Promise<void> {
+    if (this.agent) {
+      serviceLogger.info('AgentOverChromeBridge 已存在，先销毁旧实例');
+      try {
+        await this.agent.destroy();
+      } catch (error) {
+        serviceLogger.warn({ error }, '销毁旧 AgentOverChromeBridge 时出错');
+      }
+    }
+
+    serviceLogger.info(
+      '正在创建 AgentOverChromeBridge，绑定 onTaskStartTip 回调...',
+    );
+
+    this.agent = new AgentOverChromeBridge(this.defaultAgentConfig);
+
+    // 设置任务开始提示回调
+    this.setupTaskStartTipCallback();
+
+    serviceLogger.info('AgentOverChromeBridge 创建完成，onTaskStartTip 已绑定');
+  }
+
+  /**
+   * 设置任务开始提示回调
+   */
+  private setupTaskStartTipCallback(): void {
+    if (!this.agent) {
+      throw new Error('Agent 未创建，无法设置回调');
+    }
+
+    // 保存原始回调（来自 @midscene/web 的 showStatusMessage）
+    const originalCallback = this.agent.onTaskStartTip;
+
+    // 设置新的回调，同时保留原有功能
+    // 注意：这个回调会被 Midscene 内部调用，需要确保永远不抛出未捕获的错误
+    this.agent.onTaskStartTip = (tip: string) => {
+      // 使用立即执行的包装器来捕获所有可能的错误
+      // 包括同步错误、异步错误、以及延迟的 Promise rejection
+      const safeCall = async () => {
+        let bridgeError: Error | null = null;
+
+        // 调用原始回调（showStatusMessage），捕获所有错误
+        if (originalCallback) {
+          try {
+            // 关键修复：在同一个表达式中调用并附加 .catch()
+            // 这样可以确保在 Promise rejection 发生的同一个 tick 中就已经有错误处理器
+            // 避免触发 Node.js 的 unhandledRejection 事件
+            Promise.resolve(originalCallback.call(this.agent, tip)).catch(
+              (error: any) => {
+                // 判断是否是连接断开错误（内部错误，不影响任务执行）
+                const isConnectionError =
+                  error?.message?.includes('Connection lost') ||
+                  error?.message?.includes('client namespace disconnect') ||
+                  error?.message?.includes('bridge client') ||
+                  error?.message?.includes('transport close') ||
+                  error?.message?.includes('timeout');
+
+                if (isConnectionError) {
+                  // 连接断开是预期的情况（项目有重连机制），完全静默处理
+                  // 不记录日志，不上报错误，当做无事发生
+                  bridgeError =
+                    error instanceof Error ? error : new Error(String(error));
+                } else {
+                  // 非连接错误，可能需要关注
+                  serviceLogger.warn(
+                    {
+                      tip,
+                      error: error?.message,
+                      stack: error?.stack,
+                    },
+                    '显示状态消息失败',
+                  );
+
+                  // 记录到错误跟踪中
+                  this.taskErrors.push({
+                    taskName: tip,
+                    error:
+                      error instanceof Error ? error : new Error(String(error)),
+                    timestamp: Date.now(),
+                  });
+                }
+              },
+            );
+          } catch (syncError: any) {
+            // 捕获调用时的同步错误
+            serviceLogger.warn(
+              {
+                tip,
+                error: syncError?.message,
+                stack: syncError?.stack,
+              },
+              '调用原始回调时发生同步错误',
+            );
+          }
+        }
+
+        // 立即调用我们的回调，不等待 showStatusMessage 完成
+        // 这样即使 bridge 连接有问题，我们的处理逻辑也能正常执行
+        try {
+          this.handleTaskStartTip(tip, bridgeError);
+        } catch (handlerError: any) {
+          // 如果我们自己的处理逻辑失败，记录错误
+          serviceLogger.error(
+            {
+              tip,
+              error: handlerError?.message,
+              stack: handlerError?.stack,
+            },
+            'handleTaskStartTip 执行失败',
+          );
+        }
+      };
+
+      // 执行安全调用包装器，并捕获任何顶层错误
+      safeCall().catch((error: any) => {
+        // 最后的安全网：确保任何未预期的错误都被捕获
+        serviceLogger.error(
+          {
+            tip,
+            error: error?.message,
+            stack: error?.stack,
+          },
+          'onTaskStartTip 回调执行失败（最外层捕获）',
+        );
+
+        // 尝试通知客户端发生了严重错误
+        try {
+          this.triggerTaskTipCallbacks(
+            tip || '未知任务',
+            error instanceof Error ? error : new Error(String(error)),
+          );
+        } catch (notifyError) {
+          // 如果通知也失败了，只记录日志，不再抛出
+          serviceLogger.error({ notifyError }, '无法通知客户端错误');
+        }
+      });
+
+      // 注意：这里不返回 Promise，避免外部等待
+      // 所有错误都在内部处理，不会向外传播
+    };
+  }
+
+  /**
+   * 处理任务开始提示的统一方法
+   */
+  private handleTaskStartTip(tip: string, bridgeError?: Error | null): void {
+    try {
+      const { formatted, category, icon, content, hint } = formatTaskTip(tip);
+      const stageDescription = getTaskStageDescription(category);
+
+      serviceLogger.info(
+        { tip, icon, formatted, stageDescription },
+        'AI 任务开始',
+      );
+      if (content) {
+        serviceLogger.info({ content }, '详细内容');
+      }
+
+      // 如果有 bridge 错误，记录到错误跟踪中
+      if (bridgeError) {
+        this.taskErrors.push({
+          taskName: tip,
+          error: bridgeError,
+          timestamp: Date.now(),
+        });
+
+        serviceLogger.warn({ tip, error: bridgeError.message }, '记录任务错误');
+      }
+
+      serviceLogger.info(
+        {
+          tip,
+          formatted,
+          category,
+          icon,
+          content,
+          hint,
+          stage: stageDescription,
+          bridgeError: bridgeError
+            ? {
+                message: bridgeError.message,
+                type: bridgeError.message.includes('Connection lost')
+                  ? 'connection_lost'
+                  : 'bridge_error',
+              }
+            : undefined,
+        },
+        'AI 任务开始执行',
+      );
+
+      // 发射事件，让其他地方可以监听到
+      this.emit('taskStartTip', tip, bridgeError);
+
+      // 触发注册的回调，并传递 bridge 错误信息
+      this.triggerTaskTipCallbacks(tip, bridgeError);
+    } catch (error: any) {
+      // 捕获任何错误，防止影响主流程
+      serviceLogger.error(
+        {
+          tip,
+          error: error?.message,
+          stack: error?.stack,
+        },
+        'handleTaskStartTip 执行失败',
+      );
+
+      // 尝试通知客户端发生了错误
+      try {
+        this.triggerTaskTipCallbacks(
+          tip || '未知任务',
+          error instanceof Error ? error : new Error(String(error)),
+        );
+      } catch (notifyError) {
+        // 如果通知也失败了，只记录日志
+        serviceLogger.error(
+          { notifyError },
+          '无法通知客户端 handleTaskStartTip 错误',
+        );
+      }
+    }
+  }
+
+  // ==================== 连接管理相关方法 ====================
+
+  /**
+   * 初始化连接（确保只初始化一次）
+   */
+  private async initialize(): Promise<void> {
+    if (!this.agent) {
+      throw new Error('Agent 未创建，请先调用 createAgent()');
+    }
+
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        serviceLogger.info(
+          { attempt, maxRetries },
+          `尝试初始化连接 (${attempt}/${maxRetries})...`,
+        );
+        await this.connectLastTab();
+        setBrowserConnected(true);
+        serviceLogger.info('AgentOverChromeBridge 初始化成功');
+        return;
+      } catch (error) {
+        lastError = error as Error;
+        serviceLogger.error(
+          { error, attempt, maxRetries },
+          `AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries})`,
+        );
+        setBrowserConnected(false);
+
+        if (attempt < maxRetries) {
+          const delay = attempt * 2000; // 递增延迟：2s, 4s
+          serviceLogger.info({ delay }, `${delay / 1000}秒后重试...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    // 所有重试都失败了
+    serviceLogger.error('AgentOverChromeBridge 初始化最终失败，所有重试已用尽');
+    setBrowserConnected(false);
+    throw new Error(
+      `初始化失败，已重试${maxRetries}次。最后错误: ${lastError?.message}`,
+    );
+  }
+
+  /**
+   * 连接当前标签页
+   */
+  async connectLastTab(): Promise<void> {
+    try {
+      if (!this.agent) {
+        throw new Error('Agent 未初始化');
+      }
+      //@ts-expect-error
+      const tabs = await this.agent.getBrowserTabList({});
+      serviceLogger.info({ tabList: JSON.stringify(tabs) }, '浏览器标签页列表');
+      if (tabs.length > 0) {
+        const tab = tabs[tabs.length - 1];
+        await this.agent.setActiveTabId(tab.id);
+        serviceLogger.info(
+          { tab: JSON.stringify(tab) },
+          '浏览器标签页连接成功',
+        );
+      }
+    } catch (error: any) {
+      serviceLogger.error({ error }, '浏览器标签页连接失败');
+
+      // 处理浏览器连接错误
+      if (error.message?.includes('connect')) {
+        throw new AppError('浏览器连接失败', 503);
+      }
+      // 处理其他连接错误
+      throw new AppError(`浏览器连接错误: ${error.message}`, 500);
+    }
+  }
+
+  // ==================== 重连机制相关方法 ====================
+
+  /**
+   * 启动自动重连机制
+   */
+  private startAutoReconnect(): void {
+    if (this.reconnectTimer || this.isState(ServiceState.STOPPING)) {
+      return;
+    }
+
+    serviceLogger.info('启动自动重连机制...');
+    this.reconnectTimer = setInterval(async () => {
+      // 如果服务正在停止，不进行重连
+      if (
+        this.isState(ServiceState.STOPPING) ||
+        this.isState(ServiceState.STOPPED)
+      ) {
+        serviceLogger.info('服务已停止，取消自动重连');
+        this.stopAutoReconnect();
+        return;
+      }
+
+      if (
+        this.isState(ServiceState.RUNNING) ||
+        this.isState(ServiceState.RECONNECTING)
+      ) {
+        return;
+      }
+
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        serviceLogger.warn('已达到最大重连次数，停止自动重连');
+        this.stopAutoReconnect();
+        setBrowserConnected(false);
+        return;
+      }
+
+      this.setState(ServiceState.RECONNECTING);
+      this.reconnectAttempts++;
+
+      try {
+        serviceLogger.info(
+          {
+            reconnectAttempts: this.reconnectAttempts,
+            maxReconnectAttempts: this.maxReconnectAttempts,
+          },
+          `自动重连尝试 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`,
+        );
+        await this.initialize();
+
+        if (this.isState(ServiceState.RECONNECTING)) {
+          serviceLogger.info('自动重连成功');
+          this.reconnectAttempts = 0;
+          this.stopAutoReconnect();
+          this.setState(ServiceState.RUNNING);
+          setBrowserConnected(true);
+          this.emit('reconnected');
+        }
+      } catch (error) {
+        serviceLogger.error(
+          {
+            error,
+            reconnectAttempts: this.reconnectAttempts,
+            maxReconnectAttempts: this.maxReconnectAttempts,
+          },
+          `自动重连失败 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+        );
+        this.setState(ServiceState.STOPPED);
+        setBrowserConnected(false);
+      }
+    }, this.reconnectInterval);
+  }
+
+  /**
+   * 停止自动重连
+   */
+  private stopAutoReconnect(): void {
+    if (this.reconnectTimer) {
+      clearInterval(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
+  /**
+   * 重置重连状态
+   */
+  private resetReconnectState(): void {
+    this.reconnectAttempts = 0;
+    this.stopAutoReconnect();
+  }
+
+  /**
+   * 检查连接状态并启动重连
+   */
+  public async checkAndReconnect(): Promise<boolean> {
+    // 如果服务正在停止，不进行重连
+    if (this.isState(ServiceState.STOPPING)) {
+      serviceLogger.info('服务正在停止，不进行重连检查');
+      return false;
+    }
+
+    if (this.isState(ServiceState.RUNNING)) {
+      // 先使用超轻量级检测
+      const isConnected = await this.quickConnectionCheck();
+      if (isConnected) {
+        return true;
+      }
+    }
+
+    serviceLogger.warn('检测到连接断开，启动重连机制');
+    this.setState(ServiceState.STOPPED);
+    setBrowserConnected(false);
+    this.startAutoReconnect();
+    return false;
+  }
+
+  /**
+   * 强制重连
+   */
+  public async forceReconnect(): Promise<void> {
+    // 如果服务正在停止，不允许强制重连
+    if (this.isState(ServiceState.STOPPING)) {
+      serviceLogger.warn('服务正在停止，不允许强制重连');
+      throw new AppError('服务正在停止，无法重连', 503);
+    }
+
+    serviceLogger.info('强制重连...');
+    this.resetReconnectState();
+    this.setState(ServiceState.STOPPED);
+    setBrowserConnected(false);
+
+    try {
+      await this.initialize();
+      serviceLogger.info('强制重连成功');
+      this.setState(ServiceState.RUNNING);
+      setBrowserConnected(true);
+      this.emit('reconnected');
+    } catch (error) {
+      serviceLogger.error({ error }, '强制重连失败');
+      this.setState(ServiceState.STOPPED);
+      setBrowserConnected(false);
+      this.startAutoReconnect();
+      throw error;
+    }
+  }
+
+  /**
+   * 重新连接（内部方法）
+   */
+  private async reconnect(): Promise<void> {
+    // 如果服务正在停止，不进行重连
+    if (this.isState(ServiceState.STOPPING)) {
+      serviceLogger.info('服务正在停止，取消重新连接');
+      throw new Error('服务正在停止，无法重新连接');
+    }
+
+    try {
+      serviceLogger.info('尝试重新连接...');
+      this.setState(ServiceState.STOPPED);
+      setBrowserConnected(false);
+
+      // 重新创建连接
+      await this.createAgent();
+      await this.initialize();
+
+      this.setState(ServiceState.RUNNING);
+      setBrowserConnected(true);
+      serviceLogger.info('重新连接成功');
+    } catch (error) {
+      serviceLogger.error({ error }, '重新连接失败');
+      this.setState(ServiceState.STOPPED);
+      setBrowserConnected(false);
+      throw error;
+    }
+  }
+
+  // ==================== 连接状态检测方法 ====================
+
+  /**
+   * 检查连接状态 - 轻量级检测
+   */
+  private async checkConnectionStatus(): Promise<boolean> {
+    if (!this.agent) {
+      setBrowserConnected(false);
+      return false;
+    }
+
+    try {
+      // 使用更轻量级的方法：获取浏览器标签页列表
+      // 这比evaluateJavaScript更快，不会执行页面脚本
+      //@ts-expect-error
+      await this.agent.getBrowserTabList({});
+      setBrowserConnected(true);
+      return true;
+    } catch (error: any) {
+      const message = error?.message || '';
+      // 检测到连接断开的关键词
+      if (
+        message.includes('no tab is connected') ||
+        message.includes('bridge client') ||
+        message.includes('Debugger is not attached') ||
+        message.includes('tab with id') ||
+        message.includes('Connection lost') ||
+        message.includes('timeout')
+      ) {
+        serviceLogger.warn({ message }, '检测到连接断开');
+        setBrowserConnected(false);
+        return false;
+      }
+      // 其他错误可能是页面问题，不算连接断开
+      setBrowserConnected(true);
+      return true;
+    }
+  }
+
+  /**
+   * 超轻量级连接检测 - 仅用于快速检查
+   */
+  private async quickConnectionCheck(): Promise<boolean> {
+    if (!this.agent) {
+      setBrowserConnected(false);
+      return false;
+    }
+
+    try {
+      // 使用最轻量级的方法：发送状态消息
+      // 这几乎不会增加任何延迟
+      await this.agent.page.showStatusMessage('ping');
+      setBrowserConnected(true);
+      return true;
+    } catch (error: any) {
+      const message = error?.message || '';
+      if (
+        message.includes('Connection lost') ||
+        message.includes('timeout') ||
+        message.includes('bridge client')
+      ) {
+        setBrowserConnected(false);
+        return false;
+      }
+      // 如果showStatusMessage失败，回退到getBrowserTabList
+      return await this.checkConnectionStatus();
+    }
+  }
+
+  /**
+   * 确保连接有效 - 主动连接管理
+   */
+  private async ensureConnection(): Promise<void> {
+    // 如果服务正在停止，不进行连接管理
+    if (this.isState(ServiceState.STOPPING)) {
+      throw new Error('服务正在停止，无法确保连接');
+    }
+
+    // 如果服务未启动，先启动服务
+    if (!this.isStarted()) {
+      serviceLogger.info('服务未启动，开始启动...');
+      await this.start();
+      return;
+    }
+
+    // 使用轻量级检测检查连接是否真的有效
+    const isConnected = await this.quickConnectionCheck();
+    if (!isConnected) {
+      serviceLogger.warn('连接已断开，尝试重新连接...');
+      await this.reconnect();
+    }
+  }
+
+  /**
+   * 确保连接当前标签页 - 在所有操作前调用
+   */
+  private async ensureCurrentTabConnection(): Promise<void> {
+    try {
+      // 先确保服务已初始化
+      await this.ensureConnection();
+
+      if (!this.agent) {
+        throw new Error('Agent 未初始化');
+      }
+      serviceLogger.info('确保当前标签页连接成功');
+    } catch (error: any) {
+      serviceLogger.warn({ error: error.message }, '连接当前标签页时出现警告');
+      // 如果是"Another debugger is already attached"错误，我们忽略它
+      // 因为这意味着连接已经存在
+      if (!error.message?.includes('Another debugger is already attached')) {
+        this.reconnect().catch((err) =>
+          serviceLogger.error({ err }, '重连失败'),
+        );
+        throw error;
+      }
+    }
+  }
+
+  // ==================== 执行相关方法 ====================
+
+  /**
+   * 通用重试执行器：抽取公共 withRetry 重试逻辑
+   */
+  private async runWithRetry<T>(
+    _prompt: string,
+    maxRetries: number,
+    singleAttemptRunner: (attempt: number, maxRetries: number) => Promise<T>,
+  ): Promise<T> {
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await singleAttemptRunner(attempt, maxRetries);
+        return result;
+      } catch (error: any) {
+        lastError = error;
+
+        if (this.isConnectionError(error) && attempt < maxRetries) {
+          serviceLogger.warn(
+            { attempt, maxRetries },
+            `检测到连接错误，尝试重新连接 (${attempt}/${maxRetries})`,
+          );
+          await this.handleConnectionError();
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    throw lastError;
+  }
+
+  /**
+   * 检查是否是连接相关的错误
+   */
+  private isConnectionError(error: any): boolean {
+    const errorMessage = error.message || '';
+    return (
+      errorMessage.includes('Debugger is not attached') ||
+      errorMessage.includes('connect') ||
+      errorMessage.includes('bridge client') ||
+      errorMessage.includes('tab with id') ||
+      errorMessage.includes('connection')
+    );
+  }
+
+  /**
+   * 处理连接错误
+   */
+  private async handleConnectionError(): Promise<void> {
+    try {
+      serviceLogger.info('处理连接错误，尝试重新连接...');
+      await this.reconnect();
+
+      // 等待一段时间确保连接稳定
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    } catch (error) {
+      serviceLogger.error({ error }, '处理连接错误失败');
+      throw error;
+    }
+  }
+
+  /**
+   * 生成并上传 report 到 OSS
+   * 在 AI 任务执行完成后调用
+   */
+  private async generateAndUploadReport(): Promise<void> {
+    if (!this.agent) {
+      serviceLogger.warn('Agent 未初始化，跳过 report 上传');
+      return;
+    }
+
+    // 如果 agent 已销毁，静默跳过（可能是 stop() 被提前调用）
+    if (this.agent.destroyed) {
+      serviceLogger.info('Agent 已销毁，跳过 report 生成和上传');
+      return;
+    }
+
+    try {
+      // 生成 report 文件
+      this.agent.writeOutActionDumps();
+
+      const reportFile = this.agent.reportFile;
+      if (!reportFile) {
+        serviceLogger.warn('Report 文件未生成，跳过上传');
+        return;
+      }
+
+      // 上传到 OSS
+      const reportUrl = await ossService.uploadReport(reportFile);
+
+      if (reportUrl) {
+        serviceLogger.info(
+          {
+            reportUrl,
+            type: 'REPORT_UPLOADED', // 添加类型标记
+            timestamp: Date.now(),
+          },
+          '📊 Report 已生成并上传，查看地址',
+        );
+      } else {
+        serviceLogger.warn('Report 上传失败或 OSS 未启用');
+      }
+    } catch (error: any) {
+      // 检查是否是 agent 已销毁的错误
+      if (error?.message?.includes('PageAgent has been destroyed')) {
+        serviceLogger.info(
+          'Agent 已在 report 生成过程中被销毁，跳过 report 保存（可能是服务正在停止）',
+        );
+        return;
+      }
+
+      // 其他错误：上传失败不应该影响主流程，只记录日志
+      serviceLogger.error({ error }, '❌ Report 上传过程出错');
+    }
+  }
+
+  /**
+   * 执行 AI 任务
+   */
+  async execute(prompt: string, maxRetries: number = 3): Promise<void> {
+    // 如果服务未启动，自动启动
+    if (!this.isStarted()) {
+      serviceLogger.info('服务未启动，自动启动 WebOperateService...');
+      await this.start();
+    }
+
+    // 检查连接状态，如果断开则启动重连
+    const isConnected = await this.checkAndReconnect();
+    if (!isConnected) {
+      throw new AppError('浏览器连接断开，正在重连中', 503);
+    }
+
+    // 执行前确保连接当前标签页
+    await this.ensureCurrentTabConnection();
+
+    await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
+      this.executeWithRetry(prompt, attempt, max),
+    );
+
+    // 执行完成后生成并上传 report
+    await this.generateAndUploadReport();
+  }
+
+  private async executeWithRetry(
+    prompt: string,
+    _attempt: number,
+    _maxRetries: number,
+  ): Promise<void> {
+    // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
+    if (!this.agent) {
+      throw new AppError('服务启动失败，无法执行任务', 503);
+    }
+
+    try {
+      serviceLogger.info({ prompt }, '开始执行 AI 任务');
+      serviceLogger.info(
+        { onTaskStartTipType: typeof this.agent.onTaskStartTip },
+        '当前 agent.onTaskStartTip 是否已设置',
+      );
+
+      await this.agent.ai(prompt);
+      serviceLogger.info({ prompt }, 'AI 任务执行完成');
+    } catch (error: any) {
+      serviceLogger.error({ prompt, error: error.message }, 'AI 任务执行失败');
+      if (error.message?.includes('ai')) {
+        throw new AppError(`AI 执行失败: ${error.message}`, 500);
+      }
+      throw new AppError(`任务执行失败: ${error.message}`, 500);
+    }
+  }
+
+  /**
+   * 执行 AI 断言
+   */
+  async expect(prompt: string, maxRetries: number = 3): Promise<void> {
+    // 如果服务未启动，自动启动
+    if (!this.isStarted()) {
+      serviceLogger.info('服务未启动，自动启动 WebOperateService...');
+      await this.start();
+    }
+
+    // 执行前确保连接当前标签页
+    await this.ensureCurrentTabConnection();
+
+    await this.runWithRetry(prompt, maxRetries, (attempt, max) =>
+      this.expectWithRetry(prompt, attempt, max),
+    );
+  }
+
+  private async expectWithRetry(
+    prompt: string,
+    _attempt: number,
+    _maxRetries: number,
+  ): Promise<void> {
+    // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
+    if (!this.agent) {
+      throw new AppError('服务启动失败，无法执行断言', 503);
+    }
+
+    try {
+      await this.agent.aiAssert(prompt);
+    } catch (error: any) {
+      if (error.message?.includes('ai')) {
+        throw new AppError(`AI 断言失败: ${error.message}`, 500);
+      }
+      throw new AppError(`断言执行失败: ${error.message}`, 500);
+    }
+  }
+
+  /**
+   * 运行 YAML 脚本并跟踪错误（自定义包装方法）
+   * @param prompt YAML 脚本内容
+   * @returns 包含错误信息的执行结果
+   */
+  private async runYamlWithErrorTracking(prompt: string): Promise<any> {
+    if (!this.agent) {
+      throw new AppError('Agent 未初始化', 503);
+    }
+
+    // 清理之前的错误记录
+    this.clearTaskErrors();
+    const result = await this.agent.runYaml(prompt);
+
+    // 检查是否有任务错误发生
+    const taskErrors = this.getTaskErrors();
+
+    return {
+      ...result,
+      // 添加错误跟踪信息
+      _wrapped: true,
+      _timestamp: Date.now(),
+      _taskErrors: taskErrors.length > 0 ? taskErrors : undefined,
+      _hasErrors: taskErrors.length > 0,
+    };
+  }
+
+  /**
+   * 执行 YAML 脚本
+   * @returns 返回脚本执行结果
+   */
+  async executeScript(
+    prompt: string,
+    maxRetries: number = 3,
+    originalCmd?: string,
+  ): Promise<any> {
+    // 如果服务未启动，自动启动
+    if (!this.isStarted()) {
+      serviceLogger.info('服务未启动，自动启动 WebOperateService...');
+      await this.start();
+    }
+
+    // 执行前确保连接当前标签页
+    await this.ensureCurrentTabConnection();
+
+    try {
+      const result = await this.runWithRetry(
+        prompt,
+        maxRetries,
+        async (_attempt, _max) => {
+          // 此时应该已经确保服务启动，如果仍然没有agent，说明启动失败
+          if (!this.agent) {
+            throw new AppError('服务启动失败，无法执行脚本', 503);
+          }
+
+          try {
+            // 使用自定义的 runYamlWithErrorTracking 方法
+            const yamlResult = await this.runYamlWithErrorTracking(prompt);
+
+            serviceLogger.info(
+              {
+                prompt,
+                result: yamlResult,
+              },
+              'YAML 脚本执行完成',
+            );
+
+            return yamlResult;
+          } catch (error: any) {
+            // 先不急着上报错误，由外层决定是否兜底和上报
+            if (error.message?.includes('ai')) {
+              throw new AppError(`AI 执行失败: ${error.message}`, 500);
+            }
+            throw new AppError(`脚本执行失败: ${error.message}`, 500);
+          }
+        },
+      );
+
+      // 执行完成后生成并上传 report
+      await this.generateAndUploadReport();
+
+      return result;
+    } catch (error: any) {
+      // 如果提供了 originalCmd，则先尝试兜底执行
+      if (originalCmd) {
+        try {
+          await this.execute(originalCmd);
+          // 兜底成功，不上报错误
+          serviceLogger.warn(
+            { prompt, originalCmd, originalError: error?.message },
+            'YAML 执行失败，但兜底执行成功，忽略原错误',
+          );
+          return undefined; // 兜底执行没有返回值
+        } catch (fallbackErr: any) {
+          // 兜底失败，同时上报两个错误
+          serviceLogger.error(
+            {
+              prompt,
+              originalCmd,
+              originalError: error,
+              fallbackError: fallbackErr,
+            },
+            'YAML 执行失败，兜底执行也失败',
+          );
+          throw new AppError(
+            `YAML 脚本执行失败: ${error?.message} | 兜底失败: ${fallbackErr?.message}`,
+            500,
+          );
+        }
+      }
+      // 未提供 originalCmd，按原逻辑抛错
+      throw error;
+    }
+  }
+
+  /**
+   * 评估页面 JavaScript（带主动连接保证）
+   */
+  public async evaluateJavaScript(
+    script: string,
+    originalCmd?: string,
+  ): Promise<any> {
+    try {
+      // 如果服务未启动，自动启动
+      if (!this.isStarted()) {
+        serviceLogger.info('服务未启动，自动启动 WebOperateService...');
+        await this.start();
+      }
+
+      // 执行前确保连接当前标签页
+      await this.ensureCurrentTabConnection();
+
+      if (!this.agent) {
+        throw new AppError('服务启动失败，无法执行脚本', 503);
+      }
+      serviceLogger.info(`当前执行脚本：${script}`);
+      const evaluateResult = await this.agent.evaluateJavaScript(script);
+      serviceLogger.info(evaluateResult, 'evaluateJavaScript 执行完成');
+      const type = evaluateResult?.exceptionDetails?.exception?.subtype;
+      if (type === 'error') {
+        throw new AppError(`JavaScript 执行失败: ${evaluateResult}`, 500);
+      }
+      return evaluateResult;
+    } catch (error: any) {
+      // 如果提供了 originalCmd，则先尝试兜底执行
+      if (originalCmd) {
+        try {
+          await this.execute(originalCmd);
+          // 兜底成功，不上报错误
+          serviceLogger.warn(
+            { script, originalCmd, originalError: error?.message },
+            'JS 执行失败，但兜底执行成功，忽略原错误',
+          );
+          return;
+        } catch (fallbackErr: any) {
+          // 兜底失败，同时上报两个错误
+          serviceLogger.error(
+            {
+              script,
+              originalCmd,
+              originalError: error,
+              fallbackError: fallbackErr,
+            },
+            'JS 执行失败，兜底执行也失败',
+          );
+          throw new AppError(`JavaScript 执行失败`, 500);
+        }
+      }
+      throw new AppError(`JavaScript 执行失败`, 500);
+    }
+  }
+}

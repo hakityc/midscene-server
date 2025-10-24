@@ -1,0 +1,305 @@
+import { CheckCircle2, Clipboard, Copy, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useVariableTransform } from '@/hooks/useVariableTransform';
+import type { WsInboundMessage } from '@/types/debug';
+import { validateJson } from '@/utils/messageBuilder';
+
+/**
+ * 格式化 JSON，将未启用的动作注释掉
+ */
+function formatJsonWithDisabledActions(params: any): string {
+  if (!params || typeof params !== 'object') {
+    return JSON.stringify(params, null, 2);
+  }
+
+  // 如果有 tasks 数组，处理每个 task 中的 flow
+  if (Array.isArray(params.tasks)) {
+    const formattedTasks = params.tasks.map((task: any) => {
+      if (!task.flow || !Array.isArray(task.flow)) {
+        return task;
+      }
+
+      const lines: string[] = [];
+      lines.push(`    {`);
+      lines.push(`      "name": ${JSON.stringify(task.name)},`);
+      lines.push(`      "continueOnError": ${task.continueOnError},`);
+      lines.push(`      "flow": [`);
+
+      // 收集有效的动作行
+      const actionLines: string[] = [];
+
+      task.flow.forEach((action: any) => {
+        const isEnabled = action.enabled !== false;
+        // 移除前端专用字段（id, enabled）
+        // biome-ignore lint/correctness/noUnusedVariables: 解构是为了移除字段
+        const { id, enabled, ...cleanAction } = action;
+
+        // 检查是否为空对象（移除字段后没有任何内容）
+        const isEmptyAction = Object.keys(cleanAction).length === 0;
+        if (isEmptyAction) {
+          return; // 跳过空对象
+        }
+
+        const actionStr = JSON.stringify(cleanAction, null, 2);
+        const indentedAction = actionStr
+          .split('\n')
+          .map((line) => '        ' + line)
+          .join('\n');
+
+        if (!isEnabled) {
+          // 将未启用的动作注释掉
+          const commented = indentedAction
+            .split('\n')
+            .map((line) => '// ' + line)
+            .join('\n');
+          actionLines.push(commented);
+        } else {
+          actionLines.push(indentedAction);
+        }
+      });
+
+      // 添加带逗号的动作行
+      actionLines.forEach((line, index) => {
+        lines.push(line + (index < actionLines.length - 1 ? ',' : ''));
+      });
+
+      lines.push(`      ]`);
+      lines.push(`    }`);
+      return lines.join('\n');
+    });
+
+    return `{\n  "tasks": [\n${formattedTasks.join(',\n')}\n  ]\n}`;
+  }
+
+  return JSON.stringify(params, null, 2);
+}
+
+interface JsonPreviewProps {
+  message: WsInboundMessage;
+  editable?: boolean;
+  onEdit?: (message: WsInboundMessage) => void;
+  onFormUpdate?: (formData: any) => void;
+}
+
+export function JsonPreview({
+  message,
+  editable = false,
+  onEdit,
+  onFormUpdate,
+}: JsonPreviewProps) {
+  // 局部变量：编辑时只修改这个，失焦时再同步到全局
+  const [localJsonString, setLocalJsonString] = useState('');
+  const [isValid, setIsValid] = useState(true);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const { transformTasks } = useVariableTransform();
+
+  // 用于防止 handleBlur 后立即触发 useEffect 重新格式化
+  const skipNextEffectRef = useRef(false);
+
+  // 转换变量为占位符后的参数（用于预览）
+  const previewParams = useMemo(() => {
+    const params = message.payload?.params || {};
+
+    // 如果是 aiScript 类型且有 tasks，转换变量为占位符
+    if (
+      message.payload?.action === 'aiScript' &&
+      typeof params === 'object' &&
+      params !== null &&
+      'tasks' in params &&
+      Array.isArray(params.tasks)
+    ) {
+      return {
+        ...params,
+        tasks: transformTasks(params.tasks, 'placeholder'),
+      };
+    }
+
+    return params;
+  }, [message, transformTasks]);
+
+  // 全局 message 变化 → 同步到局部变量
+  useEffect(() => {
+    // 如果标志位为 true，跳过本次更新（用户刚刚手动编辑并提交）
+    if (skipNextEffectRef.current) {
+      skipNextEffectRef.current = false;
+      return;
+    }
+
+    const formatted = formatJsonWithDisabledActions(previewParams);
+    setLocalJsonString(formatted);
+    setIsValid(true);
+    setError('');
+  }, [previewParams]);
+
+  // 用户输入 → 只修改局部变量
+  const handleChange = (value: string) => {
+    setLocalJsonString(value);
+
+    if (!editable) return;
+
+    // 实时验证但不立即更新全局，只在失焦时更新
+    const validation = validateJson(value);
+    setIsValid(validation.isValid);
+    setError(validation.error || '');
+  };
+
+  // 失焦 → 同步局部变量到全局
+  const handleBlur = () => {
+    if (!editable || !isValid) return;
+
+    // 失焦时验证并更新全局 store
+    const validation = validateJson(localJsonString);
+    if (validation.isValid && validation.parsed) {
+      // 只更新 params 部分
+      const updatedMessage = {
+        ...message,
+        payload: {
+          ...message.payload,
+          params: validation.parsed,
+        },
+      };
+
+      // 更新消息（如果需要）
+      if (onEdit) {
+        onEdit(updatedMessage);
+      }
+
+      // 同步到全局 store（表单）
+      if (onFormUpdate) {
+        // 设置标志：跳过下一次 useEffect 更新
+        skipNextEffectRef.current = true;
+        onFormUpdate(validation.parsed);
+      }
+    }
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(localJsonString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) {
+        // 更新局部变量
+        setLocalJsonString(text);
+
+        // 粘贴后立即验证并同步到全局（因为用户明确想要粘贴内容）
+        const validation = validateJson(text);
+        setIsValid(validation.isValid);
+        setError(validation.error || '');
+
+        if (validation.isValid && validation.parsed) {
+          const updatedMessage = {
+            ...message,
+            payload: {
+              ...message.payload,
+              params: validation.parsed,
+            },
+          };
+
+          if (onEdit) {
+            onEdit(updatedMessage);
+          }
+
+          if (onFormUpdate) {
+            // 设置标志：跳过下一次 useEffect 更新
+            skipNextEffectRef.current = true;
+            onFormUpdate(validation.parsed);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to paste:', error);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <Label className="text-sm font-semibold">参数 JSON</Label>
+          <p className="text-xs text-muted-foreground mt-0.5">payload.params</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {editable && (
+            <Button size="sm" variant="outline" onClick={handlePaste}>
+              <Clipboard className="h-3 w-3 mr-1" />
+              粘贴
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={handleCopy}>
+            <Copy className="h-3 w-3 mr-1" />
+            {copied ? '已复制!' : '复制'}
+          </Button>
+          <div
+            className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md border ${
+              isValid
+                ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-400'
+                : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-400'
+            }`}
+          >
+            {isValid ? (
+              <>
+                <CheckCircle2 className="h-3 w-3" />
+                有效
+              </>
+            ) : (
+              <>
+                <XCircle className="h-3 w-3" />
+                无效
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Textarea
+        value={localJsonString}
+        onChange={(e) => handleChange(e.target.value)}
+        onBlur={handleBlur}
+        readOnly={!editable}
+        className={`font-mono text-xs min-h-[400px] ${
+          !isValid ? 'border-destructive' : ''
+        } ${!editable ? 'bg-muted/50' : ''}`}
+        spellCheck={false}
+      />
+
+      {!isValid && error && (
+        <div className="p-2 rounded-md border border-destructive bg-destructive/10 text-destructive text-xs font-medium">
+          ❌ {error}
+        </div>
+      )}
+
+      {editable && (
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            💡 编辑参数 JSON 后失焦会同步更新表单
+          </p>
+          <p className="text-xs text-muted-foreground">
+            📋 点击"粘贴"按钮可以快速从剪贴板导入参数并更新表单
+          </p>
+          <p className="text-xs text-amber-600 font-medium">
+            ⚠️ 被注释掉的动作（以 {'//'} 开头）不会被执行
+          </p>
+        </div>
+      )}
+
+      {!editable && localJsonString.includes('//') && (
+        <div className="p-2 rounded-md border border-amber-500 bg-amber-50 text-amber-700 text-xs font-medium">
+          ℹ️ 注意：被注释掉的动作（以 {'//'} 开头）已被禁用，不会被执行
+        </div>
+      )}
+    </div>
+  );
+}

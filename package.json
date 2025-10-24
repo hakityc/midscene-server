@@ -1,20 +1,29 @@
 {
-  "name": "midscene-server",
-  "type": "module",
+  "name": "midscene-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@9",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
-  },
-  "dependencies": {
-    "@hono/node-server": "^1.19.0",
-    "dotenv": "^17.2.1",
-    "hono": "^4.9.5"
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "lint": "biome lint . && pnpm -r lint",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "fix": "biome check --write .",
+    "test": "pnpm -r test",
+    "server:dev": "pnpm --filter @midscene/server dev",
+    "server:build": "pnpm --filter @midscene/server build",
+    "web:dev": "pnpm --filter @midscene/web dev"
   },
   "devDependencies": {
-    "@midscene/web": "^0.27.6",
-    "@types/node": "^20.11.17",
-    "tsx": "^4.7.1",
-    "typescript": "^5.8.3"
+    "@biomejs/biome": "2.2.2",
+    "@types/react": "19.1.15",
+    "@types/react-dom": "19.1.9",
+    "@vitejs/plugin-react": "5.0.4",
+    "autoprefixer": "10.4.21",
+    "postcss": "8.5.6",
+    "tailwindcss": "4.1.13",
+    "typescript": "^5.9.2",
+    "vite": "7.1.7"
   }
 }

@@ -1,36 +1,24 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "files": {
-    "ignore": [
-      "static/**",
-      "node_modules/**",
-      "**/midscene_run",
-      "**/extension_output",
-      ".nx",
-      "**/dist",
-      "test-data/**",
-      "**/inject-tp.js",
-      "dist",
-      "dist-inspect",
-      "__ai_responses__",
-      "ai-data/**",
-      "**/doc_build",
-      "*-dump.json",
-      "test-results/**",
-      "iife-script/**",
-      "script_get_all_texts.tmp.js",
-      "**/playwright-report/**",
-      "**/todo-report.spec.ts-snapshots/**",
-      "**/visualizer/scripts/fixture/*",
-      "**/unpacked-extension/*",
-      "**/page-data/**",
-      "**/dump.json",
-      "**/dump-with-invisible.json",
-      "**/dump-for-utils-test.json",
-      "**/.rslib"
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/midscene_run",
+      "!**/dist",
+      "!**/build",
+      "!**/coverage",
+      "!**/.nyc_output",
+      "!**/test-results",
+      "!**/playwright-report",
+      "!**/*.log",
+      "!**/pnpm-lock.yaml",
+      "!**/package-lock.json",
+      "!**/yarn.lock",
+      "!**/.env*",
+      "!**/dump.json",
+      "!**/*-dump.json"
     ]
   },
   "javascript": {
@@ -44,7 +32,8 @@
       "recommended": true,
       "a11y": {
         "useKeyWithClickEvents": "off",
-        "useValidAnchor": "off"
+        "useValidAnchor": "off",
+        "useSemanticElements": "off"
       },
       "style": {
         "noParameterAssign": "off",
@@ -55,19 +44,20 @@
         "useExhaustiveDependencies": "off"
       },
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "noStaticOnlyClass": "off"
       },
       "suspicious": {
         "noExplicitAny": "off",
         "noArrayIndexKey": "off",
-        "noImplicitAnyLet": "off"
+        "noImplicitAnyLet": "off",
+        "noUnknownAtRules": "off"
       }
     }
   },
   "overrides": [
     {
-      "include": ["*.ts", "*.d.ts", "*.tsx"],
-      "ignore": [".nx"],
+      "includes": ["**/*.ts", "**/*.d.ts", "**/*.tsx"],
       "linter": {
         "rules": {}
       }
