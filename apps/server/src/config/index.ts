@@ -1,3 +1,5 @@
+import { printValidationResult, validateEnv } from './envValidator.js';
+
 export interface Config {
   port: number;
   nodeEnv: string;
@@ -18,6 +20,15 @@ export interface Config {
     reportPath: string;
     url?: string; // 自定义域名 URL 前缀
   };
+}
+
+// 验证环境变量
+const envValidation = validateEnv();
+
+// 如果验证失败，抛出错误
+if (!envValidation.valid) {
+  printValidationResult(envValidation);
+  throw new Error(`环境变量验证失败: ${envValidation.errors.join('; ')}`);
 }
 
 // 使用方括号语法避免 tsup 静态替换
@@ -49,3 +60,6 @@ export const config: Config = {
         }
       : undefined,
 };
+
+// 导出环境验证结果，供其他模块使用
+export { envValidation };

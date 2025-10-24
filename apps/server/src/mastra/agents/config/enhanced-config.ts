@@ -174,12 +174,11 @@ export class ConfigManager {
     if (!modelConfig.name) {
       throw new Error('模型名称不能为空');
     }
-    if (!modelConfig.apiKey) {
-      console.warn('⚠️ API Key 未设置，可能影响功能使用');
-    }
-    if (!modelConfig.baseUrl) {
-      console.warn('⚠️ Base URL 未设置，可能影响功能使用');
-    }
+    // 注意：这里的 API Key 是 TASK_OPENAI_API_KEY（增强任务专用，非核心）
+    // 如果未设置，会回退使用默认的 OPENAI_API_KEY，不需要警告
+    // if (!modelConfig.baseUrl) {
+    //   console.warn('⚠️ Base URL 未设置，可能影响功能使用');
+    // }
 
     // 验证性能配置
     if (performance.maxRetries < 0 || performance.maxRetries > 10) {

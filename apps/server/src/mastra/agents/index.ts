@@ -7,6 +7,13 @@ export const createModel = () => {
   const apiKey = process.env.OPENAI_API_KEY || '';
   const baseUrl = process.env.OPENAI_BASE_URL;
 
+  // 检查必需的 API Key
+  if (!apiKey) {
+    throw new Error(
+      '❌ OPENAI_API_KEY 未设置，AI 核心功能无法使用。请在 .env 文件中设置 OPENAI_API_KEY',
+    );
+  }
+
   console.log('Model config:', {
     modelName,
     apiKey: apiKey ? 'Set' : 'Not set',

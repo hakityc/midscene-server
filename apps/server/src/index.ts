@@ -2,6 +2,8 @@ import { serve } from '@hono/node-server';
 import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { envValidation } from './config';
+import { printValidationResult } from './config/envValidator';
 import { setupHealthRoutes } from './routes/health';
 import { setupRouter } from './routes/index';
 import { setupError } from './utils/error';
@@ -36,6 +38,9 @@ const initApp = () => {
 const startServer = async () => {
   // 设置全局错误处理
   setupGlobalErrorHandlers();
+
+  // 打印环境变量验证结果
+  printValidationResult(envValidation);
 
   const port = Number(process.env.PORT || '3000');
 

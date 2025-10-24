@@ -15,6 +15,7 @@ export class TencentCLSTransport {
   private flushInterval: number;
   private flushTimer?: NodeJS.Timeout;
   private appendFieldsFn?: () => Record<string, any>;
+  private topicId: string;
 
   constructor(options: TencentCLSTransportOptions) {
     this.maxCount = options.maxCount || 100;
@@ -22,6 +23,7 @@ export class TencentCLSTransport {
     this.retryCount = options.retryCount || 2;
     this.flushInterval = options.flushInterval || 5000;
     this.appendFieldsFn = options.appendFieldsFn;
+    this.topicId = options.topicId;
 
     // 初始化腾讯云CLS客户端
     // 注意：这里需要根据实际的SDK API进行调整
@@ -143,7 +145,7 @@ export class TencentCLSTransport {
       logGroup.addLog(log);
     });
 
-    const request = new PutLogsRequest(process.env.CLS_TOPIC_ID!, logGroup);
+    const request = new PutLogsRequest(this.topicId, logGroup);
     await this.client.PutLogs(request);
   }
 
