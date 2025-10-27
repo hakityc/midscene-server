@@ -446,9 +446,9 @@ export function FloatingMessageMonitor({
   return (
     <>
       {/* 悬浮容器 - 包含按钮和消息列表 */}
-      <div className="fixed top-4 right-4 z-50 pointer-events-auto flex flex-col gap-2">
+      <div className="fixed top-4 right-4 z-50 pointer-events-auto flex flex-col gap-2 max-w-[320px]">
         {/* 顶部操作按钮栏 */}
-        <div className="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-2 flex items-center gap-1.5 relative z-50">
+        <div className="backdrop-blur-xl w-full bg-white/80 dark:bg-gray-800/80 rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-2 flex items-center gap-1.5 relative z-50">
           {/* 连接状态 */}
           <Button
             size="sm"

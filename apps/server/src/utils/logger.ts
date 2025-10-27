@@ -4,6 +4,27 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import pino from 'pino';
 import { TencentCLSTransport } from './tencentCLSTransport.js';
 
+/**
+ * 序列化 Error 对象，保留所有有用信息
+ */
+function serializeError(error: Error): Record<string, any> {
+  return {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+    // 保留所有自定义属性（如 AppError 的 statusCode, isOperational）
+    ...Object.getOwnPropertyNames(error).reduce(
+      (acc, key) => {
+        if (key !== 'name' && key !== 'message' && key !== 'stack') {
+          acc[key] = (error as any)[key];
+        }
+        return acc;
+      },
+      {} as Record<string, any>,
+    ),
+  };
+}
+
 // 日志上下文接口
 interface LogContext {
   messageId?: string;
@@ -99,10 +120,23 @@ export const createLogger = (name: string) => {
         // 获取当前上下文
         const context = logContextStorage.getStore();
 
+        // 处理错误对象序列化
+        let processedObj = obj;
+        if (typeof obj === 'object' && obj !== null) {
+          // 深度序列化所有 Error 对象
+          processedObj = Object.entries(obj).reduce(
+            (acc, [key, value]) => {
+              acc[key] = value instanceof Error ? serializeError(value) : value;
+              return acc;
+            },
+            {} as Record<string, any>,
+          );
+        }
+
         // 合并上下文信息到日志对象
         const logObj =
-          typeof obj === 'object' && obj !== null
-            ? { ...obj, ...context }
+          typeof processedObj === 'object' && processedObj !== null
+            ? { ...processedObj, ...context }
             : { ...context, message: typeof obj === 'string' ? obj : '' };
 
         // 调用原始方法
@@ -113,7 +147,10 @@ export const createLogger = (name: string) => {
           timestamp: Date.now(),
           level: method,
           message: msg || (typeof obj === 'string' ? obj : ''),
-          data: typeof obj === 'object' ? { ...obj, ...context } : context,
+          data:
+            typeof processedObj === 'object'
+              ? { ...processedObj, ...context }
+              : context,
           module: name,
           messageId: context?.messageId,
           conversationId: context?.conversationId,
@@ -131,10 +168,23 @@ export const createLogger = (name: string) => {
         // 获取当前上下文
         const context = logContextStorage.getStore();
 
+        // 处理错误对象序列化
+        let processedObj = obj;
+        if (typeof obj === 'object' && obj !== null) {
+          // 深度序列化所有 Error 对象
+          processedObj = Object.entries(obj).reduce(
+            (acc, [key, value]) => {
+              acc[key] = value instanceof Error ? serializeError(value) : value;
+              return acc;
+            },
+            {} as Record<string, any>,
+          );
+        }
+
         // 合并上下文信息到日志对象
         const logObj =
-          typeof obj === 'object' && obj !== null
-            ? { ...obj, ...context }
+          typeof processedObj === 'object' && processedObj !== null
+            ? { ...processedObj, ...context }
             : { ...context, message: typeof obj === 'string' ? obj : '' };
 
         // 调用原始方法

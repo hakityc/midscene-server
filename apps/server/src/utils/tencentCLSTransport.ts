@@ -89,6 +89,24 @@ export class TencentCLSTransport {
     if (typeof value === 'number' || typeof value === 'boolean') {
       return String(value);
     }
+    // 对于 Error 对象，需要特殊处理以保留所有信息
+    if (value instanceof Error) {
+      return JSON.stringify({
+        name: value.name,
+        message: value.message,
+        stack: value.stack,
+        // 保留自定义属性（如 AppError 的 statusCode, isOperational）
+        ...Object.getOwnPropertyNames(value).reduce(
+          (acc, key) => {
+            if (key !== 'name' && key !== 'message' && key !== 'stack') {
+              acc[key] = (value as any)[key];
+            }
+            return acc;
+          },
+          {} as Record<string, any>,
+        ),
+      });
+    }
     // 对于对象、数组等复杂类型，使用 JSON 序列化
     try {
       return JSON.stringify(value);

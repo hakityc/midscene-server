@@ -90,13 +90,40 @@ export function createSuccessResponseWithMeta<
 
 /**
  * 构建错误响应消息
+ * 在开发环境下会包含更详细的错误信息（如 stack trace）
  */
 export function createErrorResponse(
   originalMessage: WsInboundMessage,
   error: unknown,
   prefix: string = '操作失败',
 ): WsOutboundMessage<string> {
-  const errorMessage = error instanceof Error ? error.message : String(error);
+  let errorMessage = '';
+
+  if (error instanceof Error) {
+    errorMessage = error.message;
+
+    // 在开发环境中，提供更详细的错误信息
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (isDevelopment && error.stack) {
+      // 提取 stack 的前几行（不包含完整路径，避免信息过长）
+      const stackLines = error.stack.split('\n').slice(0, 5);
+      errorMessage = `${errorMessage}\n堆栈信息: ${stackLines.join('\n')}`;
+    }
+
+    // 如果是自定义错误类（如 AppError），包含额外信息
+    if ('statusCode' in error || 'isOperational' in error) {
+      const customProps = Object.entries(error)
+        .filter(([key]) => !['name', 'message', 'stack'].includes(key))
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+      if (customProps) {
+        errorMessage = `${errorMessage} (${customProps})`;
+      }
+    }
+  } else {
+    errorMessage = String(error);
+  }
+
   return buildOutboundFromMeta<string>(
     originalMessage.meta,
     // 使用原始消息的 action
