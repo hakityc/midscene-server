@@ -479,6 +479,96 @@ export abstract class BaseOperateService<
     };
   }
 
+  // ==================== 任务前后钩子 ====================
+
+  /**
+   * 任务执行前的钩子
+   * 用于在每次任务开始前进行必要的初始化操作
+   *
+   * 主要功能：
+   * 1. 重置 agent dump，确保每个任务的报告独立
+   * 2. 预留扩展点，方便后续添加其他前置逻辑
+   *
+   * @param taskType 任务类型，用于日志记录和区分不同任务
+   */
+  protected async beforeOperate(taskType: string): Promise<void> {
+    if (!this.agent) {
+      serviceLogger.warn('Agent 未初始化，跳过 beforeOperate 钩子');
+      return;
+    }
+
+    try {
+      // 重置 dump，确保每个任务的报告独立
+      if (
+        'resetDump' in this.agent &&
+        typeof this.agent.resetDump === 'function'
+      ) {
+        (this.agent as any).resetDump();
+        serviceLogger.info(
+          { taskType },
+          '✨ 已重置 Agent dump，开始新任务（报告将独立生成）',
+        );
+      }
+
+      // 预留扩展点：后续可以在这里添加其他前置逻辑
+      // 例如：
+      // - 设置任务开始时间
+      // - 记录任务上下文信息
+      // - 清理临时资源
+      // - 更新任务状态
+    } catch (error) {
+      // beforeOperate 失败不应该阻塞任务执行
+      serviceLogger.warn(
+        { error, taskType },
+        '⚠️ beforeOperate 钩子执行失败，但不影响任务继续',
+      );
+    }
+  }
+
+  /**
+   * 任务执行后的钩子
+   * 用于在每次任务完成后进行清理和上报操作
+   *
+   * 主要功能：
+   * 1. 生成并上传报告到 OSS
+   * 2. 预留扩展点，方便后续添加其他后置逻辑
+   *
+   * @param taskType 任务类型，用于日志记录和区分不同任务
+   * @param success 任务是否成功执行（可选，默认 true）
+   * @param error 任务执行错误（可选）
+   */
+  protected async afterOperate(
+    taskType: string,
+    success: boolean = true,
+    error?: Error,
+  ): Promise<void> {
+    try {
+      // 1. 生成并上传报告
+      await this.generateAndUploadReport();
+
+      // 2. 预留扩展点：后续可以在这里添加其他后置逻辑
+      // 例如：
+      // - 记录任务执行时长
+      // - 上报任务执行状态统计
+      // - 发送任务完成通知
+      // - 清理临时文件
+      // - 更新任务历史记录
+
+      if (!success && error) {
+        serviceLogger.warn(
+          { taskType, error: error.message },
+          '⚠️ 任务执行失败，但 afterOperate 钩子正常完成',
+        );
+      }
+    } catch (hookError: any) {
+      // afterOperate 失败不应该抛出异常，避免覆盖原始错误
+      serviceLogger.error(
+        { hookError, taskType, success },
+        '❌ afterOperate 钩子执行失败',
+      );
+    }
+  }
+
   // ==================== Report 相关方法 ====================
 
   /**

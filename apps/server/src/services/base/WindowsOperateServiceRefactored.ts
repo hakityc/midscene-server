@@ -234,6 +234,9 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
       throw new AppError('服务启动失败，无法执行任务', 503);
     }
 
+    // 任务开始前钩子：重置 dump，确保报告独立
+    await this.beforeOperate('execute');
+
     try {
       serviceLogger.info({ prompt }, '开始执行 Windows AI 任务');
 
@@ -241,13 +244,17 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
       await this.agent.aiAction(prompt);
       serviceLogger.info({ prompt }, 'Windows AI 任务执行完成');
 
-      // 执行完成后生成并上传 report
-      await this.generateAndUploadReport();
+      // 任务完成后钩子：生成并上传 report
+      await this.afterOperate('execute', true);
     } catch (error: any) {
       serviceLogger.error(
         { prompt, error: error.message },
         'Windows AI 任务执行失败',
       );
+
+      // 任务失败也上传报告
+      await this.afterOperate('execute', false, error);
+
       if (error.message?.includes('ai')) {
         throw new AppError(`AI 执行失败: ${error.message}`, 500);
       }
@@ -266,14 +273,24 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
       throw new AppError('服务启动失败，无法执行断言', 503);
     }
 
+    // 任务开始前钩子：重置 dump，确保报告独立
+    await this.beforeOperate('expect');
+
     try {
       await this.agent.aiAssert(prompt);
       serviceLogger.info({ prompt }, 'Windows AI 断言成功');
+
+      // 断言成功，上传报告
+      await this.afterOperate('expect', true);
     } catch (error: any) {
       serviceLogger.error(
         { prompt, error: error.message },
         'Windows AI 断言失败',
       );
+
+      // 断言失败也上传报告
+      await this.afterOperate('expect', false, error);
+
       if (error.message?.includes('ai')) {
         throw new AppError(`AI 断言失败: ${error.message}`, 500);
       }
@@ -296,12 +313,15 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
       throw new AppError('服务启动失败，无法执行脚本', 503);
     }
 
+    // 任务开始前钩子：重置 dump，确保报告独立
+    await this.beforeOperate('executeScript');
+
     try {
       const yamlResult = await this.agent.runYaml(yamlContent);
       serviceLogger.info({ yamlContent }, 'Windows YAML 脚本执行完成');
 
-      // 执行完成后生成并上传 report
-      await this.generateAndUploadReport();
+      // 任务完成后钩子：生成并上传 report
+      await this.afterOperate('executeScript', true);
 
       return yamlResult;
     } catch (error: any) {
@@ -324,6 +344,10 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
             },
             'YAML 执行失败，兜底执行也失败',
           );
+
+          // 兜底也失败，上传报告
+          await this.afterOperate('executeScript', false, fallbackErr);
+
           throw new AppError(
             `YAML 脚本执行失败: ${error?.message} | 兜底失败: ${fallbackErr?.message}`,
             500,
@@ -331,7 +355,9 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
         }
       }
 
-      // 没有兜底命令，直接抛出错误
+      // 没有兜底命令，上传报告并抛出错误
+      await this.afterOperate('executeScript', false, error);
+
       if (error.message?.includes('ai')) {
         throw new AppError(`AI 执行失败: ${error.message}`, 500);
       }

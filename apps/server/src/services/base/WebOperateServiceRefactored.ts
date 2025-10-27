@@ -466,6 +466,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
     await this.ensureCurrentTabConnection();
 
+    // 任务开始前钩子：重置 dump，确保报告独立
+    await this.beforeOperate('execute');
+
     let lastError: any = null;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -477,8 +480,8 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         await this.agent.ai(prompt);
         serviceLogger.info({ prompt }, 'AI 任务执行完成');
 
-        // 执行完成后生成并上传 report
-        await this.generateAndUploadReport();
+        // 任务完成后钩子：生成并上传 report
+        await this.afterOperate('execute', true);
         return;
       } catch (error: any) {
         lastError = error;
@@ -497,6 +500,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
           continue;
         }
 
+        // 任务失败也上传报告，记录失败状态
+        await this.afterOperate('execute', false, error);
+
         if (error.message?.includes('ai')) {
           throw new AppError(`AI 执行失败: ${error.message}`, 500);
         }
@@ -504,6 +510,8 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       }
     }
 
+    // 所有重试都失败，上传报告
+    await this.afterOperate('execute', false, lastError);
     throw lastError;
   }
 
@@ -515,6 +523,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
     await this.ensureCurrentTabConnection();
 
+    // 任务开始前钩子：重置 dump，确保报告独立
+    await this.beforeOperate('expect');
+
     let lastError: any = null;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -523,6 +534,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         }
 
         await this.agent.aiAssert(prompt);
+
+        // 断言成功，上传报告
+        await this.afterOperate('expect', true);
         return;
       } catch (error: any) {
         lastError = error;
@@ -537,6 +551,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
           continue;
         }
 
+        // 断言失败也上传报告
+        await this.afterOperate('expect', false, error);
+
         if (error.message?.includes('ai')) {
           throw new AppError(`AI 断言失败: ${error.message}`, 500);
         }
@@ -544,6 +561,8 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       }
     }
 
+    // 所有重试都失败，上传报告
+    await this.afterOperate('expect', false, lastError);
     throw lastError;
   }
 
@@ -558,6 +577,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
     }
 
     await this.ensureCurrentTabConnection();
+
+    // 任务开始前钩子：重置 dump，确保报告独立
+    await this.beforeOperate('executeScript');
 
     try {
       let lastError: any = null;
@@ -577,8 +599,8 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
             'YAML 脚本执行完成',
           );
 
-          // 执行完成后生成并上传 report
-          await this.generateAndUploadReport();
+          // 任务完成后钩子：生成并上传 report
+          await this.afterOperate('executeScript', true);
 
           return {
             ...yamlResult,
@@ -600,6 +622,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
             continue;
           }
 
+          // 脚本执行失败，上传报告
+          await this.afterOperate('executeScript', false, error);
+
           if (error.message?.includes('ai')) {
             throw new AppError(`AI 执行失败: ${error.message}`, 500);
           }
@@ -607,6 +632,8 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         }
       }
 
+      // 所有重试都失败，上传报告
+      await this.afterOperate('executeScript', false, lastError);
       throw lastError;
     } catch (error: any) {
       if (originalCmd) {
