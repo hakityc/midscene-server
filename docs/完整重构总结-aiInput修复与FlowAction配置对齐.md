@@ -6,7 +6,7 @@
 1. **修复 aiInput 底层实现问题**（焦点延迟 + 清除原内容）
 2. **对齐 FlowAction 配置到官方 API**（Web/Windows 差异 + 前端配置驱动）
 
-**完成时间**: 2025-10-15  
+**完成时间**: 2025-10-15
 **状态**: ✅ 已完成
 
 ---
@@ -37,17 +37,17 @@
 defineActionInput(async (param: ActionInputParam) => {
   const element = param.locate;
   assert(element, 'Element not found, cannot input');
-  
+
   // 先点击元素获取焦点
   await this.mouseClick(element.center[0], element.center[1]);
-  
+
   // ✅ 等待焦点切换（增加延迟：100ms → 250ms）
   await this.sleep(250);
-  
+
   // ✅ 清除原有内容：全选（Ctrl+A）
   await this.keyPress('Control+a');
   await this.sleep(50);
-  
+
   // 输入文本（会自动覆盖选中的内容）
   await this.typeText(param.value);
 }),
@@ -176,12 +176,12 @@ case 'aiInput':
 const renderFields = () => {
   const mainParams = getMainParams(clientType, action.type);
   const optionParams = getOptionParams(clientType, action.type);
-  
+
   return (
     <>
       {/* 主要参数 */}
       {mainParams.map(param => renderParamInput(param))}
-      
+
       {/* Options（可折叠，自动过滤 xpath）*/}
       {optionParams.map(param => renderParamInput(param))}
     </>
@@ -335,4 +335,3 @@ npm run dev
    - 真正实现"配置即 UI"
 
 **最重要的成果**：Windows 版用户不会再看到无效的 XPath 输入框，界面更清爽、更符合预期！🎉
-

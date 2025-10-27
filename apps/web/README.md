@@ -46,7 +46,7 @@ pnpm install
 pnpm dev
 ```
 
-访问：http://localhost:5173
+访问：<http://localhost:5173>
 
 ### 启动 Server（必需）
 
@@ -57,7 +57,7 @@ cd /Users/lebo/lebo/project/midscene-server/apps/server
 pnpm dev
 ```
 
-Server 运行在：http://localhost:3000
+Server 运行在：<http://localhost:3000>
 
 ## 📖 使用指南
 
@@ -69,6 +69,7 @@ Server 运行在：http://localhost:3000
 ### 2. 选择 Action 类型
 
 在下拉框中选择要执行的 Action：
+
 - **AI Script**：复杂的多步骤任务流程（推荐）
 - **AI (简单)**：单一 AI 指令
 - **Site Script**：执行 JavaScript 代码
@@ -113,6 +114,7 @@ Server 运行在：http://localhost:3000
 ### 5. 发送消息
 
 点击「发送消息」按钮，消息会：
+
 1. 通过 WebSocket 发送到 server
 2. 在右侧消息监控中显示
 3. 自动保存到历史记录
@@ -120,6 +122,7 @@ Server 运行在：http://localhost:3000
 ### 6. 查看响应
 
 在消息监控面板：
+
 - 绿色：成功
 - 红色：失败
 - 蓝色：信息
@@ -268,4 +271,3 @@ src/
 ## 📄 许可证
 
 Private
-

@@ -9,15 +9,18 @@
 ### 1. 新增组件
 
 #### `ConfirmDialog` 组件
+
 **文件：** `apps/web/src/components/ui/confirm-dialog.tsx`
 
 **功能：**
+
 - 提供确认对话框功能，替代原生 `confirm()`
 - 支持两种样式：默认样式和危险操作样式
 - 支持自定义标题、描述、按钮文本
 - 内置加载状态处理
 
 **使用示例：**
+
 ```tsx
 <ConfirmDialog
   open={isOpen}
@@ -32,6 +35,7 @@
 ```
 
 **API：**
+
 ```typescript
 interface ConfirmDialogProps {
   open: boolean;                    // 对话框是否打开
@@ -46,18 +50,22 @@ interface ConfirmDialogProps {
 ```
 
 #### `ConfirmDialogTest` 组件
+
 **文件：** `apps/web/src/components/ui/confirm-dialog-test.tsx`
 
 **功能：**
+
 - 开发时测试组件，用于验证 ConfirmDialog 功能
 - 提供两种类型的确认对话框测试
 
 ### 2. 修改现有组件
 
 #### `TemplatePanel` 组件
+
 **文件：** `apps/web/src/components/debug/TemplatePanel.tsx`
 
 **修改内容：**
+
 1. 移除原生 `confirm()` 调用
 2. 添加确认对话框状态管理
 3. 使用新的 `ConfirmDialog` 组件
@@ -66,6 +74,7 @@ interface ConfirmDialogProps {
 **修改前后对比：**
 
 **修改前：**
+
 ```typescript
 const handleDelete = (templateId: string, templateName: string) => {
   if (confirm(`确定要删除模板"${templateName}"吗？`)) {
@@ -77,6 +86,7 @@ const handleDelete = (templateId: string, templateName: string) => {
 ```
 
 **修改后：**
+
 ```typescript
 const [deleteDialog, setDeleteDialog] = useState<{
   open: boolean;
@@ -168,7 +178,7 @@ function MyComponent() {
       <button onClick={() => setShowDialog(true)}>
         删除项目
       </button>
-      
+
       <ConfirmDialog
         open={showDialog}
         onOpenChange={setShowDialog}
@@ -216,7 +226,7 @@ const confirmDelete = async () => {
 
 <ConfirmDialog
   open={dialogState.open}
-  onOpenChange={(open) => 
+  onOpenChange={(open) =>
     setDialogState(prev => ({ ...prev, open }))
   }
   title="确认删除"
@@ -233,6 +243,7 @@ const confirmDelete = async () => {
 ### 替换原生 confirm()
 
 **原代码：**
+
 ```typescript
 if (confirm('确定要删除吗？')) {
   // 执行删除操作
@@ -240,6 +251,7 @@ if (confirm('确定要删除吗？')) {
 ```
 
 **新代码：**
+
 ```typescript
 const [showConfirm, setShowConfirm] = useState(false);
 
@@ -266,11 +278,13 @@ const confirmDelete = () => {
 ### 替换原生 alert()
 
 **原代码：**
+
 ```typescript
 alert('操作成功！');
 ```
 
 **新代码：**
+
 ```typescript
 import { toast } from '@/components/ui/toast';
 
@@ -280,13 +294,16 @@ toast.success('操作成功！');
 ## 文件清单
 
 ### 新增文件
+
 - `apps/web/src/components/ui/confirm-dialog.tsx` - 确认对话框组件
 - `apps/web/src/components/ui/confirm-dialog-test.tsx` - 测试组件
 
 ### 修改文件
+
 - `apps/web/src/components/debug/TemplatePanel.tsx` - 替换原生 confirm
 
 ### 相关文件
+
 - `apps/web/src/components/ui/dialog.tsx` - 基础对话框组件
 - `apps/web/src/components/ui/toast.tsx` - Toast 提示组件
 - `apps/web/src/components/ui/button.tsx` - 按钮组件
@@ -294,6 +311,7 @@ toast.success('操作成功！');
 ## 测试验证
 
 ### 1. 功能测试
+
 - [x] 确认对话框能正确打开和关闭
 - [x] 确认操作能正确执行
 - [x] 取消操作能正确关闭对话框
@@ -301,12 +319,14 @@ toast.success('操作成功！');
 - [x] 键盘操作（ESC、Enter）正常工作
 
 ### 2. 样式测试
+
 - [x] 默认样式正确显示
 - [x] 危险操作样式正确显示
 - [x] 响应式布局正常工作
 - [x] 深色模式兼容性
 
 ### 3. 集成测试
+
 - [x] TemplatePanel 中的删除功能正常工作
 - [x] Toast 提示正确显示
 - [x] 状态管理正确
@@ -328,6 +348,7 @@ toast.success('操作成功！');
 ## 总结
 
 通过这次修改，我们成功地：
+
 - ✅ 移除了所有原生 `alert()` 和 `confirm()` 的使用
 - ✅ 提供了统一的确认对话框组件
 - ✅ 改善了用户体验和视觉一致性

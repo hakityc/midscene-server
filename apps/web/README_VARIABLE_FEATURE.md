@@ -11,6 +11,7 @@
 ## 🎯 使用场景
 
 ### 示例 1：搜索功能
+
 ```
 输入：点击搜索结果中最符合${测试搜索词}的内容（优先点击字符完全匹配的）
 
@@ -20,6 +21,7 @@ JSON 预览：点击搜索结果中最符合lbxx的内容（优先点击字符�
 ```
 
 ### 示例 2：表单填写
+
 ```
 输入：在邮箱输入框中输入${用户邮箱}
 
@@ -31,11 +33,13 @@ JSON 预览：在邮箱输入框中输入lbxx
 ## 💡 变量语法规则
 
 ### 基本语法
+
 ```
 ${变量名}
 ```
 
 ### 语法特点
+
 - ✅ 支持中文变量名
 - ✅ 支持英文变量名
 - ✅ 支持数字和下划线
@@ -43,6 +47,7 @@ ${变量名}
 - ✅ 一个输入框可以包含多个变量
 
 ### 示例
+
 ```
 ✅ 正确：点击${按钮名称}按钮
 ✅ 正确：输入${username}和${password}
@@ -57,13 +62,16 @@ ${变量名}
 ## 🎨 视觉效果
 
 ### 输入框中的变量高亮
+
 变量会以以下样式显示：
+
 - **淡蓝色背景**（浅色模式：`#dbeafe`，深色模式：`rgba(30, 58, 138, 0.3)`）
 - **加粗字体**
 - **圆角边框**（4px）
 - **内边距**（2px 4px）
 
 示例：
+
 ```
 点击搜索结果中最符合 ${测试搜索词} 的内容
                     ^^^^^^^^^^^^^^^^
@@ -75,6 +83,7 @@ ${变量名}
 ### 核心组件
 
 #### 1. `useVariableTransform` Hook
+
 ```typescript
 const { toRuntime, toPlaceholder, transformTasks } = useVariableTransform();
 
@@ -89,9 +98,11 @@ transformTasks(tasks, 'runtime') // 或 'placeholder'
 ```
 
 #### 2. `VariableInput` 组件
+
 纯手工实现的单行输入框，完美支持中文输入法，自动高亮变量。
 
 **技术特点**：
+
 - ✅ 使用原生 `<input>` 元素，完全支持中文输入法（IME）
 - ✅ 双层叠加技术：底层显示高亮，顶层透明输入
 - ✅ 实时同步滚动位置
@@ -106,9 +117,11 @@ transformTasks(tasks, 'runtime') // 或 'placeholder'
 ```
 
 #### 3. `VariableTextarea` 组件
+
 纯手工实现的多行文本框，完美支持中文输入法，自动高亮变量。
 
 **技术特点**：
+
 - ✅ 使用原生 `<textarea>` 元素，完全支持中文输入法（IME）
 - ✅ 双层叠加技术：底层显示高亮，顶层透明输入
 - ✅ 实时同步垂直和水平滚动
@@ -127,6 +140,7 @@ transformTasks(tasks, 'runtime') // 或 'placeholder'
 ### 实现原理
 
 #### 双层叠加技术
+
 ```
 ┌─────────────────────────────┐
 │ 容器 (relative)              │
@@ -142,6 +156,7 @@ transformTasks(tasks, 'runtime') // 或 'placeholder'
 ```
 
 #### 中文输入法支持
+
 - 🟢 **原生元素**：使用标准 HTML `<input>` 和 `<textarea>`
 - 🟢 **IME 事件**：浏览器自动处理 compositionstart/compositionend
 - 🟢 **无干扰**：高亮层完全不可交互，不影响输入法
@@ -176,11 +191,13 @@ transformTasks(tasks, 'runtime') // 或 'placeholder'
 ## 📂 文件清单
 
 ### 新增文件
+
 - `apps/web/src/hooks/useVariableTransform.ts` - 变量转换逻辑
 - `apps/web/src/components/ui/variable-input.tsx` - 变量输入框组件
 - `apps/web/src/components/ui/variable-textarea.tsx` - 变量文本框组件
 
 ### 修改文件
+
 - `apps/web/src/components/debug/FlowActionItem.tsx` - 集成变量输入组件
 - `apps/web/src/components/debug/JsonPreview.tsx` - JSON 预览使用占位符
 - `apps/web/src/pages/midsceneDebugPage.tsx` - 发送时转换为运行时值
@@ -188,8 +205,10 @@ transformTasks(tasks, 'runtime') // 或 'placeholder'
 ## 🚀 快速开始
 
 ### 1. ~~安装依赖~~（已改为纯手工实现，无需安装额外依赖）
+
 ~~```bash
 pnpm add react-mentions
+
 ```~~
 
 **注意**：由于 `react-mentions` 对中文输入法支持不佳，已改为纯原生实现，无需安装任何第三方库！
@@ -243,8 +262,10 @@ pnpm add react-mentions
 
 ### 1. 语义化的变量名
 ```
+
 ✅ 好：${用户名} ${邮箱地址} ${搜索关键词}
 ❌ 差：${var1} ${temp} ${x}
+
 ```
 
 ### 2. 保持一致性
@@ -252,8 +273,10 @@ pnpm add react-mentions
 
 ### 3. 避免过长的变量名
 ```
+
 ✅ 好：${目标按钮}
 ❌ 差：${需要点击的那个位于页面右上角的确认按钮}
+
 ```
 
 ### 4. 注释说明

@@ -3,12 +3,15 @@
 ## 问题描述
 
 ### 问题现象
+
 用户在 JsonPreview 组件的文本框中输入 JSON 内容时，会出现以下问题：
+
 1. **输入冲突**：用户正在输入时，内容会被意外覆盖
 2. **实时渲染干扰**：每次内容变化都会触发重新渲染，影响输入体验
 3. **表单更新时机错误**：在用户还在输入时就更新表单，导致数据不一致
 
 ### 问题根源
+
 原始的 JsonPreview 组件存在以下设计缺陷：
 
 1. **useEffect 监听 previewParams 变化**：每次 `previewParams` 变化都会重新设置 `jsonString`
@@ -19,14 +22,16 @@
 ### 双向同步流程分析
 
 **正常流程：**
+
 ```
-用户修改 JsonPreview → onFormUpdate → updateFromJson → 更新 store.tasks 
-→ buildMessage → currentMessage → JsonPreview 的 message prop 更新 
+用户修改 JsonPreview → onFormUpdate → updateFromJson → 更新 store.tasks
+→ buildMessage → currentMessage → JsonPreview 的 message prop 更新
 → previewParams 更新 → useEffect 重新设置 jsonString
 ```
 
 **问题场景：**
 用户粘贴 JSON 内容后失焦，触发以下流程：
+
 1. 失焦 → `handleBlur` → `onFormUpdate` → 更新 store
 2. store 更新 → `previewParams` 变化 → `useEffect` 重新设置 `jsonString`
 3. 用户的输入被覆盖，显示为格式化后的内容
@@ -34,6 +39,7 @@
 ## 修复方案
 
 ### 核心思路
+
 1. **分离编辑状态**：区分用户编辑状态和程序自动更新状态
 2. **失焦验证**：只在用户失焦时才验证并更新表单
 3. **防止冲突**：编辑状态下阻止自动渲染更新
@@ -48,6 +54,7 @@ const isUserEditingRef = useRef(false); // 使用 ref 跟踪用户编辑状态
 ```
 
 **为什么使用 `useRef` 而不是 `useState`：**
+
 - `useRef` 不会触发重新渲染
 - 避免了状态更新导致的渲染循环
 - 更适合跟踪编辑状态这种不需要触发 UI 更新的数据
@@ -55,6 +62,7 @@ const isUserEditingRef = useRef(false); // 使用 ref 跟踪用户编辑状态
 #### 2. 修改 useEffect 逻辑
 
 **修复前：**
+
 ```typescript
 useEffect(() => {
   // 使用转换后的参数格式化 JSON
@@ -66,6 +74,7 @@ useEffect(() => {
 ```
 
 **修复后：**
+
 ```typescript
 // 只在非用户编辑状态下更新 JSON 字符串
 useEffect(() => {
@@ -81,6 +90,7 @@ useEffect(() => {
 #### 3. 修改输入处理逻辑
 
 **修复前：**
+
 ```typescript
 const handleChange = (value: string) => {
   setJsonString(value);
@@ -113,6 +123,7 @@ const handleChange = (value: string) => {
 ```
 
 **修复后：**
+
 ```typescript
 const handleChange = (value: string) => {
   setJsonString(value);
@@ -167,6 +178,7 @@ useEffect(() => {
 ```
 
 **关键改进：**
+
 - 使用 `useRef` 而不是 `useState` 来跟踪编辑状态
 - 监听 `message` 变化来自动重置编辑状态
 - 避免了 `setTimeout` 的不优雅解决方案
@@ -280,21 +292,25 @@ const handlePaste = async () => {
 ## 关键改进点
 
 ### 1. 编辑状态管理
+
 - **问题**：没有区分用户编辑和程序更新
 - **解决**：添加 `isEditing` 状态标记
 - **效果**：防止编辑过程中的意外覆盖
 
 ### 2. 失焦验证机制
+
 - **问题**：实时更新表单导致数据不一致
 - **解决**：只在失焦时验证并更新表单
 - **效果**：确保用户完成输入后才更新
 
 ### 3. 渲染冲突解决
+
 - **问题**：useEffect 和用户输入冲突
 - **解决**：编辑状态下阻止自动渲染
 - **效果**：流畅的输入体验
 
 ### 4. 粘贴操作优化
+
 - **问题**：粘贴后需要手动失焦才能生效
 - **解决**：粘贴后立即验证并更新
 - **效果**：更好的用户体验
@@ -302,26 +318,33 @@ const handlePaste = async () => {
 ## 注意事项
 
 ### 1. 状态同步
+
 确保 `isEditing` 状态在各种情况下都能正确更新：
+
 - 输入时设置为 `true`
 - 失焦时设置为 `false`
 - 粘贴时根据情况决定
 
 ### 2. 错误处理
+
 保持实时验证功能，让用户能够及时发现 JSON 格式错误。
 
 ### 3. 性能考虑
+
 避免在编辑状态下进行不必要的计算和更新。
 
 ### 4. 用户体验
+
 保持验证状态的视觉反馈，让用户知道当前输入是否有效。
 
 ## 相关文件
 
 ### 修改文件
+
 - `apps/web/src/components/debug/JsonPreview.tsx` - 主要修复文件
 
 ### 相关组件
+
 - `apps/web/src/components/ui/textarea.tsx` - 文本框组件
 - `apps/web/src/utils/messageBuilder.ts` - JSON 验证工具
 

@@ -7,11 +7,13 @@
 ## 🆕 新增文件
 
 ### 核心组件
+
 1. **apps/web/src/components/ui/dropdown-menu.tsx**
    - 基于 Radix UI 的下拉菜单组件
    - 用于编辑模板的端类型
 
 ### 文档
+
 2. **apps/web/README_TEMPLATE_CLIENT_TYPE.md**
    - 功能使用说明文档
    - 包含 UI 操作和控制台操作指南
@@ -31,7 +33,9 @@
 ## 📝 修改文件
 
 ### 类型定义
+
 1. **apps/web/src/types/debug.ts**
+
    ```typescript
    // 为 Template 接口添加 clientType 字段
    export interface Template {
@@ -45,6 +49,7 @@
    ```
 
 ### 核心逻辑
+
 2. **apps/web/src/utils/templateStorage.ts**
    - 扩展 `createTemplateFromTasks` 函数，支持 `clientType` 参数
    - 新增 `updateTemplatesClientType` 函数，支持批量更新
@@ -54,6 +59,7 @@
    - 加载模板时自动切换到对应的端类型
 
 ### UI 组件
+
 4. **apps/web/src/components/debug/TemplatePanel.tsx**
    - 添加端类型筛选按钮（全部/Web/Windows）
    - 为每个模板添加端类型标签
@@ -64,7 +70,9 @@
    - 保存模板时传入 `clientType` 参数
 
 ### 依赖配置
+
 6. **apps/web/package.json**
+
    ```json
    {
      "dependencies": {
@@ -79,6 +87,7 @@
 ## 🔧 技术实现细节
 
 ### 1. 数据结构扩展
+
 ```typescript
 // Template 接口添加可选字段
 clientType?: ClientType; // 'web' | 'windows'
@@ -96,6 +105,7 @@ const template = {
 ```
 
 ### 2. 筛选逻辑
+
 ```typescript
 // 旧模板兼容：没有 clientType 的默认为 'web'
 const filteredTemplates = templates.filter((template) => {
@@ -106,9 +116,10 @@ const filteredTemplates = templates.filter((template) => {
 ```
 
 ### 3. 自动切换逻辑
+
 ```typescript
 // 加载模板时的优先级
-const clientType = 
+const clientType =
   template.clientType ||           // 优先使用模板的 clientType
   msg.meta.clientType ||           // 其次使用消息元数据的 clientType
   'web';                           // 默认为 web
@@ -117,6 +128,7 @@ setMeta({ ...msg.meta, clientType });
 ```
 
 ### 4. UI 组件设计
+
 ```tsx
 // 端类型标签
 {template.clientType === 'windows' ? (
@@ -150,15 +162,18 @@ setMeta({ ...msg.meta, clientType });
 ## 🎨 视觉设计
 
 ### 颜色方案
+
 - **Web 端标签**：绿色系 (`bg-green-100 text-green-700`)
 - **Windows 端标签**：蓝色系 (`bg-blue-100 text-blue-700`)
 
 ### 图标使用
+
 - **Web 端**：`<Monitor />` (lucide-react)
 - **Windows 端**：`<Window />` (lucide-react)
 - **编辑**：`<Pencil />` (lucide-react)
 
 ### 布局设计
+
 ```
 ┌─────────────────────────────┐
 │ 快速模板        2 / 5 个模板 │
@@ -176,18 +191,21 @@ setMeta({ ...msg.meta, clientType });
 ## 📊 代码统计
 
 ### 新增代码
+
 - 新增文件：5 个
 - 新增 UI 组件：1 个 (dropdown-menu.tsx, ~200 行)
 - 新增工具函数：1 个 (updateTemplatesClientType)
 - 新增文档：4 个 (约 500 行)
 
 ### 修改代码
+
 - 修改文件：5 个
 - 修改类型定义：1 处
 - 修改核心逻辑：3 处
 - 修改 UI 组件：2 处
 
 ### 依赖变更
+
 - 新增依赖：1 个 (@radix-ui/react-dropdown-menu)
 
 ## ✅ 功能检查清单
@@ -206,6 +224,7 @@ setMeta({ ...msg.meta, clientType });
 ## 🧪 测试建议
 
 ### 功能测试
+
 1. 在 Web 端创建模板 → 验证标签为绿色 Web
 2. 在 Windows 端创建模板 → 验证标签为蓝色 Windows
 3. 使用筛选按钮 → 验证筛选逻辑正确
@@ -213,10 +232,12 @@ setMeta({ ...msg.meta, clientType });
 5. 加载不同端类型模板 → 验证自动切换
 
 ### 兼容性测试
+
 1. 加载旧模板 → 验证默认显示为 Web 端
 2. 修改旧模板类型 → 验证字段正确添加
 
 ### 边界测试
+
 1. 空模板列表 → 验证提示信息正确
 2. 全部筛选为某一端 → 验证空状态提示
 3. 快速连续点击 → 验证状态更新正确
@@ -252,7 +273,7 @@ setMeta({ ...msg.meta, clientType });
 ## 📧 反馈
 
 如有问题或建议，请：
+
 1. 查看文档：`apps/web/docs/` 目录
 2. 检查快速参考：`模板客户端类型快速参考.md`
 3. 查看实现细节：`IMPLEMENTATION_SUMMARY_TEMPLATE_CLIENT_TYPE.md`
-
