@@ -43,6 +43,7 @@ export class WindowsOperateService extends EventEmitter {
    - 形成多层嵌套和潜在的循环引用
 
 3. **调用链分析**
+
    ```
    Agent.callbackOnTaskStartTip()
      → Agent.onTaskStartTip()
@@ -105,16 +106,19 @@ constructor(opts?: AgentOverWindowsOpt) {
 ## 📊 修复过程回顾
 
 ### 第一次修复（不完整）
+
 - **问题分析**：认为是回调包装导致递归
 - **修复方法**：移除回调包装
 - **结果**：❌ 问题依然存在
 
 ### 第二次修复（不完整）
+
 - **问题分析**：认为是回调设置时机问题
 - **修复方法**：在 AgentOverWindows 构造函数中设置回调
 - **结果**：❌ 问题依然存在
 
 ### 第三次修复（成功）
+
 - **问题分析**：发现类属性中的箭头函数导致 `this` 上下文问题
 - **修复方法**：
   1. 从类属性中移除 `onTaskStartTip`
@@ -186,5 +190,3 @@ class MyClass {
 ---
 
 **结论**：这不仅仅是回调递归或时机问题，而是 JavaScript/TypeScript 中 `this` 上下文绑定的基础问题。在类属性中使用箭头函数引用 `this` 是一个常见但容易被忽视的陷阱。
-
-

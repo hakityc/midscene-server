@@ -27,6 +27,7 @@ export interface MessageMeta {
 ```
 
 **特点：**
+
 - ✅ 可选字段，不传默认为 web
 - ✅ 严格类型检查
 - ✅ 与服务端类型定义保持一致
@@ -56,6 +57,7 @@ export function generateMeta(
 ```
 
 **特点：**
+
 - ✅ 向后兼容（参数可选）
 - ✅ 只在明确指定时添加 clientType
 - ✅ 自动识别默认为 web
@@ -72,6 +74,7 @@ export function generateMeta(
    - 带图标的可视化提示
 
 2. **动态图标显示**
+
    ```typescript
    const getClientTypeIcon = () => {
      const clientType = meta.clientType || 'web';
@@ -82,6 +85,7 @@ export function generateMeta(
    ```
 
 3. **智能更新逻辑**
+
    ```typescript
    const updateClientType = (value: ClientType | 'auto') => {
      if (value === 'auto') {
@@ -95,6 +99,7 @@ export function generateMeta(
    ```
 
 **特点：**
+
 - ✅ 直观的图标提示（📱 / 🖥️）
 - ✅ 自动模式支持
 - ✅ 实时更新元数据
@@ -340,6 +345,7 @@ describe('E2E: Client Type Selection', () => {
 ### Q1: 选择"自动"和"Web 端"有什么区别？
 
 **A:** 功能相同，差别在于：
+
 - **自动：** 不发送 `clientType` 字段，服务端默认为 web
 - **Web 端：** 明确发送 `clientType: 'web'`
 
@@ -356,6 +362,7 @@ describe('E2E: Client Type Selection', () => {
 ### Q4: Windows 端需要特殊配置吗？
 
 **A:** 需要确保：
+
 1. Windows 客户端应用已安装并运行
 2. WindowsOperateService 已启动
 3. 网络连接正常
@@ -419,21 +426,25 @@ const winMeta = generateMeta(conversationId, 'windows');
 Web 端 ClientType 功能已完整实现，主要成果包括：
 
 ✅ **类型系统**
+
 - 完整的 TypeScript 类型定义
 - 与服务端类型保持一致
 - 编译时类型检查
 
 ✅ **用户界面**
+
 - 直观的选择器组件
 - 图标化的可视提示
 - 友好的用户引导
 
 ✅ **向后兼容**
+
 - 不影响现有功能
 - 默认行为不变
 - 平滑升级路径
 
 ✅ **文档完善**
+
 - 详细的使用指南
 - 快速开始教程
 - 实现技术文档
@@ -445,4 +456,3 @@ Web 端 ClientType 功能已完整实现，主要成果包括：
 **实现者：** 开发团队  
 **最后更新：** 2025-10-13  
 **状态：** ✅ 生产就绪
-

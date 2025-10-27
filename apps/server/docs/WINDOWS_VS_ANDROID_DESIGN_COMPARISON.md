@@ -38,6 +38,7 @@ export async function agentFromAdbDevice(
 ```
 
 **优点**：
+
 - 分离关注点：Device 负责连接，Agent 负责高级操作
 - 显式初始化：`connect()` 必须在使用前调用
 - 错误早暴露：连接失败会在创建阶段立即抛出
@@ -85,6 +86,7 @@ export class WindowsOperateService extends EventEmitter {
 ```
 
 **问题**：
+
 - 多层包装：Agent → Service，增加复杂度
 - 回调处理混乱：在构造函数、Service 中都处理回调
 - 初始化不明确：需要手动调用 `launch()`
@@ -132,6 +134,7 @@ export class AndroidDevice implements AbstractInterface {
 ```
 
 **优点**：
+
 - **即时错误检查**：每次调用都检查 `destroyed` 状态
 - **统一入口**：所有操作通过 `getAdb()` 进入，集中检查
 - **错误上下文丰富**：错误信息包含设备 ID 等关键信息
@@ -168,6 +171,7 @@ export class AgentOverWindows extends Agent<WindowsDevice> {
 ```
 
 **问题**：
+
 - **手动检查**：依赖开发者记得调用 `assertLaunched()`
 - **容易遗漏**：新增方法可能忘记检查
 - **错误延迟**：如果忘记检查，错误会在更深层次暴露
@@ -197,6 +201,7 @@ const agent = new AndroidAgent(device, {
 ```
 
 **优点**：
+
 - **关注点分离**：Agent 不关心回调如何处理
 - **简单直接**：使用者完全控制回调行为
 - **无嵌套包装**：不会形成多层回调链
@@ -228,6 +233,7 @@ private async createAgent() {
 ```
 
 **问题**：
+
 - **过度包装**：回调被包装多次
 - **this 绑定复杂**：多层嵌套导致 this 上下文混乱
 - **栈溢出风险**：容易形成循环调用
@@ -538,6 +544,7 @@ Windows 实现相比 Android 有以下主要问题：
 4. **错误暴露延迟**：只在使用时才发现初始化问题
 
 **核心建议**：
+
 - 参考 Android 的简洁设计
 - 使用 Proxy 模式统一错误处理
 - 在初始化阶段暴露所有错误
@@ -545,5 +552,3 @@ Windows 实现相比 Android 有以下主要问题：
 - 保持回调处理简单直接
 
 这些改进将使代码更健壮、更易维护，错误也能更早被发现和处理。
-
-

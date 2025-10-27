@@ -152,6 +152,7 @@ interface ActionSelectorProps {
 ```
 
 **使用示例：**
+
 ```tsx
 <ActionSelector
   value={action}
@@ -183,11 +184,13 @@ interface ActionSelectorProps {
 ```
 
 **原因：**
+
 - 服务端未启动
 - 网络连接问题
 - API 接口错误
 
 **解决：**
+
 1. 确认服务端运行
 2. 检查网络连接
 3. 刷新页面重试
@@ -195,6 +198,7 @@ interface ActionSelectorProps {
 ### 正常使用
 
 显示分类的 action 列表，包括：
+
 - 操作名称
 - 操作描述
 - 支持数量统计
@@ -435,6 +439,7 @@ const testClientType = 'windows';
 ### 4. 及时更新文档
 
 每次添加新 action 都应该更新：
+
 - 配置注释
 - API 文档
 - 用户指南
@@ -478,11 +483,13 @@ const testClientType = 'windows';
 ### 问题：ActionSelector 一直显示"加载中"
 
 **可能原因：**
+
 1. 服务端未启动
 2. API 端口不对
 3. 网络连接问题
 
 **解决步骤：**
+
 ```bash
 # 1. 检查服务端
 curl http://localhost:3000/api/client-type-actions
@@ -497,10 +504,12 @@ pnpm dev
 ### 问题：切换客户端后 ActionSelector 没变化
 
 **可能原因：**
+
 - `clientType` 没有正确传递
 - 组件没有重新渲染
 
 **解决步骤：**
+
 1. 检查 `meta.clientType` 的值
 2. 确认 `ActionSelector` 的 `clientType` prop
 3. 打开 React DevTools 查看组件 props
@@ -508,11 +517,13 @@ pnpm dev
 ### 问题：显示"加载失败"
 
 **错误示例：**
+
 ```
 ❌ 加载失败: Failed to fetch
 ```
 
 **解决步骤：**
+
 1. 确认服务端运行在 `http://localhost:3000`
 2. 检查 CORS 配置
 3. 查看浏览器控制台网络错误
@@ -521,10 +532,12 @@ pnpm dev
 ### 问题：所有 actions 都显示警告
 
 **可能原因：**
+
 - `clientType` 值不正确
 - 配置未正确加载
 
 **解决步骤：**
+
 1. 检查 `meta.clientType` 的值
 2. 刷新页面重新加载配置
 3. 检查浏览器控制台错误
@@ -656,4 +669,3 @@ ActionSelector 现在是一个完全动态的智能组件：
 
 **最后更新：** 2025-10-13  
 **状态：** ✅ 生产就绪
-

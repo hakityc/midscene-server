@@ -72,24 +72,28 @@ interface WindowsDeviceOptions {
 ## 质量选择指南
 
 ### JPEG 90（默认，推荐）
+
 - ✅ 视觉质量几乎无损
 - ✅ 文件大小减少 90%
 - ✅ 适合大多数场景
 - ✅ 与 Web 版本一致
 
 ### JPEG 80
+
 - ✅ 更小的文件大小
 - ✅ 视觉质量仍然良好
 - ⚠️ 某些细节略有损失
 - 适合网络较慢的环境
 
 ### JPEG 70
+
 - ✅ 极小的文件大小
 - ⚠️ 可见的压缩痕迹
 - ⚠️ 可能影响 AI 识别精度
 - 仅适合带宽严重受限的场景
 
 ### PNG
+
 - ✅ 最高质量，无损压缩
 - ❌ 文件大小最大
 - ❌ 传输和处理最慢
@@ -98,12 +102,14 @@ interface WindowsDeviceOptions {
 ## 运行演示
 
 ### 功能演示
+
 ```bash
 cd apps/server
 npx tsx scripts/demo-screenshot-quality.ts
 ```
 
 ### 性能测试
+
 ```bash
 cd apps/server
 npx tsx scripts/test-screenshot-quality.ts
@@ -112,11 +118,13 @@ npx tsx scripts/test-screenshot-quality.ts
 ## 技术实现
 
 ### 核心技术栈
+
 - **@nut-tree/nut-js** - 跨平台截图库
 - **sharp** - 高性能图片处理（基于 libvips）
 - **mozjpeg** - 优化的 JPEG 压缩引擎
 
 ### 实现流程
+
 ```
 1. nut-js 捕获 PNG 截图（最高质量）
    ↓
@@ -135,22 +143,28 @@ npx tsx scripts/test-screenshot-quality.ts
 ## 常见问题
 
 ### Q: 默认质量是多少？
+
 A: 默认使用 JPEG 格式，质量 90，与 Web 版本保持一致。
 
 ### Q: PNG 和 JPEG 90 视觉上有区别吗？
+
 A: 对于大多数屏幕内容，JPEG 90 的视觉质量与 PNG 几乎无法区分。
 
 ### Q: 会影响 AI 识别精度吗？
+
 A: JPEG 90 不会影响 AI 识别精度。质量低于 70 时可能会有影响。
 
 ### Q: 如何选择合适的质量？
-A: 
+
+A:
+
 - **90**: 默认，适合所有场景
 - **80**: 网络较慢，需要更快传输
 - **70**: 带宽严重受限
 - **PNG**: 需要像素完美或存档用途
 
 ### Q: 可以在运行时更改质量吗？
+
 A: 需要创建新的 WindowsDevice 实例。未来可能添加动态配置支持。
 
 ## 性能监控
@@ -165,6 +179,7 @@ A: 需要创建新的 WindowsDevice 实例。未来可能添加动态配置支�
 ## 最佳实践
 
 ### 开发环境
+
 ```typescript
 const device = new WindowsDevice({
   screenshot: {
@@ -175,6 +190,7 @@ const device = new WindowsDevice({
 ```
 
 ### 根据网络状况
+
 ```typescript
 const device = new WindowsDevice({
   screenshot: {
@@ -185,6 +201,7 @@ const device = new WindowsDevice({
 ```
 
 ### 批量截图
+
 ```typescript
 // 批量截图时使用较低质量以节省时间和空间
 const device = new WindowsDevice({
@@ -204,4 +221,3 @@ const device = new WindowsDevice({
 - [Puppeteer 实现](../../../midscene/packages/web-integration/src/puppeteer/base-page.ts)
 - [Sharp 文档](https://sharp.pixelplumbing.com/)
 - [nut-js 文档](https://nutjs.dev/)
-

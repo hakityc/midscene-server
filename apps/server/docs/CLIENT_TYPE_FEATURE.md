@@ -22,6 +22,7 @@ export interface WsInboundMeta {
 ```
 
 **特性：**
+
 - `clientType` 字段为可选字段
 - 不传该字段时，默认值为 `'web'`
 - 支持的值：`'web'` | `'windows'`
@@ -56,6 +57,7 @@ export function createMessageHandlers() {
 ```
 
 **工作原理：**
+
 1. 使用 `Proxy` 实现动态处理器选择
 2. 每次处理消息时，从消息的 `meta.clientType` 字段获取客户端类型
 3. 根据客户端类型选择对应的处理器集合（web 或 windows）
@@ -132,6 +134,7 @@ export const setupWebSocket = (app: Hono) => {
 ### Web 端处理器（createWebMessageHandlers）
 
 支持的操作：
+
 - `CONNECT_TAB` - 连接浏览器标签页
 - `AI` - AI 执行
 - `AI_SCRIPT` - AI 脚本执行
@@ -143,6 +146,7 @@ export const setupWebSocket = (app: Hono) => {
 ### Windows 端处理器（createWindowsMessageHandlers）
 
 支持的操作：
+
 - `AI` - AI 执行
 - `AI_SCRIPT` - AI 脚本执行
 - `COMMAND` - 命令执行
@@ -169,6 +173,7 @@ const clientType: ClientType = message?.meta?.clientType || 'web';
 ```
 
 这种实现方式确保：
+
 - `undefined` → 'web'
 - `null` → 'web'
 - 空字符串 → 'web'
@@ -244,4 +249,3 @@ export function createMessageHandlers() {
 
 - [ACTIONS_ARCHITECTURE.md](./ACTIONS_ARCHITECTURE.md) - Actions 架构详细设计
 - [WebSocket 协议文档](./WEBSOCKET_PROTOCOL.md) - WebSocket 消息格式（如果存在）
-

@@ -87,6 +87,7 @@ const list = windows.map(w => ({
 ## 常见属性
 
 ### Monitor 属性
+
 - `id` - 显示器 ID
 - `name` - 显示器名称
 - `x`, `y` - 位置
@@ -95,12 +96,14 @@ const list = windows.map(w => ({
 - `scaleFactor` - 缩放因子
 
 ### Window 属性
+
 - `id` - 窗口 ID
 - `title` - 窗口标题
 - `x`, `y` - 位置
 - `width`, `height` - 尺寸
 
 ### Image 方法
+
 - `await image.toPng()` - 转 PNG
 - `await image.toJpeg()` - 转 JPEG
 - `await image.toBmp()` - 转 BMP
@@ -125,4 +128,3 @@ const list = windows.map(w => ({
 ```bash
 npx tsx test-node-screenshots.ts
 ```
-

@@ -390,6 +390,7 @@ setInterval(() => {
 ### 响应格式（Client → Server）
 
 成功：
+
 ```json
 {
   "id": "uuid-v4",
@@ -402,6 +403,7 @@ setInterval(() => {
 ```
 
 失败：
+
 ```json
 {
   "id": "uuid-v4",
@@ -465,6 +467,7 @@ test().catch(console.error)
 ### 1. 客户端无法连接
 
 **检查项**:
+
 - WebSocket 路径是否正确 (`/ws/windows-client`)
 - 服务器是否正在运行
 - 防火墙是否阻止连接
@@ -473,11 +476,13 @@ test().catch(console.error)
 ### 2. 操作超时
 
 **原因**:
+
 - 客户端处理太慢
 - 网络延迟
 - 客户端未响应
 
 **解决**:
+
 - 增加超时时间
 - 检查客户端日志
 - 优化客户端性能
@@ -485,6 +490,7 @@ test().catch(console.error)
 ### 3. 操作失败
 
 **检查**:
+
 - 客户端错误日志
 - 操作参数是否正确
 - 客户端是否有权限执行操作
@@ -507,4 +513,3 @@ test().catch(console.error)
 - [README.md](./README.md) - 架构说明
 - [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - 实现总结
 - [examples.ts](./examples.ts) - 使用示例
-

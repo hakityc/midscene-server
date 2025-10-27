@@ -10,12 +10,14 @@
 ## 🎯 迁移原因
 
 ### robotjs 的问题
+
 - ❌ 不支持 Apple Silicon (ARM64)
 - ❌ 已停止维护（最后更新 2018 年）
 - ❌ 依赖旧版本的 Electron
 - ❌ 编译困难，pnpm 默认阻止构建脚本
 
 ### nut-js 的优势
+
 - ✅ 支持 Apple Silicon (ARM64)
 - ✅ 跨平台支持更好 (macOS/Windows/Linux)
 - ✅ API 更现代，完全基于 Promise
@@ -26,6 +28,7 @@
 ## 📦 依赖变更
 
 ### 移除
+
 ```json
 {
   "robotjs": "0.6.0"
@@ -33,6 +36,7 @@
 ```
 
 ### 添加
+
 ```json
 {
   "@nut-tree/nut-js": "^4.2.0"
@@ -46,11 +50,13 @@
 ### 1. 导入方式
 
 **之前 (robotjs)**:
+
 ```typescript
 import robot from 'robotjs';
 ```
 
 **之后 (nut-js)**:
+
 ```typescript
 import { mouse, keyboard, screen, Button, Key, Point } from '@nut-tree/nut-js';
 ```
@@ -58,12 +64,14 @@ import { mouse, keyboard, screen, Button, Key, Point } from '@nut-tree/nut-js';
 ### 2. 屏幕信息获取
 
 **之前 (robotjs)**:
+
 ```typescript
 const size = robot.getScreenSize();
 // 同步调用，返回 { width, height }
 ```
 
 **之后 (nut-js)**:
+
 ```typescript
 const width = await screen.width();   // 异步
 const height = await screen.height(); // 异步
@@ -72,12 +80,14 @@ const height = await screen.height(); // 异步
 ### 3. 截图
 
 **之前 (robotjs)**:
+
 ```typescript
 const img = robot.captureScreen(0, 0, width, height);
 // 返回 BGRA 格式的图像数据
 ```
 
 **之后 (nut-js)**:
+
 ```typescript
 const image = await screen.grab();
 // 返回 Image 对象
@@ -88,6 +98,7 @@ const imageData = await image.toRGB();
 ### 4. 鼠标操作
 
 **之前 (robotjs)**:
+
 ```typescript
 robot.moveMouse(x, y);
 robot.mouseClick();
@@ -96,6 +107,7 @@ robot.mouseClick('right');
 ```
 
 **之后 (nut-js)**:
+
 ```typescript
 await mouse.move([new Point(x, y)]);
 await mouse.click(Button.LEFT);
@@ -106,6 +118,7 @@ await mouse.click(Button.RIGHT);
 ### 5. 键盘操作
 
 **之前 (robotjs)**:
+
 ```typescript
 robot.typeString(text);           // 仅支持 ASCII
 robot.keyTap('enter');
@@ -113,6 +126,7 @@ robot.keyTap('c', ['control']);
 ```
 
 **之后 (nut-js)**:
+
 ```typescript
 await keyboard.type(text);        // 支持 Unicode
 await keyboard.pressKey(Key.Enter);
@@ -125,11 +139,13 @@ await keyboard.releaseKey(Key.LeftControl, Key.C);
 ### 6. 滚动操作
 
 **之前 (robotjs)**:
+
 ```typescript
 robot.scrollMouse(x, y);
 ```
 
 **之后 (nut-js)**:
+
 ```typescript
 await mouse.scrollUp(amount);
 await mouse.scrollDown(amount);
@@ -165,12 +181,14 @@ private runSync<T>(asyncFn: () => Promise<T>): T | undefined {
 ## 📝 文件变更清单
 
 ### 修改的文件
+
 1. ✅ `apps/server/package.json` - 更新依赖
 2. ✅ `apps/server/src/services/customMidsceneDevice/windowsNativeImpl.ts` - 完全重写
 3. ✅ `apps/server/WINDOWS_SERVICE_TEST_SUMMARY.md` - 更新文档
 4. ✅ `apps/server/HOW_TO_TEST_WINDOWS.md` - 更新测试指南
 
 ### 新增功能
+
 - ✅ 添加了所有方法的异步版本（推荐使用）
 - ✅ 完整的按键映射表（支持所有常用键）
 - ✅ 更好的错误处理和日志
@@ -178,6 +196,7 @@ private runSync<T>(asyncFn: () => Promise<T>): T | undefined {
 ## ✅ 测试验证
 
 ### 测试结果
+
 ```
 ╔═══════════════════════════════════════════════════════════╗
 ║                      测试结果                            ║
@@ -189,6 +208,7 @@ private runSync<T>(asyncFn: () => Promise<T>): T | undefined {
 ```
 
 ### 测试覆盖
+
 - ✅ 单例模式
 - ✅ 服务生命周期
 - ✅ 错误处理
@@ -196,6 +216,7 @@ private runSync<T>(asyncFn: () => Promise<T>): T | undefined {
 - ✅ 服务配置
 
 ### 运行测试
+
 ```bash
 # 模拟测试（任何环境）
 npm run test:windows:mock
@@ -210,6 +231,7 @@ npm run test:windows:full
 ## 🎨 API 增强
 
 ### 新增的异步方法
+
 ```typescript
 // 推荐使用这些异步版本
 async moveMouseAsync(x: number, y: number): Promise<void>
@@ -225,6 +247,7 @@ async captureScreenAsync(): Promise<string>
 ```
 
 ### 改进的按键支持
+
 - ✅ 所有修饰键（Control, Alt, Shift, Win, Meta）
 - ✅ 所有功能键（F1-F12）
 - ✅ 所有方向键
@@ -234,6 +257,7 @@ async captureScreenAsync(): Promise<string>
 ## ⚠️ 注意事项
 
 ### macOS 权限
+
 nut-js 在 macOS 上需要辅助功能权限：
 
 ```
@@ -242,15 +266,18 @@ accessibility features! Please grant requested access.
 ```
 
 解决方案：
+
 1. 系统偏好设置 → 安全性与隐私 → 辅助功能
 2. 添加你的终端应用（Terminal 或 iTerm）
 
 ### 性能考虑
+
 - `runSync()` 使用忙等待，可能影响性能
 - 建议在新代码中使用异步版本
 - 考虑将整个调用链改为异步
 
 ### 兼容性
+
 - ✅ macOS (包括 Apple Silicon)
 - ✅ Windows
 - ✅ Linux
@@ -258,12 +285,14 @@ accessibility features! Please grant requested access.
 ## 📊 迁移影响
 
 ### 正面影响
+
 - ✅ 可以在 macOS M1/M2/M3 上开发和测试
 - ✅ 更现代的 API，代码更清晰
 - ✅ 更好的 Unicode 支持（中文输入无需特殊处理）
 - ✅ 活跃维护，bug 修复更及时
 
 ### 需要注意
+
 - ⚠️ 所有操作都是异步的（已通过 runSync 包装）
 - ⚠️ 需要系统权限（macOS 辅助功能）
 - ⚠️ 图像处理使用 jimp（性能可能略低于原生）
@@ -295,6 +324,7 @@ accessibility features! Please grant requested access.
 ✅ **迁移成功！**
 
 从 `robotjs` 到 `@nut-tree/nut-js` 的迁移已经完成，所有测试通过。新的实现：
+
 - 支持更多平台（包括 Apple Silicon）
 - API 更现代
 - 功能更强大
@@ -307,4 +337,3 @@ accessibility features! Please grant requested access.
 **迁移完成时间**: 2025-10-10  
 **测试环境**: macOS (Apple Silicon)  
 **测试结果**: 100% 通过
-

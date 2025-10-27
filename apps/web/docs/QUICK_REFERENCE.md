@@ -159,18 +159,22 @@ cd apps/server && pnpm dev
 ## 📖 文档索引
 
 ### 快速开始
+
 - [CLIENT_TYPE_QUICK_START.md](apps/web/docs/CLIENT_TYPE_QUICK_START.md) - 30 秒上手
 
 ### 使用指南
+
 - [CLIENT_TYPE_USAGE.md](apps/web/docs/CLIENT_TYPE_USAGE.md) - 详细用法
 - [ACTION_SELECTOR_GUIDE.md](apps/web/docs/ACTION_SELECTOR_GUIDE.md) - 选择器指南
 
 ### 技术文档
+
 - [CLIENT_TYPE_ACTION_VALIDATION.md](apps/server/docs/CLIENT_TYPE_ACTION_VALIDATION.md) - 验证系统
 - [ACTION_CONFIG_REFERENCE.md](apps/server/docs/ACTION_CONFIG_REFERENCE.md) - 配置参考
 - [ACTIONS_ARCHITECTURE.md](apps/server/docs/ACTIONS_ARCHITECTURE.md) - 架构设计
 
 ### 系统总览
+
 - [ACTION_VALIDATION_SYSTEM.md](docs/ACTION_VALIDATION_SYSTEM.md) - 系统完整指南
 - [FEATURE_SUMMARY.md](FEATURE_SUMMARY.md) - 功能总结（本项目根目录）
 
@@ -241,4 +245,3 @@ isActionSupported('windows', 'connectTab');  // false
 **状态：** ✅ 生产就绪
 
 🎉 **现在就开始使用吧！**
-

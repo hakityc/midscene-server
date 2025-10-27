@@ -88,24 +88,28 @@ const device = new WindowsDevice({
 ## 质量选择建议
 
 ### JPEG 90（默认，推荐）
+
 - ✅ 与 Chrome Extension 和 Puppeteer 版本对齐
 - ✅ 视觉质量几乎无损
 - ✅ 文件大小减少 80-90%
 - ✅ 适合大多数场景
 
 ### JPEG 80
+
 - ✅ 更小的文件大小
 - ✅ 视觉质量仍然良好
 - ⚠️ 某些细节可能略有损失
 - 适合网络较慢的环境
 
 ### JPEG 70
+
 - ✅ 极小的文件大小
 - ⚠️ 可见的压缩痕迹
 - ⚠️ 可能影响 AI 识别精度
 - 仅适合带宽受限的场景
 
 ### PNG
+
 - ✅ 最高质量，无损压缩
 - ❌ 文件大小最大
 - ❌ 传输和处理最慢
@@ -161,6 +165,5 @@ npx tsx scripts/test-screenshot-quality.ts
 
 - Chrome Extension 实现: `packages/web-integration/src/chrome-extension/page.ts`
 - Puppeteer 实现: `packages/web-integration/src/puppeteer/base-page.ts`
-- Sharp 文档: https://sharp.pixelplumbing.com/
-- nut-js 文档: https://nutjs.dev/
-
+- Sharp 文档: <https://sharp.pixelplumbing.com/>
+- nut-js 文档: <https://nutjs.dev/>

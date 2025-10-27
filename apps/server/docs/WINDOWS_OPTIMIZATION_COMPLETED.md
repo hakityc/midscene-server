@@ -9,6 +9,7 @@
 ## 🎯 优化 1: 简化 AgentOverWindows 构造函数
 
 ### 修改前
+
 ```typescript
 constructor(opts?: AgentOverWindowsOpt) {
   const windowsDevice = new WindowsDevice(opts?.deviceOptions);
@@ -31,6 +32,7 @@ constructor(opts?: AgentOverWindowsOpt) {
 ```
 
 ### 修改后
+
 ```typescript
 constructor(opts?: AgentOverWindowsOpt) {
   const windowsDevice = new WindowsDevice(opts?.deviceOptions);
@@ -43,6 +45,7 @@ constructor(opts?: AgentOverWindowsOpt) {
 ```
 
 ### 收益
+
 - ✅ **减少回调嵌套**：从 3 层减少到 1 层
 - ✅ **避免 this 上下文问题**：不再有多层包装和 call(this)
 - ✅ **代码更简洁**：删除了 ~15 行代码
@@ -55,10 +58,12 @@ constructor(opts?: AgentOverWindowsOpt) {
 ### 修改前
 
 **WindowsDevice**：
+
 - 只有 `destroyed` 状态
 - 没有统一的状态检查方法
 
 **AgentOverWindows**：
+
 - 维护自己的 `isLaunched` 状态
 - 每个方法手动调用 `assertLaunched()`
 - 容易遗漏状态检查
@@ -66,6 +71,7 @@ constructor(opts?: AgentOverWindowsOpt) {
 ### 修改后
 
 **WindowsDevice**：
+
 ```typescript
 export class WindowsDevice {
   private destroyed = false;
@@ -90,6 +96,7 @@ export class WindowsDevice {
 ```
 
 **AgentOverWindows**：
+
 ```typescript
 export class AgentOverWindows {
   // ✅ 移除了 isLaunched 属性
@@ -104,6 +111,7 @@ export class AgentOverWindows {
 ```
 
 ### 收益
+
 - ✅ **单一职责原则**：状态管理只在 WindowsDevice 中
 - ✅ **减少重复代码**：删除了 ~30 行重复的状态管理代码
 - ✅ **自动状态检查**：不再依赖手动调用 assertLaunched()
@@ -117,6 +125,7 @@ export class AgentOverWindows {
 ### 修改前
 
 两个分离的方法：
+
 ```typescript
 // 第一步：创建 Agent
 private async createAgent(): Promise<void> {
@@ -148,6 +157,7 @@ public async start(): Promise<void> {
 ### 修改后
 
 合并为一个方法：
+
 ```typescript
 // ✅ 合并创建和初始化
 private async createAgent(): Promise<void> {
@@ -197,6 +207,7 @@ public async start(): Promise<void> {
 ```
 
 ### 收益
+
 - ✅ **流程更清晰**：创建和初始化在一个方法中完成
 - ✅ **减少中间状态**：不会出现"已创建但未初始化"的状态
 - ✅ **更好的错误处理**：失败时自动清理 agent
@@ -208,11 +219,13 @@ public async start(): Promise<void> {
 ## 📊 总体优化成果
 
 ### 代码行数
+
 - **AgentOverWindows**: ~430 行 → ~383 行 (减少 47 行，~11%)
 - **WindowsDevice**: ~536 行 → ~548 行 (增加 12 行用于统一状态管理)
 - **WindowsOperateService**: ~407 行 → ~397 行 (减少 10 行，~2.5%)
 
 ### 代码质量
+
 | 指标 | 优化前 | 优化后 | 提升 |
 |------|--------|--------|------|
 | 回调嵌套层级 | 3 层 | 1 层 | ⬇️ 67% |
@@ -224,6 +237,7 @@ public async start(): Promise<void> {
 ### 架构清晰度
 
 **优化前**：
+
 ```
 WindowsOperateService
   ├─ 维护状态
@@ -236,6 +250,7 @@ WindowsOperateService
 ```
 
 **优化后**：
+
 ```
 WindowsOperateService
   ├─ 处理回调（一次）
@@ -249,16 +264,19 @@ WindowsOperateService
 ## 🎓 设计模式改进
 
 ### 1. 单一职责原则 (SRP)
+
 - ✅ WindowsDevice 专注于状态管理和底层操作
 - ✅ AgentOverWindows 专注于高级 AI 任务
 - ✅ WindowsOperateService 专注于服务编排和解耦
 
 ### 2. 关注点分离
+
 - ✅ 回调处理：只在 Service 层处理一次
 - ✅ 状态管理：只在 Device 层管理
 - ✅ 任务执行：在 Agent 层协调
 
 ### 3. DRY 原则
+
 - ✅ 移除重复的状态检查逻辑
 - ✅ 移除重复的回调包装逻辑
 - ✅ 合并重复的初始化流程
@@ -272,6 +290,7 @@ WindowsOperateService
 ### 低优先级优化（可选）
 
 **1. 考虑移除或标记废弃冗余方法**
+
 ```typescript
 // 这些方法是否需要保留？
 async execute(prompt: string)  // = aiAction()
@@ -281,6 +300,7 @@ async setClipboard()   // = this.interface.setClipboard()
 ```
 
 **2. 考虑暴露 device 属性**
+
 ```typescript
 // 选项 1：保留包装方法
 async screenshot() { return this.interface.screenshotBase64(); }
@@ -291,6 +311,7 @@ get device() { return this.interface; }
 ```
 
 **3. 添加更多调试信息**
+
 ```typescript
 if (this.options.debug) {
   console.log('Current state:', this.getState());
@@ -332,11 +353,10 @@ if (this.options.debug) {
 5. **保留了 Service 层** - 保持了解耦能力，为未来模块化做准备
 
 代码现在更加：
+
 - ✅ **简洁**：更少的代码，更清晰的逻辑
 - ✅ **健壮**：统一的状态检查，不会遗漏
 - ✅ **易维护**：单一职责，关注点分离
 - ✅ **易理解**：流程清晰，没有多层嵌套
 
 优化完成！🎊
-
-

@@ -84,11 +84,13 @@ export const createWindowsCommandHandler = (): MessageHandler => {
 ```
 
 **支持的命令：**
+
 - `START` - 启动 Windows 服务
 - `STOP` - 停止 Windows 服务
 - `RESTART` - 重启 Windows 服务
 
 **使用示例：**
+
 ```json
 {
   "meta": {
@@ -144,12 +146,14 @@ export function createWindowsAiHandler(): MessageHandler {
 ```
 
 **关键特性：**
+
 - ✅ 自动检查连接状态
 - ✅ 支持断线重连通知
 - ✅ 正确清理事件监听器
 - ✅ 区分连接错误和业务错误
 
 **使用示例：**
+
 ```json
 {
   "meta": {
@@ -222,6 +226,7 @@ export function executeWindowsScriptHandler(): MessageHandler {
 ```
 
 **关键特性：**
+
 - ✅ 支持 JSON 和字符串格式
 - ✅ 自动转换为 YAML
 - ✅ 支持最大重试次数
@@ -229,6 +234,7 @@ export function executeWindowsScriptHandler(): MessageHandler {
 - ✅ 处理部分任务失败
 
 **使用示例：**
+
 ```json
 {
   "meta": {
@@ -517,6 +523,7 @@ windowsOperateService.on('taskStartTip', (tip) => {
 ### Q1: Windows 服务启动失败怎么办？
 
 **A:** 检查以下几点：
+
 1. Windows 客户端是否已连接
 2. WindowsClientConnectionManager 是否正常运行
 3. 查看日志中的详细错误信息
@@ -525,6 +532,7 @@ windowsOperateService.on('taskStartTip', (tip) => {
 ### Q2: 如何处理长时间运行的任务？
 
 **A:** 使用脚本模式，可以监控每个步骤的执行状态：
+
 ```typescript
 const result = await windowsOperateService.executeScript(script);
 if (result._hasErrors) {
@@ -536,6 +544,7 @@ if (result._hasErrors) {
 ### Q3: 如何确保连接稳定性？
 
 **A:** 系统已内置自动重连机制：
+
 - 最多自动重连 5 次
 - 重连间隔 5 秒
 - 每次请求前自动检查连接状态
@@ -547,6 +556,7 @@ if (result._hasErrors) {
 ### Q5: 如何获取设备信息？
 
 **A:** 使用内置方法：
+
 ```typescript
 const deviceInfo = await windowsOperateService.getDeviceInfo();
 console.log('屏幕尺寸:', deviceInfo.width, 'x', deviceInfo.height);
@@ -581,4 +591,3 @@ Windows Service 接入已完成，主要特性包括：
 **维护者：** 开发团队  
 **最后更新：** 2025-10-13  
 **状态：** ✅ 生产就绪
-

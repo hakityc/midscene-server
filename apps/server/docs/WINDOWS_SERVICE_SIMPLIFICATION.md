@@ -122,6 +122,7 @@ async execute(prompt: string): Promise<void> {
 ```
 
 **改进**：
+
 - ✅ 移除了 `maxRetries` 参数
 - ✅ 移除了 `checkAndReconnect()` 调用
 - ✅ 移除了 `ensureConnection()` 调用
@@ -228,6 +229,7 @@ async executeScript(
 ```
 
 **改进**：
+
 - ✅ 移除了 `maxRetries` 参数
 - ✅ 移除了 `ensureConnection()` 调用
 - ✅ 移除了 `runWithRetry()` 包装
@@ -373,10 +375,12 @@ async executeScript(yamlContent: string, originalCmd?: string): Promise<any>
 ### 兼容性
 
 **向后兼容性**：
+
 - ⚠️ **部分不兼容**：移除了 `maxRetries` 参数
 - ✅ **核心功能兼容**：主要功能保持不变
 
 **迁移建议**：
+
 ```typescript
 // 旧代码
 await windowsOperateService.execute('打开记事本', 5); // ❌ 不再支持 maxRetries
@@ -401,6 +405,7 @@ for (let i = 0; i < 5; i++) {
 ### 需要测试的场景
 
 1. **基本功能测试**
+
    ```typescript
    await windowsOperateService.start();
    await windowsOperateService.execute('打开记事本');
@@ -409,12 +414,14 @@ for (let i = 0; i < 5; i++) {
    ```
 
 2. **自动启动测试**
+
    ```typescript
    // 不手动调用 start()，测试自动启动
    await windowsOperateService.execute('打开记事本');
    ```
 
 3. **错误处理测试**
+
    ```typescript
    try {
      await windowsOperateService.execute('无效的任务');
@@ -424,6 +431,7 @@ for (let i = 0; i < 5; i++) {
    ```
 
 4. **重启测试**
+
    ```typescript
    await windowsOperateService.start();
    await windowsOperateService.execute('任务1');
@@ -489,4 +497,3 @@ await windowsOperateService.execute('任务');
 4. **添加配置选项**：允许用户选择是否启用某些功能
 
 但在没有明确需求之前，保持当前的简洁实现是最佳选择。
-

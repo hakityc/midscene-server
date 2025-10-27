@@ -20,6 +20,7 @@
 **修改文件**: `/Users/lebo/lebo/project/midscene-server/apps/web/src/hooks/useWebSocket.ts`
 
 **主要改进**:
+
 - 添加重连计数器和最大重试次数限制
 - 实现指数退避重连策略（1s, 2s, 4s, 8s, 10s）
 - 在连接关闭和错误时自动触发重连
@@ -40,6 +41,7 @@ const scheduleReconnect = useCallback(() => {
 ### 2. 改进错误处理和日志
 
 **改进内容**:
+
 - 添加详细的错误日志输出到控制台
 - 在消息监控中显示重连进度
 - 区分不同类型的连接关闭代码
@@ -60,6 +62,7 @@ ws.onerror = (event) => {
 **修改文件**: `/Users/lebo/lebo/project/midscene-server/apps/web/src/components/debug/MessageMonitor.tsx`
 
 **新增功能**:
+
 - 实时显示连接状态（已连接/连接中/未连接）
 - 使用不同颜色的图标表示状态
 - 连接中时显示旋转动画
@@ -86,6 +89,7 @@ ws.onerror = (event) => {
 ### 4. 添加手动重连按钮
 
 **新增功能**:
+
 - 在消息监控面板添加"重连"按钮
 - 连接中时禁用重连按钮并显示旋转动画
 - 手动重连会重置自动重连计数器
@@ -105,6 +109,7 @@ ws.onerror = (event) => {
 ### 5. 改进资源清理
 
 **改进内容**:
+
 - 组件卸载时清理重连定时器
 - 手动断开连接时停止自动重连
 - 避免内存泄漏和重复连接

@@ -51,6 +51,7 @@ src/
 ## 已测试的模块
 
 ### 1. `utils/response.ts`
+
 - ✅ 成功响应构建
 - ✅ 错误响应构建
 - ✅ 自定义状态码
@@ -59,6 +60,7 @@ src/
 **测试数量**: 10 个测试用例
 
 ### 2. `utils/error.ts`
+
 - ✅ AppError 自定义错误类
 - ✅ 错误处理中间件
 - ✅ 不同错误类型的处理
@@ -67,6 +69,7 @@ src/
 **测试数量**: 13 个测试用例
 
 ### 3. `websocket/builders/messageBuilder.ts`
+
 - ✅ WebSocket 消息构建
 - ✅ 成功/错误响应
 - ✅ 系统消息和广播消息
@@ -75,6 +78,7 @@ src/
 **测试数量**: 27 个测试用例
 
 ### 4. `utils/taskTipFormatter.ts`
+
 - ✅ Planning/Insight/Action/Log 阶段格式化
 - ✅ 各种任务类型的提示转换
 - ✅ 边界情况和错误处理
@@ -84,6 +88,7 @@ src/
 **测试数量**: 56 个测试用例
 
 ### 5. `services/windowsClientConnectionManager.ts`
+
 - ✅ 单例模式
 - ✅ 客户端注册/注销
 - ✅ 心跳更新
@@ -214,6 +219,7 @@ pnpm test:ui
 ```
 
 在浏览器中打开 UI 界面，可以：
+
 - 查看测试执行情况
 - 过滤特定测试
 - 查看测试覆盖率
@@ -285,4 +291,3 @@ vi.useRealTimers();
 | **总计** | **134 + 1** | **✅ 100%** |
 
 最后更新: 2025-10-11
-

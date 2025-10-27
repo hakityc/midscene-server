@@ -32,9 +32,11 @@
 ## 核心文件说明
 
 ### 1. WindowsDevice.ts
+
 **职责**: 设备接口层，实现 `AbstractInterface`
 
 **功能**:
+
 - 提供截图能力 (`screenshotBase64()`)
 - 提供屏幕尺寸信息 (`size()`)
 - 定义动作空间 (`actionSpace()`)
@@ -42,6 +44,7 @@
   - `keyboardPress`: 键盘输入
 
 **最佳实践**:
+
 - ✅ 实现了 `AbstractInterface` 接口
 - ✅ 提供了清晰的设备描述 (`describe()`)
 - ✅ 支持调试模式
@@ -50,14 +53,17 @@
 **当前状态**: Mock 实现，返回模拟数据
 
 ### 2. AgentOverWindows.ts
+
 **职责**: Agent 层，继承 `Agent` 基类
 
 **功能**:
+
 - 封装 WindowsDevice，提供统一的 AI 操作接口
 - 实现特定于 Windows 的方法
 - 管理 Agent 生命周期
 
 **最佳实践**:
+
 - ✅ 继承自 `Agent<WindowsDevice>`，复用核心能力
 - ✅ 构造函数中创建 WindowsDevice 实例
 - ✅ 实现了 `aiAction()` 等高级方法
@@ -66,15 +72,18 @@
 **参考**: 官方 `AgentOverChromeBridge` 实现
 
 ### 3. WindowsOperateService.ts
+
 **职责**: 服务层，提供完整的业务逻辑
 
 **功能**:
+
 - 单例模式管理 Agent 实例
 - 自动重连机制
 - 任务执行与重试
 - 状态监控
 
 **最佳实践**:
+
 - ✅ 单例模式，确保全局唯一
 - ✅ 完整的生命周期管理（start/stop）
 - ✅ 自动重连机制
@@ -194,6 +203,7 @@ await agent.destroy()
 当前是 Mock 实现，真实实现需要：
 
 ### 1. WindowsDevice 真实化
+
 ```typescript
 // 需要实现的功能
 - 真实截图 API（如使用 screenshot-desktop）
@@ -202,6 +212,7 @@ await agent.destroy()
 ```
 
 ### 2. 可选的增强功能
+
 ```typescript
 // WindowsDevice 增强
 - 多显示器支持
@@ -238,4 +249,3 @@ await agent.destroy()
 - [Midscene.js 官方文档](https://midscenejs.com)
 - [Agent 基类源码](https://github.com/web-infra-dev/midscene/tree/main/packages/core/src/agent)
 - [AgentOverChromeBridge 参考](https://github.com/web-infra-dev/midscene/tree/main/packages/web/src/bridge-mode)
-

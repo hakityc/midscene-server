@@ -18,7 +18,7 @@ WindowsDevice "Windows Desktop" not launched. Call launch() first.
 ### 错误调用链
 
 1. `WindowsDevice.launch()` 被调用
-2. 在 launch 中调用 `initializeDeviceInfo()` 
+2. 在 launch 中调用 `initializeDeviceInfo()`
 3. `initializeDeviceInfo()` 调用 `size()` 获取屏幕尺寸
 4. `size()` 调用 `assertNotDestroyed()` 检查设备状态
 5. `assertNotDestroyed()` 调用 `checkState()` 检查 `isLaunched` 状态
@@ -39,6 +39,7 @@ async launch(): Promise<void> {
 ```
 
 **问题所在：**
+
 - `this.isLaunched = true` 的赋值在 `initializeDeviceInfo()` 调用**之后**
 - 但 `initializeDeviceInfo()` 内部调用的 `size()` 等方法需要通过 `checkState()` 检查 `isLaunched` 状态
 - 形成了一个"先有鸡还是先有蛋"的循环依赖问题
@@ -153,4 +154,3 @@ private checkState(): void {
 - **修复日期**：2025-10-13
 - **影响版本**：所有包含 WindowsDevice 的版本
 - **修复提交**：待提交
-

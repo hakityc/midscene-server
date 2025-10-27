@@ -29,6 +29,7 @@ src/websocket/actions/
 ### 1. 模块化组织
 
 #### Web 端模块 (`web/index.ts`)
+
 ```typescript
 export { createCommandHandler } from '../command';
 export { createConnectTabHandler } from '../connect';
@@ -39,11 +40,13 @@ export { handleSiteScriptHandler } from '../siteScript';
 ```
 
 **特点：**
+
 - 重新导出现有的 Web 端 actions
 - 所有操作基于 `WebOperateService`
 - 支持完整的浏览器操作功能
 
 #### Windows 端模块 (`windows/index.ts`)
+
 ```typescript
 export { createWindowsCommandHandler } from './command';
 export { createWindowsAiHandler } from './execute';
@@ -51,6 +54,7 @@ export { executeWindowsScriptHandler } from './executeScript';
 ```
 
 **特点：**
+
 - 独立实现 Windows 特定的处理逻辑
 - 预留接口供未来集成 Windows 操作服务
 - 仅支持基本的 AI 和命令操作
@@ -163,6 +167,7 @@ export const createWindowsCommandHandler = (): MessageHandler => {
 ```
 
 **实现要点：**
+
 - ✅ 使用 `WindowsOperateService` 单例
 - ✅ 支持 START、STOP、RESTART 命令
 - ✅ 记录 `clientType: 'windows'` 用于日志跟踪
@@ -238,6 +243,7 @@ export function createWindowsAiHandler(): MessageHandler {
 ```
 
 **实现要点：**
+
 - ✅ 使用 `WindowsOperateService` 执行 AI 任务
 - ✅ 支持连接状态检查和自动重连
 - ✅ 监听重连事件并通知客户端
@@ -302,6 +308,7 @@ export function executeWindowsScriptHandler(): MessageHandler {
 ```
 
 **实现要点：**
+
 - ✅ 使用 `WindowsOperateService.executeScript()` 执行脚本
 - ✅ 支持 JSON 和 YAML 格式的脚本
 - ✅ 支持兜底命令 (`originalCmd`)
@@ -329,6 +336,7 @@ export function executeWindowsScriptHandler(): MessageHandler {
 ```
 
 **处理流程：**
+
 1. 消息到达 → 解析 `clientType: 'web'`
 2. 选择 `webHandlers` 中的 `AI` 处理器
 3. 调用 `createWebAiHandler()` 创建的处理器
@@ -352,6 +360,7 @@ export function executeWindowsScriptHandler(): MessageHandler {
 ```
 
 **处理流程：**
+
 1. 消息到达 → 解析 `clientType: 'windows'`
 2. 选择 `windowsHandlers` 中的 `AI` 处理器
 3. 调用 `createWindowsAiHandler()` 创建的处理器
@@ -426,6 +435,7 @@ export function createWindowsMessageHandlers() {
 ### 2. 日志记录
 
 所有处理器都应该：
+
 - 记录 `clientType` 字段
 - 记录 `messageId` 用于追踪
 - 使用结构化日志格式
@@ -567,6 +577,7 @@ describe('WebSocket Integration', () => {
 ### Q: 为什么不直接修改现有的处理器？
 
 A: 保持现有处理器不变有以下好处：
+
 - 不影响现有 Web 端功能
 - 便于独立测试和调试
 - 代码职责更清晰
@@ -579,6 +590,7 @@ A: Windows 端的实现取决于 Windows 操作服务的开发进度。当前提
 ### Q: 如何添加新的客户端类型？
 
 A: 参考 Windows 端的实现方式：
+
 1. 在 `types/websocket.ts` 中添加新的 `ClientType`
 2. 创建新的 actions 子目录
 3. 在 `messageHandlers.ts` 中添加相应的处理器工厂
@@ -587,4 +599,3 @@ A: 参考 Windows 端的实现方式：
 ### Q: 如果某个操作 Web 和 Windows 都支持且逻辑相同怎么办？
 
 A: 可以将共同逻辑提取为通用处理器，然后在两端都导入使用。参考 `agentExecute.ts`。
-

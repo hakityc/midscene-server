@@ -1,13 +1,16 @@
 # Windows 自定义 Interface 实现审查报告
 
 ## 审查日期
+
 2025-10-13
 
 ## 审查范围
+
 - `agentOverWindows.ts` - Agent 层实现
 - `windowsDevice.ts` - Device 层（AbstractInterface 实现）
 
 ## 总体评价
+
 ✅ **整体实现质量良好**，符合 Midscene 自定义 interface 的基本要求。代码结构清晰，注释完善，参考了 Android/iOS 的实现模式。
 
 ---
@@ -15,6 +18,7 @@
 ## ✅ 符合最佳实践的部分
 
 ### 1. 核心接口实现 ✅
+
 **windowsDevice.ts** 正确实现了 `AbstractInterface` 接口的所有必需方法：
 
 ```typescript
@@ -30,6 +34,7 @@ export default class WindowsDevice implements AbstractInterface {
 ```
 
 ### 2. 动作空间定义 ✅
+
 使用了 Midscene 提供的预定义动作函数，代码清晰易维护：
 
 ```typescript
@@ -43,6 +48,7 @@ defineActionScroll(...)        // 滚动
 ```
 
 ### 3. 自定义动作支持 ✅
+
 支持通过配置注入自定义动作：
 
 ```typescript
@@ -53,6 +59,7 @@ return this.customActions
 ```
 
 ### 4. 生命周期管理 ✅
+
 正确实现了设备的生命周期管理：
 
 ```typescript
@@ -63,6 +70,7 @@ private assertNotDestroyed(): void { ... }
 ```
 
 ### 5. Agent 层设计 ✅
+
 **agentOverWindows.ts** 正确继承了 `Agent` 基类，提供了完整的 AI 能力：
 
 ```typescript
@@ -82,6 +90,7 @@ export default class AgentOverWindows extends Agent<WindowsDevice> {
 ### 问题 1: Input 动作应使用预定义函数 🔴 **重要**
 
 **当前实现：**
+
 ```typescript
 // ❌ 使用自定义 defineAction
 defineAction({
@@ -100,6 +109,7 @@ defineAction({
 ```
 
 **推荐实现：**
+
 ```typescript
 // ✅ 使用预定义的 defineActionInput
 import { defineActionInput, type ActionInputParam } from '@midscene/core/device';
@@ -117,6 +127,7 @@ defineActionInput(async (param: ActionInputParam) => {
 ```
 
 **理由：**
+
 1. 保持与 Midscene 预定义动作的一致性
 2. `defineActionInput` 是 `aiInput` 方法的调用函数
 3. 参数类型更规范（`ActionInputParam`）
@@ -126,15 +137,18 @@ defineActionInput(async (param: ActionInputParam) => {
 ### 问题 2: InterfaceType 类型定义不明确 ⚠️ **中等**
 
 **当前实现：**
+
 ```typescript
 interfaceType: InterfaceType = 'windows';
 ```
 
 **问题：**
+
 - 需要确认 `'windows'` 是否在 `InterfaceType` 枚举/联合类型中定义
 - 如果 `InterfaceType` 中没有 `'windows'`，TypeScript 可能会报错
 
 **推荐检查：**
+
 ```typescript
 // 检查 @midscene/core 中的 InterfaceType 定义
 // 如果没有 'windows'，可能需要：
@@ -157,6 +171,7 @@ afterInvokeAction?(actionName: string, param: any): Promise<void>
 ```
 
 **推荐实现（可选）：**
+
 ```typescript
 export default class WindowsDevice implements AbstractInterface {
   // ... 其他代码
@@ -192,6 +207,7 @@ export default class WindowsDevice implements AbstractInterface {
 ```
 
 **用途：**
+
 - 统一的日志记录
 - 动作前后的状态检查
 - 性能监控
@@ -226,6 +242,7 @@ async setClipboard(text: string): Promise<void> { ... }  // ✅ 应该是 public
 ### 问题 5: 错误处理可以更完善 🟡 **低优先级**
 
 **当前实现：**
+
 ```typescript
 async screenshotBase64(): Promise<string> {
   try {
@@ -243,6 +260,7 @@ async screenshotBase64(): Promise<string> {
 ```
 
 **推荐改进：**
+
 ```typescript
 async screenshotBase64(): Promise<string> {
   try {
@@ -273,12 +291,15 @@ async screenshotBase64(): Promise<string> {
 ## 📋 改进建议优先级
 
 ### 🔴 高优先级（建议立即修复）
+
 1. **修改 Input 动作实现**：使用 `defineActionInput()` 替代自定义实现
 
 ### ⚠️ 中优先级（建议近期修复）
+
 2. **确认 InterfaceType 类型**：检查并修正类型定义
 
 ### 🟡 低优先级（可选改进）
+
 3. **添加动作钩子函数**：提供更好的调试和扩展能力
 4. **改进错误处理**：提供更详细的错误信息
 5. **添加单元测试**：参考文档建议
@@ -294,6 +315,7 @@ async screenshotBase64(): Promise<string> {
 **位置：** 第 178-194 行
 
 **修改前：**
+
 ```typescript
 // 输入文本
 defineAction({
@@ -313,6 +335,7 @@ defineAction({
 ```
 
 **修改后：**
+
 ```typescript
 // 输入文本
 defineActionInput(async (param) => {
@@ -328,6 +351,7 @@ defineActionInput(async (param) => {
 ```
 
 同时确保导入了正确的类型：
+
 ```typescript
 import {
   type AbstractInterface,
@@ -434,4 +458,3 @@ async afterInvokeAction(actionName: string, param: any): Promise<void> {
 - [Midscene 自定义 Interface 文档](https://midscenejs.com/zh/integrate-with-any-interface.html)
 - [Android Agent 参考实现](https://github.com/web-infra-dev/midscene/tree/main/packages/android/src/agent.ts)
 - [iOS Agent 参考实现](https://github.com/web-infra-dev/midscene/tree/main/packages/ios/src/agent.ts)
-

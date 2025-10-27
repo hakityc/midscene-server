@@ -14,6 +14,7 @@ const actionTypeOptions = [
 ```
 
 **问题**：
+
 - 不同客户端（web、windows）支持的操作不一样
 - 前后端配置不同步
 - 扩展新操作需要修改多处代码
@@ -357,6 +358,7 @@ export function FlowActionItem({
 以后要添加新的 FlowAction 操作，只需要：
 
 1. **在后端配置中添加定义**：
+
    ```typescript
    // apps/server/src/config/clientTypeFlowActions.ts
    export type FlowActionType = 
@@ -381,22 +383,26 @@ export function FlowActionItem({
 ## 💡 优势
 
 ### 1. 统一配置源
+
 - 后端是唯一数据源
 - 前后端自动同步
 - 减少维护成本
 
 ### 2. 动态扩展
+
 - 添加新操作无需修改前端
 - 支持不同客户端的差异化配置
 - 易于测试和调试
 
 ### 3. 丰富的元数据
+
 - 操作说明
 - 参数定义
 - 使用示例
 - 类别分组
 
 ### 4. 类型安全
+
 - TypeScript 类型定义
 - 运行时验证
 - API 响应类型
@@ -415,11 +421,13 @@ export function FlowActionItem({
 ## 🔗 相关文件
 
 ### 后端
+
 - `apps/server/src/config/clientTypeFlowActions.ts` - 配置定义 ✅
 - `apps/server/src/routes/clientTypeFlowActions.ts` - API 路由 ✅
 - `apps/server/src/routes/index.ts` - 路由注册 ✅
 
 ### 前端（待实现）
+
 - `apps/web/src/hooks/useClientTypeFlowActions.ts` - Hook（待创建）
 - `apps/web/src/components/debug/FlowActionItem.tsx` - 组件（待修改）
 - `apps/web/src/types/debug.ts` - 类型定义（可能需要更新）
@@ -427,4 +435,3 @@ export function FlowActionItem({
 ---
 
 **总结**：这个架构改进让 FlowAction 的配置完全由后端控制，前端动态获取，实现了真正的配置化和客户端差异化支持。
-

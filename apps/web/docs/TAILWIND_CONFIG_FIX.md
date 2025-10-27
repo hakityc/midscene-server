@@ -13,6 +13,7 @@
 ### 1. 降级到 Tailwind CSS v3
 
 **修改前：**
+
 ```json
 {
   "devDependencies": {
@@ -25,6 +26,7 @@
 ```
 
 **修改后：**
+
 ```json
 {
   "devDependencies": {
@@ -37,6 +39,7 @@
 ### 2. 修复 PostCSS 配置
 
 **修改前：**
+
 ```js
 export default {
   plugins: {
@@ -47,6 +50,7 @@ export default {
 ```
 
 **修改后：**
+
 ```js
 export default {
   plugins: {
@@ -59,6 +63,7 @@ export default {
 ### 3. 修复 CSS 导入方式
 
 **修改前（v4 语法）：**
+
 ```css
 @import "tw-animate-css";
 @plugin "tailwindcss-animate";
@@ -73,6 +78,7 @@ export default {
 ```
 
 **修改后（v3 标准语法）：**
+
 ```css
 @tailwind base;
 @tailwind components;

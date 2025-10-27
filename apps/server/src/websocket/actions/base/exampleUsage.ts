@@ -88,7 +88,6 @@ export function createWebCommandHandler(): MessageHandler {
         if (!agent) {
           throw new Error('Agent 未初始化');
         }
-        //@ts-expect-error
         const tabs = await agent.getBrowserTabList({});
         return tabs;
       },

@@ -77,12 +77,14 @@
 ### 1. 参考 Midscene 官方实现
 
 **Android Device**:
+
 - ✅ 完整的动作空间定义
 - ✅ 设备描述和状态管理
 - ✅ 资源生命周期管理
 - ✅ 自定义动作支持
 
 **AgentOverChromeBridge**:
+
 - ✅ Agent 基类继承
 - ✅ 生命周期方法 (launch/destroy)
 - ✅ 任务回调绑定
@@ -121,6 +123,7 @@ actionSpace(): DeviceAction<any>[] {
 ### 4. 丰富的 API
 
 **Agent 层方法**:
+
 ```typescript
 // AI 任务
 await agent.aiAction('点击按钮')
@@ -145,6 +148,7 @@ await agent.setClipboard('text')
 ```
 
 **Service 层方法**:
+
 ```typescript
 // 生命周期
 await service.start()
@@ -426,4 +430,3 @@ async getClipboard(): Promise<string> {
 **实现完成时间**: 2025年
 **作者**: AI Assistant
 **版本**: 1.0.0
-

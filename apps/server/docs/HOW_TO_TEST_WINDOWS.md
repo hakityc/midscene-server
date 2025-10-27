@@ -51,6 +51,7 @@ npm run test:windows:full
 ## 测试覆盖
 
 ✅ **已测试功能:**
+
 - 服务生命周期管理 (启动、停止、重启)
 - 单例模式
 - 错误处理
@@ -73,11 +74,13 @@ npm run test:windows:full
 **依赖**: 项目已升级到 @nut-tree/nut-js，支持 Apple Silicon
 
 **优势**:
+
 - ✅ 支持 macOS M1/M2/M3
 - ✅ 跨平台支持更好
 - ✅ API 更现代
 
 **快速测试**:
+
 ```bash
 npm run test:windows:mock
 ```
@@ -87,6 +90,7 @@ npm run test:windows:mock
 **错误**: `没有可用的 Windows 客户端`
 
 **解决方案**:
+
 1. 确保服务已启动
 2. 运行 Windows 客户端示例代码
 3. 检查 WebSocket 连接
@@ -96,4 +100,3 @@ npm run test:windows:mock
 - [测试总结](./WINDOWS_SERVICE_TEST_SUMMARY.md) - 详细测试结果
 - [快速开始](./src/services/customMidsceneDevice/QUICKSTART.md) - 完整使用指南
 - [WebSocket 集成](./src/services/customMidsceneDevice/WEBSOCKET_INTEGRATION.md) - WebSocket 协议说明
-

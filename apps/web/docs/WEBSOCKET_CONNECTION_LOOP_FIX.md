@@ -18,6 +18,7 @@
 通过分析代码发现以下问题：
 
 ### 1. 循环依赖问题
+
 ```typescript
 // 问题代码结构
 const scheduleReconnect = useCallback(() => {
@@ -32,14 +33,17 @@ const connect = useCallback(() => {
 ```
 
 ### 2. 重复连接逻辑
+
 - `connect` 函数和 `scheduleReconnect` 函数都包含完整的 WebSocket 连接逻辑
 - 代码重复导致维护困难，容易引入 bug
 
 ### 3. 类型定义不匹配
+
 - `MonitorMessage` 的 `direction` 类型只支持 `'sent' | 'received'`
 - 但代码中使用了 `'info'` 作为 direction，导致类型错误
 
 ### 4. 连接状态管理混乱
+
 - 多个函数同时管理连接状态
 - 没有统一的连接生命周期管理
 
@@ -48,6 +52,7 @@ const connect = useCallback(() => {
 ### 1. 重构连接逻辑，消除循环依赖
 
 **修改前**：
+
 ```typescript
 const scheduleReconnect = useCallback(() => {
   // 重复的连接逻辑
@@ -59,6 +64,7 @@ const connect = useCallback(() => {
 ```
 
 **修改后**：
+
 ```typescript
 // 统一的连接创建函数
 const createWebSocketConnection = useCallback(() => {
@@ -92,6 +98,7 @@ const connect = useCallback(() => {
 ### 2. 修复类型定义
 
 **修改前**：
+
 ```typescript
 export interface MonitorMessage {
   direction: 'sent' | 'received';
@@ -106,6 +113,7 @@ const addMessage = useCallback((
 ```
 
 **修改后**：
+
 ```typescript
 export interface MonitorMessage {
   direction: 'sent' | 'received' | 'info'; // 添加 'info' 支持
@@ -122,6 +130,7 @@ const addMessage = useCallback((
 ### 3. 优化连接状态管理
 
 **改进内容**：
+
 - 使用单一函数管理所有连接逻辑
 - 在 `onclose` 事件中直接处理重连，避免函数间依赖
 - 使用 `useRef` 管理重连计数器和定时器
@@ -130,6 +139,7 @@ const addMessage = useCallback((
 ### 4. 改进错误处理
 
 **改进内容**：
+
 - 添加详细的控制台错误日志
 - 区分不同类型的连接关闭代码
 - 提供更友好的错误提示信息
@@ -139,19 +149,23 @@ const addMessage = useCallback((
 修复后的连接管理具备以下特点：
 
 ### ✅ **消除循环依赖**
+
 - 不再存在函数间的循环依赖
 - 连接逻辑统一管理，避免重复代码
 
 ### ✅ **稳定的连接管理**
+
 - 连接建立后不会立即断开
 - 重连逻辑只在必要时触发
 - 避免频繁的连接/断开循环
 
 ### ✅ **正确的类型安全**
+
 - 修复所有 TypeScript 类型错误
 - 类型定义与实际使用保持一致
 
 ### ✅ **优化的资源管理**
+
 - 正确清理定时器和连接
 - 避免内存泄漏
 - 组件卸载时正确清理资源
@@ -159,6 +173,7 @@ const addMessage = useCallback((
 ## 技术细节
 
 ### 连接生命周期管理
+
 ```typescript
 // 1. 初始连接
 connect() → createWebSocketConnection()
@@ -177,11 +192,13 @@ setTimeout() → 增加重连计数 → createWebSocketConnection()
 ```
 
 ### 重连策略
+
 - **最大重试次数**：5 次
 - **退避策略**：指数退避（1s → 2s → 4s → 8s → 10s）
 - **重连条件**：只有非正常关闭才重连（code !== 1000 && code !== 1001）
 
 ### 错误处理
+
 - **连接错误**：记录到控制台，显示用户友好的错误信息
 - **重连失败**：达到最大重试次数后停止重连
 - **资源清理**：确保定时器和连接正确清理

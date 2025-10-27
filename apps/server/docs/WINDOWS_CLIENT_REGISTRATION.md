@@ -114,6 +114,7 @@ type WindowsAction =
 ```
 
 **注意事项：**
+
 - `id` 必须是唯一的，建议使用 UUID
 - `timestamp` 必须是当前时间戳（毫秒），服务器会验证时间戳是否在 30 秒范围内
 - `machineName` 和 `capabilities` 是必需字段
@@ -621,4 +622,3 @@ class Program
 ## 技术支持
 
 如果遇到问题，请查看服务器日志以获取更多详细信息。服务器使用 `serviceLogger` 记录所有客户端连接、注册和心跳活动。
-

@@ -3,6 +3,7 @@
 ## 功能概述
 
 新增了 JSON 模式与表单模式之间的双向同步功能，用户可以：
+
 - 在 JSON 模式中直接编辑 JSON，自动同步到表单
 - 使用"粘贴 JSON"按钮快速从剪贴板导入 JSON 并更新表单
 - 表单修改会自动反映到 JSON 预览中
@@ -14,12 +15,14 @@
 **文件**: `/Users/lebo/lebo/project/midscene-server/apps/web/src/utils/jsonParser.ts`
 
 **主要功能**:
+
 - 解析完整的 WebSocket 消息 JSON
 - 提取并转换各种 Action 类型的参数
 - 支持所有 Action 类型：`aiScript`, `ai`, `siteScript`, `downloadVideo`
 - 智能解析流程动作和任务结构
 
 **支持的解析内容**:
+
 ```typescript
 // 元数据解析
 {
@@ -91,6 +94,7 @@
 **文件**: `/Users/lebo/lebo/project/midscene-server/apps/web/src/components/debug/JsonPreview.tsx`
 
 **新增功能**:
+
 - **编辑模式**: `editable={true}` 时支持直接编辑 JSON
 - **粘贴功能**: "粘贴 JSON" 按钮快速从剪贴板导入
 - **实时验证**: 编辑时实时验证 JSON 格式
@@ -98,6 +102,7 @@
 - **错误提示**: 详细的错误信息和格式验证
 
 **新增 Props**:
+
 ```typescript
 interface JsonPreviewProps {
   message: WsInboundMessage;
@@ -112,11 +117,13 @@ interface JsonPreviewProps {
 **文件**: `/Users/lebo/lebo/project/midscene-server/apps/web/src/pages/midsceneDebugPage.tsx`
 
 **新增功能**:
+
 - **双向同步**: JSON 修改自动更新表单状态
 - **状态管理**: 智能更新各种 Action 类型的表单状态
 - **错误处理**: 解析失败时的友好错误提示
 
 **核心函数**:
+
 ```typescript
 const handleJsonToFormUpdate = useCallback((formData: any) => {
   if (formData.action) setAction(formData.action);
@@ -252,6 +259,7 @@ const handleJsonToFormUpdate = useCallback((formData: any) => {
 ```
 
 这个 JSON 会被自动解析并填充到表单中，包括：
+
 - 任务名称和配置
 - 流程动作列表
 - Loading 遮罩选项
@@ -260,6 +268,7 @@ const handleJsonToFormUpdate = useCallback((formData: any) => {
 ## 总结
 
 这个双向同步功能大大提升了调试效率，用户可以：
+
 - 快速从现有 JSON 配置创建表单
 - 在 JSON 和表单之间无缝切换
 - 享受实时验证和错误提示

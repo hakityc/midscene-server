@@ -3,6 +3,7 @@
 ## 一、现状分析
 
 ### 当前痛点
+
 - 使用 Apifox 需要手写复杂的 JSON 结构
 - 参数嵌套层级深，容易出错
 - 无法可视化地构建 flow 流程
@@ -50,11 +51,13 @@ interface WsInboundMessage {
 结合表单构建器和 JSON 编辑器的优点：
 
 #### 1. **模板 + 表单模式**（推荐用于常用场景）
+
 - 为每个 Action 类型提供预设模板
 - 使用可视化表单构建复杂的 flow
 - 自动生成 JSON
 
 #### 2. **JSON 编辑模式**（用于高级场景）
+
 - 保留当前的 JSON 编辑器
 - 提供语法高亮和验证
 - 支持从模板快速开始
@@ -62,6 +65,7 @@ interface WsInboundMessage {
 ### 核心功能设计
 
 #### 功能 1：Action 选择器
+
 - 下拉选择框选择 Action 类型
 - 每个 Action 显示说明文档
 - 自动切换到对应的参数表单
@@ -69,6 +73,7 @@ interface WsInboundMessage {
 #### 功能 2：动态参数表单
 
 ##### 2.1 AI Script 构建器（重点）
+
 ```
 [任务列表]
   └─ 任务 1
@@ -88,6 +93,7 @@ interface WsInboundMessage {
 ```
 
 **支持的动作类型**：
+
 - `aiTap`: AI 点击
   - 必填：描述
   - 可选：xpath
@@ -114,26 +120,33 @@ interface WsInboundMessage {
 ##### 2.2 其他 Action 表单
 
 **AI (简单请求)**
+
 - 参数输入框（纯文本）
 
 **Site Script (网站脚本)**
+
 - 脚本内容（多行文本）
 - 原始命令（可选）
 
 **Download Video (下载视频)**
+
 - 视频 URL
 - 保存路径（可选）
 
 #### 功能 3：元数据管理
+
 - 自动生成：messageId（UUID）、timestamp
 - 手动输入：conversationId（支持记忆上次使用的值）
 
 #### 功能 4：选项配置
+
 - 复选框：启用 Loading 遮罩（LOADING_SHADE）
 - 其他选项（预留扩展）
 
 #### 功能 5：预设模板库
+
 常用场景快速开始：
+
 - 搜索并点击第一个结果
 - 表单填写
 - 列表滚动加载
@@ -141,16 +154,19 @@ interface WsInboundMessage {
 - 自定义模板保存
 
 #### 功能 6：实时 JSON 预览
+
 - 分屏显示：表单 | JSON
 - JSON 可编辑（同步回表单）
 - 语法高亮、格式化
 
 #### 功能 7：历史记录
+
 - 保存最近 10 次发送的消息
 - 支持快速加载历史消息
 - LocalStorage 持久化
 
 #### 功能 8：响应监控
+
 - 实时显示 WebSocket 消息
 - 消息类型分类（发送/接收/错误）
 - 时间戳、状态、内容
@@ -198,6 +214,7 @@ interface WsInboundMessage {
 ### 3.2 移动端适配
 
 垂直单栏布局，Tab 切换：
+
 - Tab 1: 构建器
 - Tab 2: 监控
 - Tab 3: 历史
@@ -205,6 +222,7 @@ interface WsInboundMessage {
 ## 四、技术实现
 
 ### 4.1 技术栈
+
 - **UI 框架**: React + TypeScript
 - **样式**: Tailwind CSS（保持现有 brutalist 风格）
 - **表单管理**: React Hook Form
@@ -214,6 +232,7 @@ interface WsInboundMessage {
 - **持久化**: LocalStorage
 
 ### 4.2 新增依赖建议
+
 ```json
 {
   "dependencies": {
@@ -226,6 +245,7 @@ interface WsInboundMessage {
 ```
 
 ### 4.3 目录结构
+
 ```
 src/
 ├── pages/
@@ -258,24 +278,28 @@ src/
 ## 五、开发计划
 
 ### Phase 1: 基础架构（1-2 天）
+
 - [ ] 重构 WebSocket 连接管理
 - [ ] 设计类型系统
 - [ ] 实现布局框架
 - [ ] 消息监控面板
 
 ### Phase 2: 核心功能（2-3 天）
+
 - [ ] Action 选择器
 - [ ] AI Script 构建器
 - [ ] Flow 动作管理（增删改）
 - [ ] 实时 JSON 生成
 
 ### Phase 3: 增强功能（1-2 天）
+
 - [ ] 其他 Action 表单
 - [ ] 模板系统
 - [ ] 历史记录
 - [ ] JSON 模式切换
 
 ### Phase 4: 优化（1 天）
+
 - [ ] 表单验证
 - [ ] 错误处理
 - [ ] 移动端适配
@@ -308,9 +332,9 @@ src/
 ## 下一步
 
 等待你的确认后，我将开始实施：
+
 1. 先实现 Phase 1 的基础架构
 2. 重点开发 AI Script 构建器（最常用）
 3. 逐步完善其他功能
 
 是否开始开发？或者你有其他建议？
-

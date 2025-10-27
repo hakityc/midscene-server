@@ -99,6 +99,7 @@ node windows-client-example.js
 客户端成功连接后，你应该看到：
 
 **客户端日志**:
+
 ```
 🚀 启动 Windows 客户端
 ==================================================
@@ -111,6 +112,7 @@ node windows-client-example.js
 ```
 
 **服务端日志**:
+
 ```
 Windows 客户端 WebSocket 处理器已初始化
 Windows 客户端尝试连接
@@ -259,20 +261,23 @@ console.log('截图长度:', screenshot.length)
 ### Q: 客户端连接失败
 
 **A**: 检查：
+
 1. 服务器是否运行在正确的端口
 2. WebSocket 路径是否为 `/ws/windows-client`
 3. 防火墙是否允许连接
 
 ### Q: 操作超时
 
-**A**: 
+**A**:
+
 1. 增加超时时间：`service.execute(prompt, 5)` // 5次重试
 2. 检查客户端性能
 3. 查看客户端日志
 
 ### Q: 某些操作不支持
 
-**A**: 
+**A**:
+
 1. 检查客户端依赖是否安装
 2. 查看客户端的 `capabilities` 列表
 3. 确保 Windows 有操作权限
@@ -283,12 +288,12 @@ console.log('截图长度:', screenshot.length)
 - 查看 [examples.ts](./examples.ts) 了解更多使用示例
 - 查看 [README.md](./README.md) 了解架构设计
 
-## 🎉 完成！
+## 🎉 完成
 
 现在你已经成功集成了 Windows WebSocket 自动化！
 
 如有问题，请查看：
+
 - 服务端日志
 - 客户端日志
 - 网络连接状态
-

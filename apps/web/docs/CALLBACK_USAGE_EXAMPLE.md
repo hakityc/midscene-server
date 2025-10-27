@@ -7,6 +7,7 @@
 ## 新的 API
 
 ### 注册回调
+
 ```typescript
 // 注册任务提示回调
 webOperateService.onTaskTip((tip: string) => {
@@ -16,6 +17,7 @@ webOperateService.onTaskTip((tip: string) => {
 ```
 
 ### 移除回调
+
 ```typescript
 // 移除特定回调
 webOperateService.offTaskTip(callback);
@@ -104,6 +106,7 @@ webOperateService.onTaskTip(callbackB);
 ### 从旧的事件监听方式迁移
 
 **旧方式:**
+
 ```typescript
 webOperateService.on("taskStartTip", (tip: string) => {
   // 处理逻辑
@@ -111,6 +114,7 @@ webOperateService.on("taskStartTip", (tip: string) => {
 ```
 
 **新方式:**
+
 ```typescript
 const callback = (tip: string) => {
   // 处理逻辑

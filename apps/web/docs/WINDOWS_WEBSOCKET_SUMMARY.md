@@ -99,18 +99,21 @@
 ## 🎯 核心特性
 
 ### 1. 完全隔离
+
 - ✅ 独立的 WebSocket 路由 (`/ws/windows-client`)
 - ✅ 独立的连接管理器
 - ✅ 与现有浏览器 WebSocket 完全隔离
 - ✅ 不影响现有业务逻辑
 
 ### 2. 架构清晰
+
 - ✅ 三层架构（Service → Agent → DeviceProxy）
 - ✅ 符合 Midscene 官方最佳实践
 - ✅ 继承 Agent 基类，复用核心能力
 - ✅ 实现 AbstractInterface，遵循接口规范
 
 ### 3. 功能完整
+
 - ✅ 8种基础操作（点击、输入、滚动等）
 - ✅ 窗口管理
 - ✅ 剪贴板操作
@@ -119,6 +122,7 @@
 - ✅ 心跳检测
 
 ### 4. 易于使用
+
 - ✅ 简单的 API
 - ✅ 完整的示例代码
 - ✅ 详细的文档
@@ -190,11 +194,13 @@ const screenshot = await service.screenshot()
 ## 📚 文档清单
 
 ### 核心文档
+
 - `QUICKSTART.md` - **从这里开始**，5分钟快速集成
 - `WEBSOCKET_INTEGRATION.md` - 详细的集成指南和协议说明
 - `windows-client-example.js` - 完整的客户端实现示例
 
 ### 参考文档
+
 - `README.md` - 架构设计说明
 - `IMPLEMENTATION_SUMMARY.md` - 实现总结和统计
 - `examples.ts` - 各种使用示例
@@ -235,24 +241,28 @@ console.log('设备信息:', info)
 ## 🎨 设计亮点
 
 ### 1. WebSocket 代理模式
+
 - 服务端不直接操作 Windows
 - 通过 WebSocket 将操作转发给客户端
 - 客户端执行真实的 Windows 操作
 - 完美解决跨平台问题
 
 ### 2. 请求-响应管理
+
 - Promise 化的异步操作
 - 超时自动处理
 - 错误自动捕获
 - 请求ID关联
 
 ### 3. 连接管理
+
 - 自动心跳检测
 - 断线自动清理
 - 负载均衡选择
 - 完整的生命周期
 
 ### 4. 错误处理
+
 - 统一的错误格式
 - 完整的错误堆栈
 - 友好的错误信息
@@ -261,16 +271,19 @@ console.log('设备信息:', info)
 ## 🚀 下一步
 
 ### 立即可用
+
 1. 集成 WebSocket 路由
 2. 启动客户端
 3. 开始使用
 
 ### 真实化客户端
+
 1. 安装依赖包
 2. 实现真实操作
 3. 测试验证
 
 ### 可选增强
+
 1. 添加 HTTP 管理 API
 2. 实现前端管理界面
 3. 添加监控面板
@@ -279,12 +292,14 @@ console.log('设备信息:', info)
 ## 💡 技术栈
 
 ### 服务端
+
 - TypeScript
 - Node.js
 - WebSocket (Hono)
 - Midscene Core
 
 ### 客户端
+
 - Node.js
 - WebSocket (ws)
 - robotjs (鼠标键盘)
@@ -316,4 +331,3 @@ console.log('设备信息:', info)
 **版本**: 1.0.0  
 **作者**: AI Assistant  
 **下一步**: 查看 [QUICKSTART.md](./apps/server/src/services/customMidsceneDevice/QUICKSTART.md)
-

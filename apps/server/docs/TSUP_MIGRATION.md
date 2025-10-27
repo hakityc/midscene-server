@@ -54,7 +54,7 @@ npm run prepare-deployment     # 准备部署文件
 
 - **之前**: tsc 编译 + 独立脚本处理
 - **现在**: tsup 基于 esbuild，速度显著提升
-- **实测**: 
+- **实测**:
   - Staging 构建: ~69ms（tsup 编译）
   - Production 构建: ~317ms（tsup 编译）
 
@@ -133,11 +133,13 @@ node index.js
 ### 导入路径测试
 
 **之前（tsc）**:
+
 ```javascript
 import { setupRouter } from "./routes/index";    // ❌ 缺少 .js
 ```
 
 **现在（tsup）**:
+
 ```javascript
 import { setupRouter } from "./routes/index.js"; // ✅ 自动添加
 ```
@@ -149,6 +151,7 @@ cd dist/server && node index.js
 ```
 
 输出：
+
 ```
 ✅ CLS传输器初始化成功
 ✅ WebOperateService 预初始化完成
@@ -168,12 +171,14 @@ cd dist/server && node index.js
 
 1. 恢复 `scripts/fix-imports.js` 文件
 2. 修改 `package.json` 中的 scripts:
+
    ```json
    {
      "compile": "tsc",
      "build:prod": "NODE_ENV=prod npm run clean && npm run compile && npm run fix-imports && npm run prepare-deployment:prod"
    }
    ```
+
 3. 删除 `tsup.config.ts`
 4. 卸载 tsup: `pnpm remove tsup`
 
@@ -196,4 +201,3 @@ cd dist/server && node index.js
 **迁移日期**: 2025-10-11  
 **工具版本**: tsup@8.5.0  
 **Node.js 版本**: v20.10.0
-

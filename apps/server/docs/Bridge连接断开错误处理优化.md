@@ -104,11 +104,13 @@ this.agent.onTaskStartTip = (tip: string) => {
 ## 效果
 
 ### 优化前
+
 - ❌ 出现未处理的 Promise 拒绝
 - ❌ 日志级别为 `error`，引起不必要的警报
 - ❌ 错误堆栈难以理解
 
 ### 优化后
+
 - ✅ 所有错误都被捕获，不会出现 unhandledRejection
 - ✅ 连接断开错误使用 `debug` 级别，其他错误使用 `warn` 级别
 - ✅ 错误日志清晰，易于理解
@@ -162,6 +164,6 @@ this.agent.onTaskStartTip = (tip: string) => {
 ## 相关问题
 
 如果未来 `@midscene/web` 官方修复了这个问题，可以考虑：
+
 1. 移除我们的错误处理包装
 2. 或者保留作为防御性编程的一部分
-

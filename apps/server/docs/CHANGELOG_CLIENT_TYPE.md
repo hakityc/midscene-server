@@ -13,6 +13,7 @@
 **文件：** `src/types/websocket.ts`
 
 **变更内容：**
+
 - 新增 `ClientType` 类型定义：`'web' | 'windows'`
 - 在 `WsInboundMeta` 接口中添加 `clientType?: ClientType` 字段
 - 默认值为 `'web'`，保持向后兼容
@@ -73,6 +74,7 @@ src/websocket/actions/
 **变更内容：**
 
 1. **导入更新**
+
    ```typescript
    // 新增 Web 端导入
    import {
@@ -95,6 +97,7 @@ src/websocket/actions/
    - `createMessageHandlers()` - 统一处理器工厂（使用 Proxy）
 
 3. **动态选择机制**
+
    ```typescript
    export function createMessageHandlers() {
      const webHandlers = createWebMessageHandlers();
@@ -120,6 +123,7 @@ src/websocket/actions/
 **文件：** `src/websocket/index.ts`
 
 **变更内容：**
+
 - 更新导入语句，使用新的 `createMessageHandlers()` 函数
 - 处理器创建逻辑保持不变，自动支持客户端类型区分
 
@@ -135,12 +139,14 @@ export const setupWebSocket = (app: Hono) => {
 ## 新增文档
 
 ### 1. CLIENT_TYPE_FEATURE.md
+
 - 客户端类型功能详细说明
 - 使用示例
 - 技术实现细节
 - 测试建议
 
 ### 2. ACTIONS_ARCHITECTURE.md
+
 - Actions 架构设计文档
 - 目录结构说明
 - 实现指南
@@ -148,12 +154,14 @@ export const setupWebSocket = (app: Hono) => {
 - 未来规划
 
 ### 3. actions/README.md
+
 - Actions 使用快速指南
 - 添加新处理器的步骤
 - 代码模式和示例
 - 常见问题
 
 ### 4. CHANGELOG_CLIENT_TYPE.md
+
 - 本文档，变更日志
 
 ## 功能对比
@@ -250,25 +258,31 @@ export const setupWebSocket = (app: Hono) => {
 ## 技术亮点
 
 ### 1. Proxy 模式
+
 使用 JavaScript Proxy 实现动态处理器选择，避免在每个处理器中重复判断逻辑。
 
 **优势：**
+
 - 代码简洁
 - 易于扩展
 - 性能优化（处理器实例复用）
 
 ### 2. 模块化设计
+
 通过 `web/` 和 `windows/` 子目录组织代码，职责清晰。
 
 **优势：**
+
 - 便于维护
 - 易于测试
 - 支持独立开发
 
 ### 3. 类型安全
+
 完整的 TypeScript 类型定义，编译时检查。
 
 **优势：**
+
 - 减少运行时错误
 - 更好的 IDE 支持
 - 代码自文档化
@@ -364,18 +378,21 @@ describe('WebSocket Integration', () => {
 ## 未来计划
 
 ### 短期（1-2 周）
+
 - [ ] 添加单元测试覆盖
 - [ ] 添加集成测试
 - [ ] 优化重连机制
 - [ ] 性能监控和优化
 
 ### 中期（1-2 月）
+
 - [ ] 添加更多 Windows 操作
 - [ ] 实现操作录制功能
 - [ ] 性能监控和优化
 - [ ] 添加集成测试
 
 ### 长期（3-6 月）
+
 - [ ] 支持更多客户端类型（mobile、desktop）
 - [ ] 实现跨平台抽象层
 - [ ] 添加操作编排引擎
@@ -429,6 +446,7 @@ const message = {
 ## 问题反馈
 
 如有问题或建议，请通过以下方式反馈：
+
 - 创建 Issue
 - 联系开发团队
 - 查阅相关文档
@@ -437,4 +455,3 @@ const message = {
 
 **维护者：** 开发团队  
 **最后更新：** 2025-10-13
-

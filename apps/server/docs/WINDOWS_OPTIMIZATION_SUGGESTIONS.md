@@ -9,6 +9,7 @@
 ### 1. 简化 AgentOverWindows 的构造函数
 
 **当前代码**：
+
 ```typescript
 constructor(opts?: AgentOverWindowsOpt) {
   const windowsDevice = new WindowsDevice(opts?.deviceOptions);
@@ -29,11 +30,13 @@ constructor(opts?: AgentOverWindowsOpt) {
 ```
 
 **问题**：
+
 - 对 `onTaskStartTip` 做了额外包装
 - `if (originalOnTaskStartTip)` 检查是重复的（外层已经检查过）
 - 使用 `call(this, tip)` 不如直接调用
 
 **优化建议**：
+
 ```typescript
 constructor(opts?: AgentOverWindowsOpt) {
   const windowsDevice = new WindowsDevice(opts?.deviceOptions);
@@ -47,6 +50,7 @@ constructor(opts?: AgentOverWindowsOpt) {
 ```
 
 **参考 Android**：
+
 ```typescript
 // AndroidAgent 完全不处理回调
 export class AndroidAgent extends PageAgent<AndroidDevice> {
@@ -60,6 +64,7 @@ export class AndroidAgent extends PageAgent<AndroidDevice> {
 ### 2. 移除或简化 `isLaunched` 状态管理
 
 **当前代码**：
+
 ```typescript
 export class AgentOverWindows extends Agent<WindowsDevice> {
   private isLaunched = false;
@@ -91,11 +96,13 @@ export class AgentOverWindows extends Agent<WindowsDevice> {
 ```
 
 **问题**：
+
 - `isLaunched` 状态与 `WindowsDevice` 内部状态重复
 - `assertLaunched()` 需要在每个方法中手动调用
 - `WindowsDevice` 本身已经有状态检查
 
 **优化建议 1：委托给 WindowsDevice**
+
 ```typescript
 export class AgentOverWindows extends Agent<WindowsDevice> {
   // ✅ 移除 isLaunched，让 WindowsDevice 管理自己的状态
@@ -116,6 +123,7 @@ export class AgentOverWindows extends Agent<WindowsDevice> {
 ```
 
 **优化建议 2：在 WindowsDevice 中统一处理**
+
 ```typescript
 export class WindowsDevice implements AbstractInterface {
   private isLaunched = false;
@@ -148,6 +156,7 @@ export class WindowsDevice implements AbstractInterface {
 ### 3. 简化便捷方法
 
 **当前代码**：
+
 ```typescript
 export class AgentOverWindows extends Agent<WindowsDevice> {
   // 这两个方法只是简单的别名
@@ -162,11 +171,13 @@ export class AgentOverWindows extends Agent<WindowsDevice> {
 ```
 
 **问题**：
+
 - `execute` 和 `expect` 只是 `aiAction` 和 `aiAssert` 的别名
 - 增加了 API 复杂度，没有实质性价值
 - Android 没有这些别名方法
 
 **优化建议**：
+
 ```typescript
 // ✅ 选项 1：完全移除这些别名
 // 用户直接使用 aiAction 和 aiAssert
@@ -185,6 +196,7 @@ async execute(prompt: string): Promise<void> {
 ### 4. WindowsOperateService 的优化（保留但简化）
 
 **当前架构**：
+
 ```
 WebSocket Handler
     ↓
@@ -196,12 +208,14 @@ WindowsDevice
 ```
 
 **为什么需要 Service 层**：
+
 - ✅ **解耦**：node 服务处理多种类型（chromeExt、windows 等）
 - ✅ **统一接口**：为 WebSocket handlers 提供一致的 API
 - ✅ **未来拆分**：后续可能把 windows 模块独立部署
 - ✅ **状态管理**：统一管理 agent 实例和生命周期
 
 **当前问题**：
+
 - Service 中的 `createAgent()` 方法过于复杂
 - 回调处理逻辑重复
 - 初始化流程不够清晰
@@ -272,6 +286,7 @@ export class WindowsOperateService extends EventEmitter {
 ### 5. 移除冗余的包装方法
 
 **当前代码**：
+
 ```typescript
 export class AgentOverWindows extends Agent<WindowsDevice> {
   // 这些方法只是简单转发
@@ -308,11 +323,13 @@ export class AgentOverWindows extends Agent<WindowsDevice> {
 ```
 
 **问题**：
+
 - 这些方法只是简单转发给 `this.interface`
 - 唯一的作用是调用 `assertLaunched()`
 - 如果 `WindowsDevice` 自己做状态检查，这些方法就没必要了
 
 **优化建议**：
+
 ```typescript
 export class AgentOverWindows extends Agent<WindowsDevice> {
   // ✅ 直接暴露 device 的方法，不做包装
@@ -330,6 +347,7 @@ await agent.device.activateWindow(handle);
 ```
 
 **或者保留关键方法，移除不必要的**：
+
 ```typescript
 export class AgentOverWindows extends Agent<WindowsDevice> {
   // ✅ 只保留有实际价值的方法
@@ -352,10 +370,12 @@ export class AgentOverWindows extends Agent<WindowsDevice> {
 ### 6. 改进 WindowsDevice 的状态管理
 
 **当前问题**：
+
 - 状态分散在 `AgentOverWindows` 和 `WindowsDevice` 中
 - 没有统一的状态检查机制
 
 **优化建议**：
+
 ```typescript
 export class WindowsDevice implements AbstractInterface {
   private state: 'not-launched' | 'launching' | 'ready' | 'destroyed' = 'not-launched';
@@ -421,6 +441,7 @@ export class WindowsDevice implements AbstractInterface {
 如果不想大改架构，可以先做这些最小改动：
 
 ### 改动 1：简化构造函数
+
 ```typescript
 constructor(opts?: AgentOverWindowsOpt) {
   const windowsDevice = new WindowsDevice(opts?.deviceOptions);
@@ -430,6 +451,7 @@ constructor(opts?: AgentOverWindowsOpt) {
 ```
 
 ### 改动 2：在 WindowsDevice 中添加统一检查
+
 ```typescript
 export class WindowsDevice {
   private checkState() {
@@ -446,6 +468,7 @@ export class WindowsDevice {
 ```
 
 ### 改动 3：移除 AgentOverWindows 中的 isLaunched
+
 ```typescript
 // 删除 isLaunched 属性
 // 删除 assertLaunched() 方法
@@ -456,6 +479,7 @@ async launch() {
 ```
 
 ### 改动 4：标记废弃便捷方法
+
 ```typescript
 /** @deprecated 请使用 aiAction() */
 async execute(prompt: string) {
@@ -489,11 +513,12 @@ async expect(assertion: string) {
 4. **参考 Android，但保持 Service 层**
    - AndroidAgent 简洁（无 Service 是因为使用场景不同）
    - Windows 需要 Service 是因为：
-     * node 服务统一处理多种客户端类型
-     * 未来模块化拆分的需要
-     * WebSocket 集成的统一接口
+     - node 服务统一处理多种客户端类型
+     - 未来模块化拆分的需要
+     - WebSocket 集成的统一接口
 
 5. **清晰的职责划分**
+
    ```
    Service 层：
    - 管理 agent 生命周期
@@ -512,4 +537,3 @@ async expect(assertion: string) {
    ```
 
 这样可以让代码更简洁、职责更清晰、更易维护。
-

@@ -22,6 +22,7 @@ RangeError: Maximum call stack size exceeded
 参考 `AgentOverChromeBridge` 的正确实现，将回调设置移到构造函数中：
 
 **修改前（错误）**：
+
 ```typescript
 // AgentOverWindows.ts
 constructor(opts) {
@@ -34,6 +35,7 @@ this.agent.onTaskStartTip = callback; // ❌ 事后设置回调
 ```
 
 **修改后（正确）**：
+
 ```typescript
 // AgentOverWindows.ts
 constructor(opts) {
@@ -68,6 +70,7 @@ this.agent = new AgentOverWindows(config);
 ## 📚 核心教训
 
 ### 1. 在构造函数中设置回调
+
 对于继承自 Agent 的类，所有回调都应该在构造时通过 opts 传入：
 
 ```typescript
@@ -94,10 +97,13 @@ class MyAgent extends Agent {
 ```
 
 ### 2. 参考已有的正确实现
+
 `AgentOverChromeBridge` 提供了正确的实现模式，应该保持一致。
 
 ### 3. 理解基类的内部机制
+
 Agent 基类在构造函数中会：
+
 - 设置 `this.onTaskStartTip = opts.onTaskStartTip`
 - 创建 TaskExecutor 并绑定 `this.callbackOnTaskStartTip`
 - `callbackOnTaskStartTip` 会调用 `this.onTaskStartTip`
@@ -121,5 +127,3 @@ Agent 基类在构造函数中会：
 ---
 
 **详细分析请参考**：`CALLBACK_RECURSION_FIX.md`
-
-

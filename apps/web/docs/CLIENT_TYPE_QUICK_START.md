@@ -3,6 +3,7 @@
 ## 🚀 30 秒快速上手
 
 ### 1. 打开调试页面
+
 访问：`http://localhost:5173`
 
 ### 2. 找到"客户端类型"选择器
@@ -77,4 +78,3 @@
 ---
 
 📖 详细文档：[CLIENT_TYPE_USAGE.md](./CLIENT_TYPE_USAGE.md)
-

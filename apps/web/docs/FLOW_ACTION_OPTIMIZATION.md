@@ -13,6 +13,7 @@
 #### 通用可选参数
 
 对于以下操作类型，添加了这些可选参数：
+
 - `aiTap`
 - `aiInput`
 - `aiHover`
@@ -166,4 +167,3 @@ function filterUndefined<T extends Record<string, unknown>>(obj: T): Partial<T>
 ## 参考文档
 
 - Midscene 官方文档 - YAML 模式配置参考
-

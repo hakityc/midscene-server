@@ -3,6 +3,7 @@
 ## 概述
 
 本次重构完成了以下主要工作：
+
 1. **删除了视频下载相关逻辑** - 移除了 `downloadVideo` action 和相关组件
 2. **新增了 Command 逻辑** - 支持 `start` 和 `stop` 两个命令参数，并为后续扩展预留了空间
 
@@ -11,10 +12,12 @@
 ### 1. 类型定义 (`src/types/debug.ts`)
 
 **删除:**
+
 - `'downloadVideo'` 从 `WebSocketAction` 类型中移除
 - `DownloadVideoParams` 接口完全删除
 
 **新增:**
+
 ```typescript
 export interface CommandParams {
   command: 'start' | 'stop' | string; // 支持 start, stop 及后续扩展
@@ -26,9 +29,11 @@ export interface CommandParams {
 #### `src/components/debug/SimpleActionForms.tsx`
 
 **删除:**
+
 - `DownloadVideoForm` 组件及其接口
 
 **新增:**
+
 - `CommandForm` 组件 - 支持输入命令参数
   - 提供友好的 UI 提示当前支持的命令
   - 显示命令说明（start - 启动服务，stop - 停止服务）
@@ -37,9 +42,11 @@ export interface CommandParams {
 #### `src/components/debug/ActionSelector.tsx`
 
 **删除:**
+
 - `downloadVideo` 选项
 
 **更新:**
+
 - 将 `command` 选项移至更合理的位置
 - 更新描述为 "执行控制命令 (start, stop 等)"
 
@@ -48,29 +55,35 @@ export interface CommandParams {
 **状态管理更新:**
 
 删除的状态：
+
 ```typescript
 const [videoUrl, setVideoUrl] = useState('');
 const [videoSavePath, setVideoSavePath] = useState('');
 ```
 
 新增的状态：
+
 ```typescript
 const [command, setCommand] = useState('start');
 ```
 
 **表单渲染更新:**
+
 - 删除 `DownloadVideoForm` 的渲染逻辑
 - 新增 `CommandForm` 的渲染：
+
 ```typescript
 case 'command':
   return <CommandForm command={command} onChange={setCommand} />;
 ```
 
 **消息构建更新:**
+
 - 依赖项数组中用 `command` 替换了 `videoUrl` 和 `videoSavePath`
 - JSON 表单同步处理 command 数据
 
 **历史记录加载:**
+
 - 添加对 `command` action 的历史记录恢复支持
 
 ### 4. 工具函数 (`src/utils/jsonParser.ts`)
@@ -78,19 +91,23 @@ case 'command':
 **更新解析器:**
 
 删除：
+
 ```typescript
 videoUrl?: string;
 videoSavePath?: string;
 ```
 
 新增：
+
 ```typescript
 params?: string;  // 用于通用参数
 ```
 
 **解析逻辑:**
+
 - 删除 `downloadVideo` case
 - 新增 `command` case:
+
 ```typescript
 case 'command': {
   result.params = payload.params as string;
@@ -101,6 +118,7 @@ case 'command': {
 ### 5. 消息构建器 (`src/utils/messageBuilder.ts`)
 
 已有的 `buildCommandScriptMessage` 函数保持不变：
+
 ```typescript
 export function buildCommandScriptMessage(
   command: string,
@@ -134,6 +152,7 @@ export function buildCommandScriptMessage(
 ### 扩展性设计
 
 Command 参数类型设计为 `'start' | 'stop' | string`，这意味着：
+
 - 当前明确支持 `start` 和 `stop`
 - 可以轻松添加新的命令而无需修改类型定义
 - 保持了类型安全的同时提供了灵活性
@@ -232,6 +251,7 @@ export interface CommandParams {
 ## 代码质量
 
 所有修改已通过：
+
 - ✅ Biome 格式化检查
 - ✅ Biome Lint 检查
 - ✅ TypeScript 类型检查
@@ -267,4 +287,3 @@ export interface CommandParams {
 **更新日期**: 2025-10-13  
 **更新人**: AI Assistant  
 **版本**: v1.0
-

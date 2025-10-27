@@ -12,12 +12,14 @@
 ### 1. 主题系统 ✓
 
 **新增文件**：
+
 - `src/hooks/useTheme.tsx` - 主题 Provider 和 Hook
   - 支持 light/dark/system 三种模式
   - LocalStorage 持久化
   - 自动响应系统主题变化
 
 **新增组件**：
+
 - `src/components/ui/theme-toggle.tsx` - 主题切换按钮
   - 流畅的图标切换动画
   - 一键切换亮色/暗色模式
@@ -51,6 +53,7 @@
 ### 4. 主页面更新 ✓
 
 **midsceneDebugPage.tsx**：
+
 - 移除 Brutalist 背景图案
 - 更新为 bg-background 响应主题
 - 添加 ThemeToggle 按钮
@@ -60,6 +63,7 @@
 ## 🎨 设计风格对比
 
 ### Before (Brutalist)
+
 ```css
 /* 粗黑边框 */
 border-2 border-black
@@ -77,6 +81,7 @@ text-gray-600
 ```
 
 ### After (shadcn/ui)
+
 ```css
 /* 细边框 */
 border border-input
@@ -137,6 +142,7 @@ text-muted-foreground
 ## 📁 文件清单
 
 ### 新增文件
+
 ```
 src/
 ├── hooks/
@@ -147,6 +153,7 @@ src/
 ```
 
 ### 修改文件
+
 ```
 src/
 ├── App.tsx                               # 添加 ThemeProvider
@@ -187,21 +194,25 @@ pnpm dev
 ## 🎯 核心特性
 
 ### 1. 响应式设计
+
 - 移动端：垂直布局
 - 桌面端：左右分栏
 - 所有组件都适配了暗色模式
 
 ### 2. 流畅动画
+
 - 主题切换有淡入淡出动画
 - 按钮hover有过渡效果
 - 图标旋转动画
 
 ### 3. 无障碍性
+
 - 主题切换按钮有 sr-only 文本
 - 所有交互元素有合适的 focus 状态
 - 颜色对比度符合 WCAG 标准
 
 ### 4. 性能优化
+
 - 主题状态使用 Context 管理
 - LocalStorage 缓存主题选择
 - 组件按需渲染
@@ -254,6 +265,7 @@ localStorage.setItem('midscene-theme', theme);
 ## 🎨 颜色方案
 
 ### Light Mode
+
 - 背景：`#ffffff`
 - 前景：`#000000`
 - 主色：`#000000`
@@ -261,6 +273,7 @@ localStorage.setItem('midscene-theme', theme);
 - 边框：`#e5e5e5`
 
 ### Dark Mode
+
 - 背景：`#0a0a0a`
 - 前景：`#fafafa`
 - 主色：`#ffffff`
@@ -272,6 +285,7 @@ localStorage.setItem('midscene-theme', theme);
 ### 1. 部分组件待更新
 
 由于时间限制，以下组件可能仍包含少量 Brutalist 样式细节：
+
 - TaskItem
 - FlowActionItem
 - AiScriptForm
@@ -303,11 +317,13 @@ localStorage.setItem('midscene-theme', theme);
 ## 🔮 未来改进
 
 ### 短期（1周）
+
 - [ ] 完善 TaskItem 和 FlowActionItem 的所有细节
 - [ ] 添加更多主题预设（蓝色、紫色等）
 - [ ] 优化动画性能
 
 ### 中期（1个月）
+
 - [ ] 添加主题自定义面板
 - [ ] 支持导入导出主题配置
 - [ ] 添加更多颜色方案
@@ -328,4 +344,3 @@ Web 调试工具已成功升级到 shadcn/ui 风格：
 **文档版本**：1.0.0  
 **最后更新**：2025-10-11  
 **作者**：Cursor AI Assistant
-

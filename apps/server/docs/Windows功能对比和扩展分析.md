@@ -106,6 +106,7 @@
 ### 1. 高优先级 - 实用性强
 
 #### 1.1 进程管理
+
 ```typescript
 // 建议扩展
 class AgentOverWindows extends Agent<WindowsDevice> {
@@ -140,10 +141,12 @@ class AgentOverWindows extends Agent<WindowsDevice> {
 ```
 
 **实现方式**:
+
 - 使用 Node.js `child_process` 模块
 - 或使用 `node-windows` 库
 
 #### 1.2 文件对话框处理
+
 ```typescript
 /**
  * 处理文件选择对话框
@@ -173,6 +176,7 @@ async saveFileAs(filePath: string): Promise<void> {
 ```
 
 #### 1.3 系统托盘操作
+
 ```typescript
 /**
  * 点击系统托盘图标
@@ -188,6 +192,7 @@ async clickTrayIcon(appName: string): Promise<void> {
 ```
 
 #### 1.4 快捷键组合增强
+
 ```typescript
 /**
  * 按下组合键
@@ -207,6 +212,7 @@ await agent.pressHotkey(['Alt'], 'Tab');                  // 切换窗口
 ### 2. 中优先级 - 提升体验
 
 #### 2.1 窗口尺寸和位置管理
+
 ```typescript
 /**
  * 移动窗口
@@ -237,6 +243,7 @@ async restoreWindow(windowHandle: string): Promise<void>;
 **实现方式**: `node-window-manager`
 
 #### 2.2 虚拟桌面管理 (Windows 10+)
+
 ```typescript
 /**
  * 切换虚拟桌面
@@ -261,6 +268,7 @@ async createVirtualDesktop(): Promise<void> {
 ```
 
 #### 2.3 OCR 文本识别
+
 ```typescript
 /**
  * 从屏幕区域识别文本
@@ -276,11 +284,13 @@ async recognizeText(region?: {
 }
 ```
 
-**实现方式**: 
+**实现方式**:
+
 - 使用 `tesseract.js` (本地 OCR)
 - 或集成云 OCR API (Azure, Google Vision, 阿里云等)
 
 #### 2.4 屏幕录制
+
 ```typescript
 /**
  * 开始录屏
@@ -298,6 +308,7 @@ async stopRecording(): Promise<string>;
 ### 3. 低优先级 - 特殊场景
 
 #### 3.1 注册表操作
+
 ```typescript
 /**
  * 读取注册表
@@ -313,6 +324,7 @@ async writeRegistry(key: string, valueName: string, value: string, type: string)
 **实现方式**: `regedit` npm 包
 
 #### 3.2 性能监控
+
 ```typescript
 /**
  * 获取系统性能信息
@@ -327,6 +339,7 @@ async getSystemInfo(): Promise<{
 **实现方式**: `systeminformation` npm 包
 
 #### 3.3 网络管理
+
 ```typescript
 /**
  * 获取网络连接状态
@@ -370,7 +383,7 @@ async getNetworkStatus(): Promise<{
 1. ✅ **完善窗口管理**
    - 安装 `node-window-manager`
    - 完整实现 `getWindowList()` 和 `activateWindow()`
-   
+
 2. ✅ **快捷键组合增强**
    - 实现 `pressHotkey()` 方法
    - 支持常用组合键
@@ -445,26 +458,31 @@ async getNetworkStatus(): Promise<{
 ## 💡 建议
 
 ### 1. 保持与官方 API 一致
+
 - ✅ 不要重写 Agent 基类的核心方法（已修复）
 - ✅ 只扩展 Windows 特有的功能
 - ✅ 方法命名遵循 Midscene 规范
 
 ### 2. 优先实现高价值功能
+
 - **窗口管理**: 桌面应用的核心需求
 - **快捷键**: 提升操作效率
 - **应用启动**: 完整的测试流程
 
 ### 3. 文档和示例
+
 - 为每个扩展功能提供清晰的文档
 - 提供实际使用示例
 - 说明与其他平台的差异
 
 ### 4. 性能优化
+
 - 缓存窗口列表
 - 减少不必要的截图
 - 使用异步操作
 
 ### 5. 错误处理
+
 - 完善的错误提示
 - 自动重试机制
 - 降级方案
@@ -492,4 +510,3 @@ async getNetworkStatus(): Promise<{
 ---
 
 **总结**: Windows Agent 已经完整支持所有 Midscene 官方 API，接下来应该专注于 **Windows 特有功能的扩展**，特别是窗口管理、快捷键和应用管理这些高价值功能。
-

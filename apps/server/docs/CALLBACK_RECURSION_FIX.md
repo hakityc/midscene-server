@@ -106,14 +106,17 @@ private setupTaskStartTipCallback(): void {
 ## 影响范围
 
 ### 修改文件
+
 - `apps/server/src/services/windowsOperateService.ts`
 
 ### 影响功能
+
 - Windows AI 任务执行
 - 任务开始提示回调
 - 服务重启和重连机制
 
 ### 向后兼容性
+
 - ✅ 完全向后兼容
 - ✅ 不影响现有功能
 - ✅ 只修复了递归问题
@@ -123,12 +126,14 @@ private setupTaskStartTipCallback(): void {
 ### 测试场景
 
 1. **基础任务执行**
+
    ```typescript
    await windowsOperateService.execute('打开记事本');
    // 应该正常执行，不再报堆栈溢出错误
    ```
 
 2. **服务重启**
+
    ```typescript
    await windowsOperateService.stop();
    await windowsOperateService.start();
@@ -137,6 +142,7 @@ private setupTaskStartTipCallback(): void {
    ```
 
 3. **重连机制**
+
    ```typescript
    await windowsOperateService.forceReconnect();
    await windowsOperateService.execute('输入文本');
@@ -144,6 +150,7 @@ private setupTaskStartTipCallback(): void {
    ```
 
 4. **多次重启**
+
    ```typescript
    for (let i = 0; i < 5; i++) {
      await windowsOperateService.stop();
@@ -154,6 +161,7 @@ private setupTaskStartTipCallback(): void {
    ```
 
 ### 预期结果
+
 - ✅ 任务正常执行，不再出现堆栈溢出错误
 - ✅ `onTaskStartTip` 回调正常触发
 - ✅ 任务提示正常输出到日志
@@ -203,6 +211,7 @@ this.agent.on('taskStart', (tip) => {
 对比 `AgentOverChromeBridge` 和 `AgentOverWindows` 的实现，发现关键差异：
 
 **AgentOverChromeBridge（正确的实现）**:
+
 ```typescript
 constructor(opts?) {
   const originalOnTaskStartTip = opts?.onTaskStartTip;
@@ -221,6 +230,7 @@ constructor(opts?) {
 ```
 
 **AgentOverWindows（问题实现）**:
+
 ```typescript
 constructor(opts?: AgentOverWindowsOpt) {
   const windowsDevice = new WindowsDevice(opts?.deviceOptions);
@@ -229,6 +239,7 @@ constructor(opts?: AgentOverWindowsOpt) {
 ```
 
 然后在 `windowsOperateService.ts` 中：
+
 ```typescript
 this.agent = new AgentOverWindows({ ...this.defaultAgentConfig });
 // 之后再调用 setupTaskStartTipCallback() 设置回调
@@ -341,4 +352,3 @@ class MyAgent extends Agent {
   }
 }
 ```
-
