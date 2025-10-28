@@ -220,6 +220,32 @@ export class WindowsOperateService extends EventEmitter {
   }
 
   /**
+   * 启用 Debug 模式
+   */
+  public async enableDebug(): Promise<void> {
+    // 修改当前运行的 device 选项（如果存在）
+    if (this.agent?.device?.options) {
+      this.agent.device.options.debug = true;
+      serviceLogger.info('Windows Device Debug 模式已启用');
+    }
+    // 同时更新 defaultAgentConfig，确保重启后保持该设置
+    (this.defaultAgentConfig.deviceOptions as any).debug = true;
+  }
+
+  /**
+   * 禁用 Debug 模式
+   */
+  public async disableDebug(): Promise<void> {
+    // 修改当前运行的 device 选项（如果存在）
+    if (this.agent?.device?.options) {
+      this.agent.device.options.debug = false;
+      serviceLogger.info('Windows Device Debug 模式已禁用');
+    }
+    // 同时更新 defaultAgentConfig
+    (this.defaultAgentConfig.deviceOptions as any).debug = false;
+  }
+
+  /**
    * 检查服务是否已启动
    */
   public isStarted(): boolean {

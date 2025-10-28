@@ -1,5 +1,5 @@
-import { History, Play, Send, Square } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
+import { History, Send } from 'lucide-react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { ActionSelector } from '@/components/debug/ActionSelector';
 import { AiScriptForm } from '@/components/debug/AiScriptForm';
 import { FloatingMessageMonitor } from '@/components/debug/FloatingMessageMonitor';
@@ -16,7 +16,9 @@ import {
 import { TemplatePanel } from '@/components/debug/TemplatePanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVariableTransform } from '@/hooks/useVariableTransform';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -36,6 +38,15 @@ import {
 } from '@/utils/messageBuilder';
 
 export default function MidsceneDebugPage() {
+  // 生成唯一 ID
+  const serviceSwitchId = useId();
+  const debugSwitchId = useId();
+
+  // 服务运行状态（适用于 web 和 windows）
+  const [isServiceRunning, setIsServiceRunning] = useState(false);
+  // Debug 模式状态（仅用于 windows）
+  const [isDebugEnabled, setIsDebugEnabled] = useState(true); // 默认启用，与后端 defaultAgentConfig 保持一致
+
   // 使用 Zustand store
   const {
     endpoint,
@@ -328,40 +339,54 @@ export default function MidsceneDebugPage() {
               <CardTitle>消息构建器</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* 服务控制按钮 */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={() => {
-                    const startMessage = buildCommandScriptMessage(
-                      'start',
-                      meta,
-                    );
-                    send(startMessage);
-                    addHistory(startMessage, '启动服务');
+              {/* 服务控制 Switch（适用于 web 和 windows） */}
+              <div className="flex items-center gap-3">
+                <Label htmlFor={serviceSwitchId} className="min-w-[80px]">
+                  服务状态
+                </Label>
+                <Switch
+                  id={serviceSwitchId}
+                  checked={isServiceRunning}
+                  onCheckedChange={(checked) => {
+                    const command = checked ? 'start' : 'stop';
+                    const message = buildCommandScriptMessage(command, meta);
+                    send(message);
+                    addHistory(message, checked ? '启动服务' : '停止服务');
+                    setIsServiceRunning(checked);
                   }}
                   disabled={status !== 'open'}
-                  variant="outline"
-                  className="h-11"
-                  size="lg"
-                >
-                  <Play className="h-5 w-5 mr-2" />
-                  启动服务
-                </Button>
-                <Button
-                  onClick={() => {
-                    const stopMessage = buildCommandScriptMessage('stop', meta);
-                    send(stopMessage);
-                    addHistory(stopMessage, '停止服务');
-                  }}
-                  disabled={status !== 'open'}
-                  variant="outline"
-                  className="h-11"
-                  size="lg"
-                >
-                  <Square className="h-5 w-5 mr-2" />
-                  停止服务
-                </Button>
+                />
+                <span className="text-sm text-muted-foreground">
+                  {isServiceRunning ? '运行中' : '已停止'}
+                </span>
               </div>
+
+              {/* Debug 模式 Switch（仅用于 windows） */}
+              {meta.clientType === 'windows' && (
+                <div className="flex items-center gap-3">
+                  <Label htmlFor={debugSwitchId} className="min-w-[80px]">
+                    Debug 模式
+                  </Label>
+                  <Switch
+                    id={debugSwitchId}
+                    checked={isDebugEnabled}
+                    onCheckedChange={(checked) => {
+                      const command = checked ? 'enableDebug' : 'disableDebug';
+                      const message = buildCommandScriptMessage(command, meta);
+                      send(message);
+                      addHistory(
+                        message,
+                        checked ? '启用 Debug 模式' : '禁用 Debug 模式',
+                      );
+                      setIsDebugEnabled(checked);
+                    }}
+                    disabled={status !== 'open'}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {isDebugEnabled ? '已启用' : '已禁用'}
+                  </span>
+                </div>
+              )}
 
               {/* 发送消息按钮 */}
               <Button

@@ -10,6 +10,8 @@ enum Command {
   START = 'start',
   STOP = 'stop',
   RESTART = 'restart',
+  ENABLE_DEBUG = 'enableDebug',
+  DISABLE_DEBUG = 'disableDebug',
 }
 
 /**
@@ -45,6 +47,14 @@ export const createWindowsCommandHandler = (): MessageHandler => {
           await windowsOperateService.stop();
           await windowsOperateService.start();
           wsLogger.info('Windows 服务已重启');
+          break;
+        case Command.ENABLE_DEBUG:
+          await windowsOperateService.enableDebug();
+          wsLogger.info('Windows 服务 Debug 模式已启用');
+          break;
+        case Command.DISABLE_DEBUG:
+          await windowsOperateService.disableDebug();
+          wsLogger.info('Windows 服务 Debug 模式已禁用');
           break;
       }
 

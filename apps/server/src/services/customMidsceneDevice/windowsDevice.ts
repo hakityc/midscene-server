@@ -86,6 +86,8 @@ export default class WindowsDevice implements AbstractInterface {
   private connectedWindow: {
     id: number;
     title: string;
+    x: number; // 窗口在屏幕上的 X 坐标（用于坐标转换）
+    y: number; // 窗口在屏幕上的 Y 坐标（用于坐标转换）
     width: number;
     height: number;
   } | null = null;
@@ -365,7 +367,7 @@ Status: Ready
       if (this.connectedWindow) {
         if (this.options.debug) {
           console.log(
-            `📸 使用连接的窗口截图: "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id})`,
+            `📸 使用连接的窗口截图: "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id}, 位置: ${this.connectedWindow.x}, ${this.connectedWindow.y})`,
           );
         }
         this.cachedScreenshot = await windowsNative.captureWindowAsync(
@@ -481,6 +483,59 @@ Status: Ready
     }
   }
 
+  // ==================== 坐标转换方法 ====================
+
+  /**
+   * 坐标转换：将窗口相对坐标转换为屏幕绝对坐标
+   *
+   * 核心逻辑：
+   * - 全屏模式：不需要转换，直接返回原坐标
+   * - 窗口模式：窗口相对坐标 + 窗口屏幕位置 = 屏幕绝对坐标
+   *
+   * 同时进行边界检测，确保坐标在窗口范围内
+   *
+   * @param x 窗口相对 X 坐标（来自 AI）
+   * @param y 窗口相对 Y 坐标（来自 AI）
+   * @returns 屏幕绝对坐标
+   */
+  private transformCoordinates(x: number, y: number): { x: number; y: number } {
+    if (!this.connectedWindow) {
+      // 全屏模式：不需要转换
+      return { x, y };
+    }
+
+    // 窗口模式：进行边界检测
+    let adjustedX = x;
+    let adjustedY = y;
+
+    if (
+      x < 0 ||
+      y < 0 ||
+      x > this.connectedWindow.width ||
+      y > this.connectedWindow.height
+    ) {
+      console.warn(
+        `⚠️ 坐标 (${x}, ${y}) 超出窗口范围 (${this.connectedWindow.width}x${this.connectedWindow.height})，自动裁剪`,
+      );
+
+      // 裁剪到窗口范围内
+      adjustedX = Math.max(0, Math.min(x, this.connectedWindow.width - 1));
+      adjustedY = Math.max(0, Math.min(y, this.connectedWindow.height - 1));
+    }
+
+    // 转换为屏幕绝对坐标
+    const screenX = adjustedX + this.connectedWindow.x;
+    const screenY = adjustedY + this.connectedWindow.y;
+
+    if (this.options.debug) {
+      console.log(
+        `🔄 坐标转换: 窗口相对 (${x}, ${y}) → 屏幕绝对 (${screenX}, ${screenY})`,
+      );
+    }
+
+    return { x: screenX, y: screenY };
+  }
+
   // ==================== 鼠标操作方法 ====================
 
   /**
@@ -493,7 +548,16 @@ Status: Ready
       console.log(`🖱️ Mouse click at (${x}, ${y})`);
     }
 
-    await windowsNative.mouseClickAsync(x, y);
+    // 坐标转换
+    const transformed = this.transformCoordinates(x, y);
+
+    if (this.options.debug) {
+      console.log(
+        `🖱️ Mouse click at (${x}, ${y}) → screen (${transformed.x}, ${transformed.y})`,
+      );
+    }
+
+    await windowsNative.mouseClickAsync(transformed.x, transformed.y);
   }
 
   /**
@@ -506,7 +570,16 @@ Status: Ready
       console.log(`🖱️ Mouse double click at (${x}, ${y})`);
     }
 
-    await windowsNative.mouseDoubleClickAsync(x, y);
+    // 坐标转换
+    const transformed = this.transformCoordinates(x, y);
+
+    if (this.options.debug) {
+      console.log(
+        `🖱️ Mouse double click at (${x}, ${y}) → screen (${transformed.x}, ${transformed.y})`,
+      );
+    }
+
+    await windowsNative.mouseDoubleClickAsync(transformed.x, transformed.y);
   }
 
   /**
@@ -519,7 +592,16 @@ Status: Ready
       console.log(`🖱️ Mouse right click at (${x}, ${y})`);
     }
 
-    await windowsNative.mouseRightClickAsync(x, y);
+    // 坐标转换
+    const transformed = this.transformCoordinates(x, y);
+
+    if (this.options.debug) {
+      console.log(
+        `🖱️ Mouse right click at (${x}, ${y}) → screen (${transformed.x}, ${transformed.y})`,
+      );
+    }
+
+    await windowsNative.mouseRightClickAsync(transformed.x, transformed.y);
   }
 
   /**
@@ -532,7 +614,16 @@ Status: Ready
       console.log(`🖱️ Mouse hover at (${x}, ${y})`);
     }
 
-    await windowsNative.moveMouseAsync(x, y);
+    // 坐标转换
+    const transformed = this.transformCoordinates(x, y);
+
+    if (this.options.debug) {
+      console.log(
+        `🖱️ Mouse hover at (${x}, ${y}) → screen (${transformed.x}, ${transformed.y})`,
+      );
+    }
+
+    await windowsNative.moveMouseAsync(transformed.x, transformed.y);
   }
 
   /**
@@ -550,7 +641,22 @@ Status: Ready
       console.log(`🖱️ Drag from (${fromX}, ${fromY}) to (${toX}, ${toY})`);
     }
 
-    await windowsNative.dragAndDropAsync(fromX, fromY, toX, toY);
+    // 坐标转换：起点和终点都需要转换
+    const transformedFrom = this.transformCoordinates(fromX, fromY);
+    const transformedTo = this.transformCoordinates(toX, toY);
+
+    if (this.options.debug) {
+      console.log(
+        `🖱️ Drag from (${fromX}, ${fromY}) → screen (${transformedFrom.x}, ${transformedFrom.y}) to (${toX}, ${toY}) → screen (${transformedTo.x}, ${transformedTo.y})`,
+      );
+    }
+
+    await windowsNative.dragAndDropAsync(
+      transformedFrom.x,
+      transformedFrom.y,
+      transformedTo.x,
+      transformedTo.y,
+    );
   }
 
   // ==================== 键盘操作方法 ====================
@@ -598,7 +704,21 @@ Status: Ready
       console.log(`🔄 Scroll ${direction} at (${x}, ${y}) by ${distance}px`);
     }
 
-    await windowsNative.scrollAtAsync(x, y, direction, distance);
+    // 坐标转换
+    const transformed = this.transformCoordinates(x, y);
+
+    if (this.options.debug) {
+      console.log(
+        `🔄 Scroll ${direction} at (${x}, ${y}) → screen (${transformed.x}, ${transformed.y}) by ${distance}px`,
+      );
+    }
+
+    await windowsNative.scrollAtAsync(
+      transformed.x,
+      transformed.y,
+      direction,
+      distance,
+    );
   }
 
   /**
@@ -669,7 +789,14 @@ Status: Ready
   async connectWindow(params: {
     windowId?: number;
     windowTitle?: string;
-  }): Promise<{ id: number; title: string; width: number; height: number }> {
+  }): Promise<{
+    id: number;
+    title: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }> {
     this.assertNotDestroyed();
 
     const { windowId, windowTitle } = params;
@@ -685,6 +812,7 @@ Status: Ready
     // 获取窗口列表
     const windows = await this.getWindowList();
 
+    console.log('windows 列表: ', windows);
     // 优先通过 ID 查找
     let targetWindow = windowId
       ? windows.find((w) => w.id === windowId)
@@ -712,6 +840,8 @@ Status: Ready
     this.connectedWindow = {
       id: targetWindow.id,
       title: targetWindow.title,
+      x: targetWindow.x, // 保存窗口屏幕位置，用于坐标转换
+      y: targetWindow.y,
       width: targetWindow.width,
       height: targetWindow.height,
     };
@@ -719,11 +849,11 @@ Status: Ready
     if (this.options.debug) {
       if (isSwitching) {
         console.log(
-          `🔄 切换窗口: "${previousWindow!.title}" (ID: ${previousWindow!.id}) → "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id})`,
+          `🔄 切换窗口: "${previousWindow!.title}" (ID: ${previousWindow!.id}) → "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id}, 位置: ${this.connectedWindow.x}, ${this.connectedWindow.y})`,
         );
       } else {
         console.log(
-          `✅ 已连接到窗口: "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id})`,
+          `✅ 已连接到窗口: "${this.connectedWindow.title}" (ID: ${this.connectedWindow.id}, 位置: ${this.connectedWindow.x}, ${this.connectedWindow.y}, 尺寸: ${this.connectedWindow.width}x${this.connectedWindow.height})`,
         );
       }
     }
@@ -749,6 +879,8 @@ Status: Ready
   getConnectedWindow(): {
     id: number;
     title: string;
+    x: number;
+    y: number;
     width: number;
     height: number;
   } | null {
