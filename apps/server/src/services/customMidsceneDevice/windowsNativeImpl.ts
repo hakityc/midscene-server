@@ -839,6 +839,17 @@ export class WindowsNativeImpl {
   }
 
   /**
+   * 异步：移动鼠标（逻辑坐标版本）
+   * ⚠️ 此方法假设传入的坐标已经是逻辑坐标，不再进行 DPR 转换
+   * 用于窗口模式下，避免双重 DPR 转换
+   * @param x 逻辑 X 坐标（已转换）
+   * @param y 逻辑 Y 坐标（已转换）
+   */
+  async moveMouseAsyncLogical(x: number, y: number): Promise<void> {
+    await mouse.move([new Point(x, y)]);
+  }
+
+  /**
    * 异步：鼠标单击
    * @param x 物理 X 坐标
    * @param y 物理 Y 坐标
@@ -846,6 +857,18 @@ export class WindowsNativeImpl {
   async mouseClickAsync(x: number, y: number): Promise<void> {
     const logical = this.convertToLogicalCoordinates(x, y);
     await mouse.move([new Point(logical.x, logical.y)]);
+    await mouse.click(Button.LEFT);
+  }
+
+  /**
+   * 异步：鼠标单击（逻辑坐标版本）
+   * ⚠️ 此方法假设传入的坐标已经是逻辑坐标，不再进行 DPR 转换
+   * 用于窗口模式下，避免双重 DPR 转换
+   * @param x 逻辑 X 坐标（已转换）
+   * @param y 逻辑 Y 坐标（已转换）
+   */
+  async mouseClickAsyncLogical(x: number, y: number): Promise<void> {
+    await mouse.move([new Point(x, y)]);
     await mouse.click(Button.LEFT);
   }
 
@@ -861,6 +884,18 @@ export class WindowsNativeImpl {
   }
 
   /**
+   * 异步：鼠标双击（逻辑坐标版本）
+   * ⚠️ 此方法假设传入的坐标已经是逻辑坐标，不再进行 DPR 转换
+   * 用于窗口模式下，避免双重 DPR 转换
+   * @param x 逻辑 X 坐标（已转换）
+   * @param y 逻辑 Y 坐标（已转换）
+   */
+  async mouseDoubleClickAsyncLogical(x: number, y: number): Promise<void> {
+    await mouse.move([new Point(x, y)]);
+    await mouse.doubleClick(Button.LEFT);
+  }
+
+  /**
    * 异步：鼠标右键点击
    * @param x 物理 X 坐标
    * @param y 物理 Y 坐标
@@ -868,6 +903,18 @@ export class WindowsNativeImpl {
   async mouseRightClickAsync(x: number, y: number): Promise<void> {
     const logical = this.convertToLogicalCoordinates(x, y);
     await mouse.move([new Point(logical.x, logical.y)]);
+    await mouse.click(Button.RIGHT);
+  }
+
+  /**
+   * 异步：鼠标右键点击（逻辑坐标版本）
+   * ⚠️ 此方法假设传入的坐标已经是逻辑坐标，不再进行 DPR 转换
+   * 用于窗口模式下，避免双重 DPR 转换
+   * @param x 逻辑 X 坐标（已转换）
+   * @param y 逻辑 Y 坐标（已转换）
+   */
+  async mouseRightClickAsyncLogical(x: number, y: number): Promise<void> {
+    await mouse.move([new Point(x, y)]);
     await mouse.click(Button.RIGHT);
   }
 
@@ -889,6 +936,27 @@ export class WindowsNativeImpl {
     await mouse.move([new Point(logicalFrom.x, logicalFrom.y)]);
     await mouse.pressButton(Button.LEFT);
     await mouse.drag([new Point(logicalTo.x, logicalTo.y)]);
+    await mouse.releaseButton(Button.LEFT);
+  }
+
+  /**
+   * 异步：拖放操作（逻辑坐标版本）
+   * ⚠️ 此方法假设传入的坐标已经是逻辑坐标，不再进行 DPR 转换
+   * 用于窗口模式下，避免双重 DPR 转换
+   * @param fromX 起始逻辑 X 坐标（已转换）
+   * @param fromY 起始逻辑 Y 坐标（已转换）
+   * @param toX 目标逻辑 X 坐标（已转换）
+   * @param toY 目标逻辑 Y 坐标（已转换）
+   */
+  async dragAndDropAsyncLogical(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+  ): Promise<void> {
+    await mouse.move([new Point(fromX, fromY)]);
+    await mouse.pressButton(Button.LEFT);
+    await mouse.drag([new Point(toX, toY)]);
     await mouse.releaseButton(Button.LEFT);
   }
 
@@ -928,6 +996,25 @@ export class WindowsNativeImpl {
   ): Promise<void> {
     const logical = this.convertToLogicalCoordinates(x, y);
     await mouse.move([new Point(logical.x, logical.y)]);
+    await this.scrollAsync(direction, distance);
+  }
+
+  /**
+   * 异步：在指定位置滚动（逻辑坐标版本）
+   * ⚠️ 此方法假设传入的坐标已经是逻辑坐标，不再进行 DPR 转换
+   * 用于窗口模式下，避免双重 DPR 转换
+   * @param x 逻辑 X 坐标（已转换）
+   * @param y 逻辑 Y 坐标（已转换）
+   * @param direction 滚动方向
+   * @param distance 滚动距离
+   */
+  async scrollAtAsyncLogical(
+    x: number,
+    y: number,
+    direction: 'up' | 'down' | 'left' | 'right',
+    distance: number,
+  ): Promise<void> {
+    await mouse.move([new Point(x, y)]);
     await this.scrollAsync(direction, distance);
   }
 

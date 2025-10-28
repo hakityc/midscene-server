@@ -88,8 +88,10 @@ export default class WindowsDevice implements AbstractInterface {
     title: string;
     x: number; // 窗口在屏幕上的 X 坐标（用于坐标转换）
     y: number; // 窗口在屏幕上的 Y 坐标（用于坐标转换）
-    width: number;
-    height: number;
+    width: number; // 窗口物理宽度（来自 node-screenshots）
+    height: number; // 窗口物理高度（来自 node-screenshots）
+    logicalWidth?: number; // 窗口逻辑宽度（计算得出）
+    logicalHeight?: number; // 窗口逻辑高度（计算得出）
   } | null = null;
 
   // ==================== 公开属性 ====================
@@ -329,8 +331,65 @@ Status: Ready
   async size(): Promise<Size> {
     this.assertNotDestroyed();
 
-    // 每次都重新获取，不使用缓存
-    // 因为 getScreenSize 内部已经有缓存了
+    // ⚠️ 关键修复：窗口模式下应该返回窗口尺寸，而不是全屏尺寸
+    //
+    // 问题：
+    // - 在窗口模式下，screenshotBase64() 已经设置了 cachedSize = 窗口尺寸
+    // - 但 size() 方法总是重新获取全屏尺寸，覆盖了窗口尺寸
+    // - 导致传给 AI 的 size 和实际截图尺寸不一致！
+    //
+    // 调用流程：
+    // 1. commonContextParser() 调用 screenshotBase64() → 设置 cachedSize = 窗口尺寸
+    // 2. commonContextParser() 调用 size() → 如果重新获取全屏，会覆盖窗口尺寸
+    // 3. AI 收到的：size = 全屏尺寸，但 screenshot = 窗口截图 → 坐标系统错乱！
+    //
+    // 解决：
+    // - 如果已连接到窗口且 cachedSize 已设置（由 screenshotBase64() 设置），直接返回
+    // - 否则，返回全屏尺寸
+
+    // 窗口模式：使用已设置的窗口尺寸（在 screenshotBase64() 中设置）
+    // 注意：如果 size() 在 screenshotBase64() 之前调用，cachedSize 可能未设置
+    // 此时使用 window.width/height（可能是物理尺寸），并尝试获取全屏 DPR 来计算逻辑尺寸
+    if (this.connectedWindow) {
+      if (this.cachedSize) {
+        // 已有缓存的窗口尺寸（由 screenshotBase64() 设置，包含正确的 DPR）
+        if (this.options.debug) {
+          console.log(
+            `📐 Windows device size (窗口模式): ${this.cachedSize.width}x${this.cachedSize.height} (dpr: ${this.cachedSize.dpr})`,
+          );
+          console.log(`   窗口: "${this.connectedWindow.title}"`);
+        }
+        return this.cachedSize;
+      } else {
+        // 未缓存：使用窗口原始尺寸，并尝试获取 DPR
+        // 这种情况较少见（size() 在 screenshotBase64() 之前调用）
+        const screenInfo = await windowsNative.getScreenSizeAsync();
+        const windowDpr = screenInfo.dpr; // 使用全屏 DPR（通常相同）
+
+        // 假设 window.width 是物理尺寸，计算逻辑尺寸
+        // 但这里传给 AI 的应该是物理尺寸（与截图一致），所以直接用 window.width
+        const windowSize = {
+          width: this.connectedWindow.width,
+          height: this.connectedWindow.height,
+          dpr: windowDpr,
+        };
+
+        if (this.options.debug) {
+          console.log(
+            `📐 Windows device size (窗口模式，未缓存): ${windowSize.width}x${windowSize.height} (dpr: ${windowSize.dpr})`,
+          );
+          console.log(
+            `   窗口: "${this.connectedWindow.title}" (注意：size() 在 screenshotBase64() 之前调用)`,
+          );
+        }
+
+        // 缓存以便后续使用
+        this.cachedSize = windowSize;
+        return windowSize;
+      }
+    }
+
+    // 全屏模式：获取全屏尺寸
     const screenInfo = await windowsNative.getScreenSizeAsync();
     this.cachedSize = {
       width: screenInfo.width,
@@ -340,12 +399,9 @@ Status: Ready
 
     if (this.options.debug) {
       console.log(
-        `📐 Windows device size: ${this.cachedSize.width}x${this.cachedSize.height} (dpr: ${this.cachedSize.dpr})`,
+        `📐 Windows device size (全屏模式): ${this.cachedSize.width}x${this.cachedSize.height} (dpr: ${this.cachedSize.dpr})`,
       );
     }
-
-    // 添加调试日志
-    console.log('[DEBUG] windowsDevice.size() 返回:', this.cachedSize);
 
     return this.cachedSize;
   }
@@ -375,12 +431,144 @@ Status: Ready
           screenshotOptions,
         );
 
-        // 更新缓存尺寸为窗口尺寸
+        // ⚠️ 关键修复：检测窗口 DPR
+        //
+        // 问题分析：
+        // - node-screenshots 返回的 window.width/height 可能是物理尺寸（与 monitor.width 一致）
+        // - 而不是逻辑尺寸
+        // - 如果直接比较 window.width 和截图尺寸，可能永远一致（都是物理尺寸）
+        //
+        // 解决方案：
+        // - 获取全屏 DPR（因为窗口和全屏使用同一个显示器，DPR 相同）
+        // - 计算窗口逻辑尺寸 = window.width / screenDpr
+        // - 如果截图尺寸 = window.width（物理），且 screenDpr > 1，说明需要转换
+
+        let windowDpr = 1;
+        let windowLogicalWidth = this.connectedWindow.width;
+        let windowLogicalHeight = this.connectedWindow.height;
+        let actualWidth = this.connectedWindow.width;
+        let actualHeight = this.connectedWindow.height;
+
+        try {
+          // 1. 获取全屏 DPR（窗口和全屏使用同一个显示器，DPR 相同）
+          const screenInfo = await windowsNative.getScreenSizeAsync();
+          const screenDpr = screenInfo.dpr;
+
+          // 2. 解析截图实际尺寸（应该是物理尺寸）
+          const base64Data = this.cachedScreenshot.replace(
+            /^data:image\/\w+;base64,/,
+            '',
+          );
+          const buffer = Buffer.from(base64Data, 'base64');
+          const metadata = await sharp(buffer).metadata();
+
+          const screenshotWidth = metadata.width || this.connectedWindow.width;
+          const screenshotHeight =
+            metadata.height || this.connectedWindow.height;
+
+          // 3. 判断 node-screenshots window.width 的含义
+          //
+          // 情况 A：window.width 是物理尺寸
+          // - 如果 screenshotWidth ≈ window.width，说明都是物理尺寸
+          // - 窗口逻辑尺寸 = window.width / screenDpr
+          // - windowDpr = screenDpr
+          //
+          // 情况 B：window.width 是逻辑尺寸（不太可能，因为与 monitor.width 行为一致）
+          // - 如果 screenshotWidth > window.width，说明截图是物理尺寸
+          // - windowDpr = screenshotWidth / window.width
+
+          if (Math.abs(screenshotWidth - this.connectedWindow.width) < 5) {
+            // 截图尺寸 ≈ window.width，说明 window.width 是物理尺寸
+            windowDpr = screenDpr;
+            windowLogicalWidth = this.connectedWindow.width / screenDpr;
+            windowLogicalHeight = this.connectedWindow.height / screenDpr;
+            actualWidth = screenshotWidth; // 物理尺寸
+            actualHeight = screenshotHeight;
+
+            if (this.options.debug && Math.abs(screenDpr - 1.0) > 0.01) {
+              console.log(`⚠️ window.width 是物理尺寸，需要转换为逻辑尺寸`);
+              console.log(
+                `   窗口物理尺寸: ${this.connectedWindow.width}x${this.connectedWindow.height}`,
+              );
+              console.log(
+                `   窗口逻辑尺寸: ${windowLogicalWidth.toFixed(0)}x${windowLogicalHeight.toFixed(0)} (÷ ${screenDpr.toFixed(4)})`,
+              );
+              console.log(
+                `   截图实际尺寸: ${screenshotWidth}x${screenshotHeight}`,
+              );
+              console.log(
+                `   窗口 DPR: ${windowDpr.toFixed(4)} (使用全屏 DPR)`,
+              );
+            }
+          } else if (screenshotWidth > this.connectedWindow.width) {
+            // 截图尺寸 > window.width，说明 window.width 是逻辑尺寸，截图是物理尺寸
+            windowDpr = screenshotWidth / this.connectedWindow.width;
+            windowLogicalWidth = this.connectedWindow.width;
+            windowLogicalHeight = this.connectedWindow.height;
+            actualWidth = screenshotWidth;
+            actualHeight = screenshotHeight;
+
+            if (this.options.debug) {
+              console.log(`⚠️ window.width 是逻辑尺寸，截图是物理尺寸`);
+              console.log(
+                `   窗口逻辑尺寸: ${this.connectedWindow.width}x${this.connectedWindow.height}`,
+              );
+              console.log(
+                `   截图物理尺寸: ${screenshotWidth}x${screenshotHeight}`,
+              );
+              console.log(`   计算窗口 DPR: ${windowDpr.toFixed(4)}`);
+            }
+          } else {
+            // 两者接近，可能是同一种坐标系统
+            // 使用全屏 DPR 作为参考（因为窗口在同一个显示器上）
+            windowDpr = screenDpr;
+            windowLogicalWidth = this.connectedWindow.width / screenDpr;
+            windowLogicalHeight = this.connectedWindow.height / screenDpr;
+            actualWidth = screenshotWidth;
+            actualHeight = screenshotHeight;
+
+            if (this.options.debug) {
+              console.log(
+                `✓ 窗口尺寸与截图尺寸一致，使用全屏 DPR: ${screenDpr.toFixed(4)}`,
+              );
+              console.log(
+                `   窗口逻辑尺寸: ${windowLogicalWidth.toFixed(0)}x${windowLogicalHeight.toFixed(0)}`,
+              );
+              console.log(
+                `   窗口物理尺寸: ${screenshotWidth}x${screenshotHeight}`,
+              );
+            }
+          }
+        } catch (parseError) {
+          console.warn('⚠️ 无法解析窗口截图尺寸，使用全屏 DPR', parseError);
+          // 回退：使用全屏 DPR
+          try {
+            const screenInfo = await windowsNative.getScreenSizeAsync();
+            windowDpr = screenInfo.dpr;
+            windowLogicalWidth = this.connectedWindow.width / windowDpr;
+            windowLogicalHeight = this.connectedWindow.height / windowDpr;
+          } catch {
+            windowDpr = 1;
+          }
+        }
+
+        // 更新缓存尺寸（使用实际截图尺寸和计算的 DPR）
+        // AI 看到的截图是物理尺寸，所以 cachedSize.width 应该是物理尺寸
         this.cachedSize = {
-          width: this.connectedWindow.width,
-          height: this.connectedWindow.height,
-          dpr: 1, // 窗口截图不涉及 DPI 缩放
+          width: actualWidth, // 物理尺寸（截图实际分辨率）
+          height: actualHeight,
+          dpr: windowDpr,
         };
+
+        // 同时保存窗口逻辑尺寸（用于坐标转换）
+        this.connectedWindow.logicalWidth = windowLogicalWidth;
+        this.connectedWindow.logicalHeight = windowLogicalHeight;
+
+        if (this.options.debug) {
+          console.log(
+            `📐 窗口物理尺寸: ${actualWidth}x${actualHeight}, 逻辑尺寸: ${windowLogicalWidth.toFixed(0)}x${windowLogicalHeight.toFixed(0)}, DPR: ${windowDpr.toFixed(4)}`,
+          );
+        }
 
         return this.cachedScreenshot;
       }
@@ -488,15 +676,29 @@ Status: Ready
   /**
    * 坐标转换：将窗口相对坐标转换为屏幕绝对坐标
    *
+   * ⚠️ 关键问题：DPR 坐标系统对齐
+   *
+   * 问题场景：
+   * - 窗口截图实际分辨率可能高于窗口逻辑尺寸（DPI 缩放）
+   * - AI 返回的坐标基于截图实际分辨率（物理坐标）
+   * - 但 window.x, y 是基于逻辑坐标系统的
+   * - 需要在转换时除以窗口 DPR，将物理坐标转为逻辑坐标
+   *
+   * 示例（窗口 DPR = 1.5）：
+   * - 窗口逻辑尺寸：960x540
+   * - 截图实际尺寸：1440x810（物理像素）
+   * - AI 返回坐标：(720, 405) ← 基于 1440x810
+   * - 转换步骤：
+   *   1. 物理 → 逻辑：(720/1.5, 405/1.5) = (480, 270)
+   *   2. 窗口相对 → 屏幕绝对：(480 + window.x, 270 + window.y)
+   *
    * 核心逻辑：
    * - 全屏模式：不需要转换，直接返回原坐标
-   * - 窗口模式：窗口相对坐标 + 窗口屏幕位置 = 屏幕绝对坐标
+   * - 窗口模式：物理坐标 → 逻辑坐标 → 屏幕绝对坐标
    *
-   * 同时进行边界检测，确保坐标在窗口范围内
-   *
-   * @param x 窗口相对 X 坐标（来自 AI）
-   * @param y 窗口相对 Y 坐标（来自 AI）
-   * @returns 屏幕绝对坐标
+   * @param x 窗口相对 X 坐标（来自 AI，基于截图实际分辨率）
+   * @param y 窗口相对 Y 坐标（来自 AI，基于截图实际分辨率）
+   * @returns 屏幕绝对坐标（逻辑坐标系统）
    */
   private transformCoordinates(x: number, y: number): { x: number; y: number } {
     if (!this.connectedWindow) {
@@ -504,32 +706,51 @@ Status: Ready
       return { x, y };
     }
 
-    // 窗口模式：进行边界检测
-    let adjustedX = x;
-    let adjustedY = y;
+    // 获取窗口 DPR（如果已计算）
+    const windowDpr = this.cachedSize?.dpr || 1;
+    const windowPhysicalWidth =
+      this.cachedSize?.width || this.connectedWindow.width;
+    const windowPhysicalHeight =
+      this.cachedSize?.height || this.connectedWindow.height;
 
-    if (
-      x < 0 ||
-      y < 0 ||
-      x > this.connectedWindow.width ||
-      y > this.connectedWindow.height
-    ) {
+    // 边界检测：AI 坐标是基于截图物理分辨率的
+    if (x < 0 || y < 0 || x > windowPhysicalWidth || y > windowPhysicalHeight) {
       console.warn(
-        `⚠️ 坐标 (${x}, ${y}) 超出窗口范围 (${this.connectedWindow.width}x${this.connectedWindow.height})，自动裁剪`,
+        `⚠️ 坐标 (${x}, ${y}) 超出窗口物理范围 (${windowPhysicalWidth}x${windowPhysicalHeight})，自动裁剪`,
       );
 
       // 裁剪到窗口范围内
-      adjustedX = Math.max(0, Math.min(x, this.connectedWindow.width - 1));
-      adjustedY = Math.max(0, Math.min(y, this.connectedWindow.height - 1));
+      x = Math.max(0, Math.min(x, windowPhysicalWidth - 1));
+      y = Math.max(0, Math.min(y, windowPhysicalHeight - 1));
     }
 
-    // 转换为屏幕绝对坐标
-    const screenX = adjustedX + this.connectedWindow.x;
-    const screenY = adjustedY + this.connectedWindow.y;
+    // ⚠️ 关键步骤：将物理坐标转换为逻辑坐标
+    // AI 返回的坐标是基于截图实际分辨率的（物理像素）
+    // window.x, y 和鼠标操作使用的是逻辑坐标系统
+    let logicalX = x;
+    let logicalY = y;
+
+    if (Math.abs(windowDpr - 1.0) > 0.01) {
+      // 存在 DPI 缩放，需要转换
+      logicalX = Math.round(x / windowDpr);
+      logicalY = Math.round(y / windowDpr);
+
+      if (this.options.debug) {
+        console.log(
+          `  物理坐标 (${x}, ${y}) → 逻辑坐标 (${logicalX}, ${logicalY}) [窗口DPR: ${windowDpr.toFixed(4)}]`,
+        );
+      }
+    }
+
+    // ⚠️ 转换为屏幕绝对坐标（逻辑坐标系统）
+    // window.x, y 可能是物理坐标或逻辑坐标，需要验证
+    // 假设 window.x, y 是逻辑坐标（因为在同一个显示器上，通常与屏幕逻辑坐标系统一致）
+    const screenX = logicalX + this.connectedWindow.x;
+    const screenY = logicalY + this.connectedWindow.y;
 
     if (this.options.debug) {
       console.log(
-        `🔄 坐标转换: 窗口相对 (${x}, ${y}) → 屏幕绝对 (${screenX}, ${screenY})`,
+        `🔄 坐标转换: AI物理坐标 (${x}, ${y}) → 窗口逻辑坐标 (${logicalX}, ${logicalY}) → 屏幕绝对坐标 (${screenX}, ${screenY}) [窗口DPR: ${windowDpr.toFixed(4)}]`,
       );
     }
 
@@ -557,7 +778,9 @@ Status: Ready
       );
     }
 
-    await windowsNative.mouseClickAsync(transformed.x, transformed.y);
+    // 使用逻辑坐标版本，避免双重 DPR 转换
+    // transformCoordinates 已经输出了屏幕逻辑坐标
+    await windowsNative.mouseClickAsyncLogical(transformed.x, transformed.y);
   }
 
   /**
@@ -579,7 +802,11 @@ Status: Ready
       );
     }
 
-    await windowsNative.mouseDoubleClickAsync(transformed.x, transformed.y);
+    // 使用逻辑坐标版本，避免双重 DPR 转换
+    await windowsNative.mouseDoubleClickAsyncLogical(
+      transformed.x,
+      transformed.y,
+    );
   }
 
   /**
@@ -601,7 +828,11 @@ Status: Ready
       );
     }
 
-    await windowsNative.mouseRightClickAsync(transformed.x, transformed.y);
+    // 使用逻辑坐标版本，避免双重 DPR 转换
+    await windowsNative.mouseRightClickAsyncLogical(
+      transformed.x,
+      transformed.y,
+    );
   }
 
   /**
@@ -623,7 +854,8 @@ Status: Ready
       );
     }
 
-    await windowsNative.moveMouseAsync(transformed.x, transformed.y);
+    // 使用逻辑坐标版本，避免双重 DPR 转换
+    await windowsNative.moveMouseAsyncLogical(transformed.x, transformed.y);
   }
 
   /**
@@ -651,7 +883,8 @@ Status: Ready
       );
     }
 
-    await windowsNative.dragAndDropAsync(
+    // 使用逻辑坐标版本，避免双重 DPR 转换
+    await windowsNative.dragAndDropAsyncLogical(
       transformedFrom.x,
       transformedFrom.y,
       transformedTo.x,
@@ -713,7 +946,8 @@ Status: Ready
       );
     }
 
-    await windowsNative.scrollAtAsync(
+    // 使用逻辑坐标版本，避免双重 DPR 转换
+    await windowsNative.scrollAtAsyncLogical(
       transformed.x,
       transformed.y,
       direction,
