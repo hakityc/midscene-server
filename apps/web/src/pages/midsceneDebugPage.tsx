@@ -9,6 +9,7 @@ import { MetaForm } from '@/components/debug/MetaForm';
 import {
   AiForm,
   CommandForm,
+  ConnectWindowForm,
   GenericForm,
   SiteScriptForm,
 } from '@/components/debug/SimpleActionForms';
@@ -30,6 +31,7 @@ import {
   buildAiMessage,
   buildAiScriptMessage,
   buildCommandScriptMessage,
+  buildConnectWindowMessage,
   buildSiteScriptMessage,
 } from '@/utils/messageBuilder';
 
@@ -45,6 +47,8 @@ export default function MidsceneDebugPage() {
     siteScript,
     siteScriptCmd,
     command,
+    connectWindowId,
+    connectWindowTitle,
     history,
     showHistory,
     setAction,
@@ -56,6 +60,8 @@ export default function MidsceneDebugPage() {
     setSiteScript,
     setSiteScriptCmd,
     setCommand,
+    setConnectWindowId,
+    setConnectWindowTitle,
     setShowHistory,
     addHistory,
     removeHistory,
@@ -103,6 +109,12 @@ export default function MidsceneDebugPage() {
           return buildSiteScriptMessage(siteScript, siteScriptCmd, meta);
         case 'command':
           return buildCommandScriptMessage(command, meta);
+        case 'connectWindow':
+          return buildConnectWindowMessage(
+            connectWindowId,
+            connectWindowTitle,
+            meta,
+          );
         default:
           return {
             meta,
@@ -198,6 +210,8 @@ export default function MidsceneDebugPage() {
       siteScript,
       siteScriptCmd,
       command,
+      connectWindowId,
+      connectWindowTitle,
       buildMessage,
     ],
   );
@@ -228,6 +242,15 @@ export default function MidsceneDebugPage() {
         );
       case 'command':
         return <CommandForm command={command} onChange={setCommand} />;
+      case 'connectWindow':
+        return (
+          <ConnectWindowForm
+            windowId={connectWindowId}
+            windowTitle={connectWindowTitle}
+            onWindowIdChange={setConnectWindowId}
+            onWindowTitleChange={setConnectWindowTitle}
+          />
+        );
       default:
         return <GenericForm actionType={action} />;
     }

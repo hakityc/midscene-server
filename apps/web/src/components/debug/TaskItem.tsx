@@ -53,7 +53,7 @@ export function TaskItem({
 
   // 确保所有动作都有稳定的 ID
   const flowWithIds = useMemo(() => {
-    return task.flow.map((action) => ({
+    return task.flow.map((action): FlowAction & { id: string } => ({
       ...action,
       id: action.id || uuidv4(),
     }));
@@ -97,7 +97,10 @@ export function TaskItem({
     updateTask('flow', [...flowWithIds, newAction]);
   };
 
-  const updateAction = (actionIndex: number, action: FlowAction) => {
+  const updateAction = (
+    actionIndex: number,
+    action: FlowAction & { id: string },
+  ) => {
     const newFlow = [...flowWithIds];
     newFlow[actionIndex] = action;
     updateTask('flow', newFlow);

@@ -332,6 +332,38 @@ export function buildCommandScriptMessage(
 }
 
 /**
+ * 构建连接窗口消息
+ */
+export function buildConnectWindowMessage(
+  windowId: string,
+  windowTitle: string,
+  meta: MessageMeta,
+): WsInboundMessage {
+  const params: { windowId?: number; windowTitle?: string } = {};
+
+  // 如果 windowId 有效，优先使用它
+  if (windowId && windowId.trim() !== '') {
+    const id = Number.parseInt(windowId, 10);
+    if (!Number.isNaN(id)) {
+      params.windowId = id;
+    }
+  }
+
+  // 如果 windowTitle 有效，添加它
+  if (windowTitle && windowTitle.trim() !== '') {
+    params.windowTitle = windowTitle.trim();
+  }
+
+  return {
+    meta,
+    payload: {
+      action: 'connectWindow',
+      params,
+    },
+  };
+}
+
+/**
  * 格式化 JSON（用于显示）
  */
 export function formatJson(obj: unknown): string {

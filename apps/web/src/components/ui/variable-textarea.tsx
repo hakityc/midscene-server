@@ -6,6 +6,7 @@ interface VariableTextareaProps
   value: string;
   onChange: (value: string) => void;
   rows?: number;
+  placeholder?: string;
 }
 
 /**
@@ -18,6 +19,7 @@ export function VariableTextarea({
   onChange,
   className,
   rows = 3,
+  placeholder,
   ...props
 }: VariableTextareaProps) {
   const editorRef = React.useRef<HTMLDivElement>(null);
@@ -201,6 +203,7 @@ export function VariableTextarea({
         contentEditable
         onInput={handleInput}
         onPaste={handlePaste}
+        data-placeholder={placeholder}
         className={cn(
           'min-h-[60px] w-full rounded-md border border-input',
           'bg-background px-3 py-2 text-sm shadow-sm transition-colors',
@@ -226,6 +229,12 @@ export function VariableTextarea({
           border-radius: 4px;
           padding: 2px 4px;
           font-weight: normal;
+        }
+
+        [contenteditable][data-placeholder]:empty::before {
+          content: attr(data-placeholder);
+          color: hsl(var(--muted-foreground));
+          pointer-events: none;
         }
 
         @media (prefers-color-scheme: dark) {

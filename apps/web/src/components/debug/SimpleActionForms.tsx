@@ -105,6 +105,60 @@ export function CommandForm({ command, onChange }: CommandFormProps) {
   );
 }
 
+interface ConnectWindowFormProps {
+  windowId: string;
+  windowTitle: string;
+  onWindowIdChange: (id: string) => void;
+  onWindowTitleChange: (title: string) => void;
+}
+
+export function ConnectWindowForm({
+  windowId,
+  windowTitle,
+  onWindowIdChange,
+  onWindowTitleChange,
+}: ConnectWindowFormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-sm font-semibold">窗口 ID (可选)</Label>
+        <Input
+          value={windowId}
+          onChange={(e) => onWindowIdChange(e.target.value)}
+          placeholder="例如: 12345"
+          className="text-xs"
+          type="number"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          💡 Windows 窗口的唯一 ID
+        </p>
+      </div>
+
+      <div>
+        <Label className="text-sm font-semibold">窗口标题 (可选)</Label>
+        <Input
+          value={windowTitle}
+          onChange={(e) => onWindowTitleChange(e.target.value)}
+          placeholder="例如: 记事本"
+          className="text-xs"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          💡 窗口标题（支持模糊匹配）
+        </p>
+      </div>
+
+      <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">
+          ⚠️ 注意
+        </p>
+        <p className="text-xs text-amber-600 dark:text-amber-500">
+          必须提供窗口 ID 或窗口标题其中之一。如果同时提供，优先使用窗口 ID。
+        </p>
+      </div>
+    </div>
+  );
+}
+
 interface GenericFormProps {
   actionType: string;
 }

@@ -446,7 +446,7 @@ export function FloatingMessageMonitor({
   return (
     <>
       {/* 悬浮容器 - 包含按钮和消息列表 */}
-      <div className="fixed top-4 right-4 z-50 pointer-events-auto flex flex-col gap-2 max-w-[320px]">
+      <div className="fixed top-4 right-4 z-50 pointer-events-auto flex flex-col gap-2 max-w-[360px]">
         {/* 顶部操作按钮栏 */}
         <div className="backdrop-blur-xl w-full bg-white/80 dark:bg-gray-800/80 rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-2 flex items-center gap-1.5 relative z-50">
           {/* 连接状态 */}
@@ -548,7 +548,7 @@ export function FloatingMessageMonitor({
           <div className="h-5 w-px bg-gray-200/50 dark:bg-gray-700/50" />
 
           {/* 暂停通知 */}
-          <Button
+          {/* <Button
             size="sm"
             variant="ghost"
             onClick={handlePauseNotification}
@@ -561,7 +561,7 @@ export function FloatingMessageMonitor({
             <span className="font-medium">
               {isNotificationPaused ? '已暂停' : '暂停'}
             </span>
-          </Button>
+          </Button> */}
         </div>
 
         {/* 消息列表 */}

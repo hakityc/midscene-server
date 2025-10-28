@@ -30,6 +30,8 @@ interface DebugState {
   siteScript: string;
   siteScriptCmd: string;
   command: string;
+  connectWindowId: string;
+  connectWindowTitle: string;
 
   // 历史记录
   history: HistoryItem[];
@@ -47,6 +49,8 @@ interface DebugState {
   setSiteScript: (script: string) => void;
   setSiteScriptCmd: (cmd: string) => void;
   setCommand: (command: string) => void;
+  setConnectWindowId: (id: string) => void;
+  setConnectWindowTitle: (title: string) => void;
   setShowHistory: (show: boolean) => void;
 
   // 历史记录操作
@@ -96,6 +100,8 @@ export const useDebugStore = create<DebugState>()(
       siteScript: 'console.log("Hello from Midscene");',
       siteScriptCmd: '',
       command: 'start',
+      connectWindowId: '',
+      connectWindowTitle: '',
 
       history: [],
       showHistory: false,
@@ -121,6 +127,8 @@ export const useDebugStore = create<DebugState>()(
       setSiteScript: (script) => set({ siteScript: script }),
       setSiteScriptCmd: (cmd) => set({ siteScriptCmd: cmd }),
       setCommand: (command) => set({ command }),
+      setConnectWindowId: (id) => set({ connectWindowId: id }),
+      setConnectWindowTitle: (title) => set({ connectWindowTitle: title }),
       setShowHistory: (show) => set({ showHistory: show }),
 
       // 历史记录操作
@@ -170,6 +178,15 @@ export const useDebugStore = create<DebugState>()(
           newState.siteScriptCmd = msg.payload.originalCmd || '';
         } else if (msg.payload.action === 'command') {
           newState.command = msg.payload.params as string;
+        } else if (msg.payload.action === 'connectWindow') {
+          const params = msg.payload.params as {
+            windowId?: number;
+            windowTitle?: string;
+          };
+          newState.connectWindowId = params.windowId
+            ? String(params.windowId)
+            : '';
+          newState.connectWindowTitle = params.windowTitle || '';
         }
 
         set(newState);
@@ -229,6 +246,16 @@ export const useDebugStore = create<DebugState>()(
                 updates.command = formData;
               }
               break;
+
+            case 'connectWindow':
+              // formData 应该是一个对象 { windowId?, windowTitle? }
+              if (formData && typeof formData === 'object') {
+                updates.connectWindowId = formData.windowId
+                  ? String(formData.windowId)
+                  : '';
+                updates.connectWindowTitle = formData.windowTitle || '';
+              }
+              break;
           }
 
           return updates;
@@ -258,6 +285,8 @@ export const useDebugStore = create<DebugState>()(
           siteScript: 'console.log("Hello from Midscene");',
           siteScriptCmd: '',
           command: 'start',
+          connectWindowId: '',
+          connectWindowTitle: '',
         }),
     }),
     {
@@ -274,6 +303,8 @@ export const useDebugStore = create<DebugState>()(
         siteScript: state.siteScript,
         siteScriptCmd: state.siteScriptCmd,
         command: state.command,
+        connectWindowId: state.connectWindowId,
+        connectWindowTitle: state.connectWindowTitle,
         history: state.history,
       }),
     },

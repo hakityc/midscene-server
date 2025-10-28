@@ -30,9 +30,9 @@ import {
 import type { ClientType, FlowAction } from '@/types/debug';
 
 interface FlowActionItemProps {
-  action: FlowAction;
+  action: FlowAction & { id: string };
   index: number;
-  onChange: (action: FlowAction) => void;
+  onChange: (action: FlowAction & { id: string }) => void;
   onRemove: () => void;
   clientType: ClientType;
 }
@@ -108,7 +108,7 @@ export function FlowActionItem({
   >({});
 
   const updateField = (field: string, value: unknown) => {
-    onChange({ ...action, [field]: value } as FlowAction);
+    onChange({ ...action, [field]: value } as FlowAction & { id: string });
     // 清除该字段的验证错误
     if (validationErrors[field]) {
       setValidationErrors((prev) => {
@@ -356,7 +356,13 @@ export function FlowActionItem({
         </div>
         <Select
           value={action.type}
-          onValueChange={(val) => onChange({ type: val } as FlowAction)}
+          onValueChange={(val) =>
+            onChange({
+              id: action.id,
+              type: val,
+              enabled: action.enabled,
+            } as FlowAction & { id: string })
+          }
         >
           <SelectTrigger className="h-7 text-xs flex-1">
             <SelectValue />

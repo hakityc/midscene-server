@@ -178,7 +178,23 @@ const actionRulesMap: Record<FlowActionType, OptimizationRule[]> = {
   aiScroll: aiScrollRules,
   aiWaitFor: aiWaitForRules,
   aiKeyboardPress: aiKeyboardPressRules,
+  aiDoubleClick: [],
+  aiRightClick: [],
+  aiQuery: [],
+  aiString: [],
+  aiNumber: [],
+  aiBoolean: [],
+  aiAction: [],
+  aiLocate: [],
   sleep: [],
+  screenshot: [],
+  logText: [],
+  logScreenshot: [],
+  javascript: [],
+  getClipboard: [],
+  setClipboard: [],
+  getWindowList: [],
+  activateWindow: [],
 };
 
 /**
