@@ -11,3 +11,4 @@ export { createDownloadVideoHandler } from '../downloadVideo';
 export { createAiHandler } from '../execute';
 export { executeScriptHandler } from '../executeScript';
 export { handleSiteScriptHandler } from '../siteScript';
+export { createSummarizeHandler } from '../summerize';

@@ -12,4 +12,5 @@ export enum WebSocketAction {
   SITE_SCRIPT = 'siteScript',
   COMMAND = 'command',
   TEST = 'test',
+  SUMMARIZE = 'summarize',
 }
