@@ -39,6 +39,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
     aiActionContext: '如果当前需要用户登录或者扫码，抛出异常，提示用户手动操作',
   };
 
+  // ==================== 自定义 tip 映射 ====================
+  private stepTipMap: Map<number, string> = new Map();
+
   private constructor() {
     super();
   }
@@ -141,6 +144,13 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
   // ==================== Web 特定方法 ====================
 
   /**
+   * 设置自定义 tip 映射
+   */
+  public setStepTipMap(stepTipMap: Map<number, string>): void {
+    this.stepTipMap = stepTipMap;
+  }
+
+  /**
    * 设置任务开始提示回调
    */
   private setupTaskStartTipCallback(): void {
@@ -150,13 +160,23 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
     const originalCallback = this.agent.onTaskStartTip;
 
-    this.agent.onTaskStartTip = (tip: string) => {
+    this.agent.onTaskStartTip = (tip: string, stepIndex?: number) => {
+      // 如果有 stepIndex 且在映射表中存在，使用自定义 tip；否则使用自动生成的 tip
+      const finalTip =
+        stepIndex !== undefined && this.stepTipMap.has(stepIndex)
+          ? this.stepTipMap.get(stepIndex)!
+          : tip;
+
       const safeCall = async () => {
+
         let bridgeError: Error | null = null;
 
         if (originalCallback) {
           try {
-            Promise.resolve(originalCallback.call(this.agent, tip)).catch(
+            Promise.resolve(
+              // 使用本地包扩展后的双参数签名 (tip, stepIndex)
+              originalCallback.call(this.agent, finalTip, stepIndex),
+            ).catch(
               (error: any) => {
                 const isConnectionError =
                   error?.message?.includes('Connection lost') ||
@@ -171,7 +191,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
                 } else {
                   serviceLogger.warn(
                     {
-                      tip,
+                      tip: finalTip,
                       error: error?.message,
                       stack: error?.stack,
                     },
@@ -179,7 +199,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
                   );
 
                   this.taskErrors.push({
-                    taskName: tip,
+                    taskName: finalTip,
                     error:
                       error instanceof Error ? error : new Error(String(error)),
                     timestamp: Date.now(),
@@ -190,7 +210,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
           } catch (syncError: any) {
             serviceLogger.warn(
               {
-                tip,
+                tip: finalTip,
                 error: syncError?.message,
                 stack: syncError?.stack,
               },
@@ -200,11 +220,11 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         }
 
         try {
-          this.handleTaskStartTip(tip, bridgeError);
+          this.handleTaskStartTip(finalTip, bridgeError);
         } catch (handlerError: any) {
           serviceLogger.error(
             {
-              tip,
+              tip: finalTip,
               error: handlerError?.message,
               stack: handlerError?.stack,
             },
@@ -216,7 +236,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       safeCall().catch((error: any) => {
         serviceLogger.error(
           {
-            tip,
+            tip: finalTip,
             error: error?.message,
             stack: error?.stack,
           },
@@ -225,7 +245,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
         try {
           this.triggerTaskTipCallbacks(
-            tip || '未知任务',
+            finalTip || '未知任务',
             error instanceof Error ? error : new Error(String(error)),
           );
         } catch (notifyError) {
@@ -243,8 +263,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       if (!this.agent) {
         throw new Error('Agent 未初始化');
       }
-      //@ts-expect-error
-      const tabs = await this.agent.getBrowserTabList({});
+      const tabs = await (this.agent as any).getBrowserTabList({});
       serviceLogger.info({ tabList: JSON.stringify(tabs) }, '浏览器标签页列表');
       if (tabs.length > 0) {
         const tab = tabs[tabs.length - 1];
