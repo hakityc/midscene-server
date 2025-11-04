@@ -22,6 +22,7 @@ export function executeScriptHandler(): MessageHandler {
 
     const webOperateService = WebOperateServiceRefactored.getInstance();
 
+    //TODO 这里需要使用 leboStepName 来展示任务名称
     // 使用封装好的方法创建任务提示回调
     const taskTipCallback = webOperateService.createTaskTipCallback({
       send,
@@ -52,7 +53,11 @@ export function executeScriptHandler(): MessageHandler {
 
       // 建立 stepIndex -> customTip 映射
       const stepTipMap = new Map<number, string>();
-      if (parsedParams && typeof parsedParams === 'object' && 'tasks' in parsedParams) {
+      if (
+        parsedParams &&
+        typeof parsedParams === 'object' &&
+        'tasks' in parsedParams
+      ) {
         const tasks = (parsedParams as any).tasks;
         if (Array.isArray(tasks)) {
           let globalStepIndex = 0;
