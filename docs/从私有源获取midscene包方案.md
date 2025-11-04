@@ -180,3 +180,5 @@ pnpm install
 3. ✅ 修改 midscene-server 配置从私有源读取
 4. ✅ 验证自动更新流程
 
+
+

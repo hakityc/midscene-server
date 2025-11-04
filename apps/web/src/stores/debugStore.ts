@@ -32,6 +32,15 @@ interface DebugState {
   command: string;
   connectWindowId: string;
   connectWindowTitle: string;
+  summarizeFullPage: boolean;
+  summarizeLocate?: {
+    rect: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    };
+  };
 
   // 历史记录
   history: HistoryItem[];
@@ -51,6 +60,15 @@ interface DebugState {
   setCommand: (command: string) => void;
   setConnectWindowId: (id: string) => void;
   setConnectWindowTitle: (title: string) => void;
+  setSummarizeFullPage: (fullPage: boolean) => void;
+  setSummarizeLocate: (locate?: {
+    rect: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    };
+  }) => void;
   setShowHistory: (show: boolean) => void;
 
   // 历史记录操作
@@ -102,6 +120,8 @@ export const useDebugStore = create<DebugState>()(
       command: 'start',
       connectWindowId: '',
       connectWindowTitle: '',
+      summarizeFullPage: true,
+      summarizeLocate: undefined,
 
       history: [],
       showHistory: false,
@@ -129,6 +149,8 @@ export const useDebugStore = create<DebugState>()(
       setCommand: (command) => set({ command }),
       setConnectWindowId: (id) => set({ connectWindowId: id }),
       setConnectWindowTitle: (title) => set({ connectWindowTitle: title }),
+      setSummarizeFullPage: (fullPage) => set({ summarizeFullPage: fullPage }),
+      setSummarizeLocate: (locate) => set({ summarizeLocate: locate }),
       setShowHistory: (show) => set({ showHistory: show }),
 
       // 历史记录操作
@@ -187,6 +209,20 @@ export const useDebugStore = create<DebugState>()(
             ? String(params.windowId)
             : '';
           newState.connectWindowTitle = params.windowTitle || '';
+        } else if (msg.payload.action === 'summarize') {
+          const params = msg.payload.params as {
+            fullPage?: boolean;
+            locate?: {
+              rect: {
+                left: number;
+                top: number;
+                width: number;
+                height: number;
+              };
+            };
+          };
+          newState.summarizeFullPage = params.fullPage !== undefined ? params.fullPage : true;
+          newState.summarizeLocate = params.locate;
         }
 
         set(newState);
@@ -256,6 +292,14 @@ export const useDebugStore = create<DebugState>()(
                 updates.connectWindowTitle = formData.windowTitle || '';
               }
               break;
+
+            case 'summarize':
+              // formData 应该是一个对象 { fullPage?, locate? }
+              if (formData && typeof formData === 'object') {
+                updates.summarizeFullPage = formData.fullPage !== undefined ? formData.fullPage : true;
+                updates.summarizeLocate = formData.locate;
+              }
+              break;
           }
 
           return updates;
@@ -287,6 +331,8 @@ export const useDebugStore = create<DebugState>()(
           command: 'start',
           connectWindowId: '',
           connectWindowTitle: '',
+          summarizeFullPage: true,
+          summarizeLocate: undefined,
         }),
     }),
     {
@@ -305,6 +351,8 @@ export const useDebugStore = create<DebugState>()(
         command: state.command,
         connectWindowId: state.connectWindowId,
         connectWindowTitle: state.connectWindowTitle,
+        summarizeFullPage: state.summarizeFullPage,
+        summarizeLocate: state.summarizeLocate,
         history: state.history,
       }),
     },

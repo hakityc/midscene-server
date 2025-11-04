@@ -147,3 +147,5 @@ cat apps/server/node_modules/@midscene/mcp/package.json | grep '"version"'
 
 如果是通过文件引用，需要确保部署环境中 `local-packages/` 目录存在，或者改为发布到私有 npm registry。
 
+
+

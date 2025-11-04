@@ -371,6 +371,54 @@ export function buildConnectWindowMessage(
 }
 
 /**
+ * 构建 Summarize 消息（对当前打开的网页进行总结）
+ */
+export function buildSummarizeMessage(
+  fullPage: boolean,
+  locate:
+    | {
+        rect: {
+          left: number;
+          top: number;
+          width: number;
+          height: number;
+        };
+      }
+    | undefined,
+  meta: MessageMeta,
+): WsInboundMessage {
+  const params: {
+    fullPage?: boolean;
+    locate?: {
+      rect: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+      };
+    };
+  } = {};
+
+  // 只在非默认值时添加 fullPage
+  if (fullPage !== true) {
+    params.fullPage = fullPage;
+  }
+
+  // 只在有值时添加 locate
+  if (locate?.rect) {
+    params.locate = locate;
+  }
+
+  return {
+    meta,
+    payload: {
+      action: 'summarize',
+      params,
+    },
+  };
+}
+
+/**
  * 格式化 JSON（用于显示）
  */
 export function formatJson(obj: unknown): string {

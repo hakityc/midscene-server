@@ -12,6 +12,7 @@ import {
   ConnectWindowForm,
   GenericForm,
   SiteScriptForm,
+  SummarizeForm,
 } from '@/components/debug/SimpleActionForms';
 import { TemplatePanel } from '@/components/debug/TemplatePanel';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ import {
   buildCommandScriptMessage,
   buildConnectWindowMessage,
   buildSiteScriptMessage,
+  buildSummarizeMessage,
 } from '@/utils/messageBuilder';
 
 export default function MidsceneDebugPage() {
@@ -60,6 +62,8 @@ export default function MidsceneDebugPage() {
     command,
     connectWindowId,
     connectWindowTitle,
+    summarizeFullPage,
+    summarizeLocate,
     history,
     showHistory,
     setAction,
@@ -73,6 +77,8 @@ export default function MidsceneDebugPage() {
     setCommand,
     setConnectWindowId,
     setConnectWindowTitle,
+    setSummarizeFullPage,
+    setSummarizeLocate,
     setShowHistory,
     addHistory,
     removeHistory,
@@ -126,6 +132,12 @@ export default function MidsceneDebugPage() {
             connectWindowTitle,
             meta,
           );
+        case 'summarize':
+          return buildSummarizeMessage(
+            summarizeFullPage,
+            summarizeLocate,
+            meta,
+          );
         default:
           return {
             meta,
@@ -145,6 +157,10 @@ export default function MidsceneDebugPage() {
       siteScript,
       siteScriptCmd,
       command,
+      connectWindowId,
+      connectWindowTitle,
+      summarizeFullPage,
+      summarizeLocate,
       transformTasks,
     ],
   );
@@ -260,6 +276,15 @@ export default function MidsceneDebugPage() {
             windowTitle={connectWindowTitle}
             onWindowIdChange={setConnectWindowId}
             onWindowTitleChange={setConnectWindowTitle}
+          />
+        );
+      case 'summarize':
+        return (
+          <SummarizeForm
+            fullPage={summarizeFullPage}
+            locate={summarizeLocate}
+            onFullPageChange={setSummarizeFullPage}
+            onLocateChange={setSummarizeLocate}
           />
         );
       default:

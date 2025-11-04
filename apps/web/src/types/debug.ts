@@ -12,7 +12,8 @@ export type WebSocketAction =
   | 'downloadVideoCallback'
   | 'siteScript'
   | 'command'
-  | 'test';
+  | 'test'
+  | 'summarize';
 
 // 客户端类型
 export type ClientType = 'web' | 'windows';
@@ -295,6 +296,18 @@ export interface SiteScriptParams {
 
 export interface CommandParams {
   command: 'start' | 'stop' | string; // 支持 start, stop 及后续扩展
+}
+
+export interface SummarizeParams {
+  fullPage?: boolean; // 是否全页截图，默认 true
+  locate?: {
+    rect: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    };
+  }; // 指定要总结的区域
 }
 
 // WebSocket 消息结构

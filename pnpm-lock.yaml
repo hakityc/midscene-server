@@ -66,14 +66,14 @@ importers:
         specifier: 0.14.2
         version: 0.14.2(@mastra/core@0.15.2(openapi-types@12.1.3)(react@19.1.1)(zod@3.25.76))(react@19.1.1)(zod@3.25.76)
       '@midscene/core':
-        specifier: 0.30.4-lebo.1
-        version: 0.30.4-lebo.1(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+        specifier: 0.30.7
+        version: 0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
       '@midscene/mcp':
-        specifier: 0.30.4-lebo.1
-        version: 0.30.4-lebo.1
+        specifier: 0.30.7
+        version: 0.30.7
       '@midscene/web':
-        specifier: 0.30.4-lebo.1
-        version: 0.30.4-lebo.1(bufferutil@4.0.9)(date-fns@4.1.0)(playwright@1.56.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(utf-8-validate@6.0.5)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+        specifier: 0.30.7-lebo.1
+        version: 0.30.7-lebo.1(bufferutil@4.0.9)(date-fns@4.1.0)(playwright@1.56.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(utf-8-validate@6.0.5)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
       '@nut-tree/nut-js':
         specifier: ^4.2.0
         version: 4.2.0
@@ -1207,32 +1207,28 @@ packages:
       ai: ^4.0.0 || ^5.0.0
       zod: ^3.25.0 || ^4.0.0
 
-  '@midscene/core@0.30.4':
-    resolution: {integrity: sha512-/tkg9/7VD7ygO9JCDg3iQceZOz+E1g/1xKWMBr3cNgMRGy7B+w6I5TBggpigxR0tMEwlZ9l5HIPgfx+6kJfd+Q==}
+  '@midscene/core@0.30.7':
+    resolution: {integrity: sha512-XELmC7aSBxoXn/u2Y7aiIZYCXUc7w9YQpuLAP3BRH3yDps50PMx5sXh83q7TyA6wVFRPU19hkGVthwJX8a13gA==}
     engines: {node: '>=18.0.0'}
 
-  '@midscene/core@0.30.4-lebo.1':
-    resolution: {integrity: sha512-+gm/IJo/OA5UPkylQxH52gHJ17K3ZfBCbdUZWOO7ZQNQzGidnCqv2M2A2bS8Hur1CvZ4jocgLbVIIjGSkYX4lQ==}
-    engines: {node: '>=18.0.0'}
-
-  '@midscene/mcp@0.30.4-lebo.1':
-    resolution: {integrity: sha512-tOqaoAeZ9U/aO9L1IFysmUHsVUsvHglF6MzWLn1YVOL2AzZdgLK3ihnYnmiRG917LCGoZ0396HxdZZxnaBgN8w==}
+  '@midscene/mcp@0.30.7':
+    resolution: {integrity: sha512-8JmeRsbiMhh+I2cJEKv0FlPTbjw57jUouvXGcrN5WS7Naa4ZCe4s6Wa3w3j6YuaLnF703s4OdgCgA8HSxi+6mg==}
     hasBin: true
 
-  '@midscene/playground@0.30.4':
-    resolution: {integrity: sha512-8aHRkPu83SOnMVE1rfjMUQqs/pxyhmqgREwpOm+o2jHmauHT8F348MnhDinIOzpFKzgfRP/c+k18SV7C6rm7cw==}
+  '@midscene/playground@0.30.7':
+    resolution: {integrity: sha512-ha5vQeOcPD8+KYtzLwoNmMwDTEP2y8hqGSAaUUWs8C6bnuMV9frlb98ERxsEAXQ0dCm+wGoUoEgS2XQnV/kMfg==}
 
-  '@midscene/recorder@0.30.4':
-    resolution: {integrity: sha512-W3p5cP6Vq+d60P7xh8Qwp+UUtnZZ0hHQ+4MWIBBh6bM31X6ireTy2bGN8R+kNYwW7D5M49Dns54gBfBTJ3+juA==}
+  '@midscene/recorder@0.30.7':
+    resolution: {integrity: sha512-1KsyTxd81RLlL56SVT1mhaTm89bxLDsclGW06WG9fngUmvCzeW0cv7QBkQjfhfDK8UyRpIBUI0pX17S5PXW96A==}
     peerDependencies:
       react: 18.3.1
       react-dom: 18.3.1
 
-  '@midscene/shared@0.30.4':
-    resolution: {integrity: sha512-ZSaiKCyda5cibo0PK/H1chAepdHLln6Lf0rQB+1u0NsmlownKyVwPEKSRa/tfR2z/fUhKLiCB5u5kzfsVUiHeA==}
+  '@midscene/shared@0.30.7':
+    resolution: {integrity: sha512-fEpmCteB44NVNEuxM7xWGoPAPjF2hiDaWwFlW0qDGNVd5c5mGJ7KEb3ExztT7wUJJ1w9C73BDOVWAoDf0onMfQ==}
 
-  '@midscene/web@0.30.4-lebo.1':
-    resolution: {integrity: sha512-eMud247g0qXmm9xHREJK5Ge2ifwqAHClEWAGC1BM/81QG9WWeHZo6nuhQl+oU5yRb+Cfw6x+MVxCR5gDHCLt7g==}
+  '@midscene/web@0.30.7-lebo.1':
+    resolution: {integrity: sha512-HaxDo2oiVJE/qnjuKZkh2biHvnMguInS/OMz0cgBPEvaz3KHhqDxsKIupEkshC4/LQ1mPR2U9CpV70eX5trJKw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     peerDependencies:
@@ -1272,16 +1268,19 @@ packages:
   '@nut-tree/libnut-darwin@2.7.1':
     resolution: {integrity: sha512-yJKwAeWuORi+EN4tWkJj/9L5f/MO6FT7ida0CSeN8AT4KppCAsXdkLcQjirFTuWrCVvbkizVTSE3d/J7rVi0kw==}
     engines: {node: '>=10.15.3'}
+    cpu: [x64, arm64]
     os: [darwin, linux, win32]
 
   '@nut-tree/libnut-linux@2.7.1':
     resolution: {integrity: sha512-ZAGoKL1ugy/2fibseOGhyZkthCdBRuTqf2fgHZgum0DQQAZCCNis+mySiTj4p+Xqeowe5t0L0Pn279embjz4bw==}
     engines: {node: '>=10.15.3'}
+    cpu: [x64, arm64]
     os: [darwin, linux, win32]
 
   '@nut-tree/libnut-win32@2.7.1':
     resolution: {integrity: sha512-QmaQt1U7jXNjhqb10x6Ziijbhvqn2o50WgADZMM7mADVc5iDf3Xhd9yA1TmiGbgfqxkRPq9HpuInoYBz0U234g==}
     engines: {node: '>=10.15.3'}
+    cpu: [x64, arm64]
     os: [darwin, linux, win32]
 
   '@nut-tree/libnut@4.2.0':
@@ -1297,6 +1296,7 @@ packages:
   '@nut-tree/nut-js@4.2.0':
     resolution: {integrity: sha512-/xXsE7Z6+lOiltZgNWy6uPgiReSabgEYiTJFG2VqA9kRELtoiTyLM8ySds78zpPdTYYaL/Usi05+u54pIXnqQA==}
     engines: {node: '>=16'}
+    cpu: [x64, arm64]
     os: [linux, darwin, win32]
 
   '@nut-tree/provider-interfaces@4.2.0':
@@ -4015,6 +4015,7 @@ packages:
 
   libsql@0.5.22:
     resolution: {integrity: sha512-NscWthMQt7fpU8lqd7LXMvT9pi+KhhmTHAJWUB/Lj6MWa0MKFv0F2V4C6WKKpjCVZl0VwcDz4nOI3CyaT1DDiA==}
+    cpu: [x64, arm64, wasm32, arm]
     os: [darwin, linux, win32]
 
   lilconfig@3.1.3:
@@ -6806,14 +6807,14 @@ snapshots:
 
   '@jsdevtools/ono@7.1.3': {}
 
-  '@langchain/core@0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))':
+  '@langchain/core@0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.2.15(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
+      langsmith: 0.2.15(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -7001,46 +7002,19 @@ snapshots:
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
       zod-to-json-schema: 3.24.6(zod@3.25.76)
 
-  '@midscene/core@0.30.4(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
+  '@midscene/core@0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
     dependencies:
       '@anthropic-ai/sdk': 0.33.1
       '@azure/identity': 4.5.0
-      '@langchain/core': 0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
-      '@midscene/recorder': 0.30.4(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@midscene/shared': 0.30.4
+      '@langchain/core': 0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
+      '@midscene/recorder': 0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      '@midscene/shared': 0.30.7
       '@ui-tars/action-parser': 1.2.3
       dotenv: 16.6.1
       https-proxy-agent: 7.0.2
       js-yaml: 4.1.0
       jsonrepair: 3.12.0
-      langsmith: 0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
-      openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)
-      semver: 7.5.2
-      socks-proxy-agent: 8.0.4
-      zod: 3.24.3
-    transitivePeerDependencies:
-      - date-fns
-      - encoding
-      - luxon
-      - moment
-      - react
-      - react-dom
-      - supports-color
-      - ws
-
-  '@midscene/core@0.30.4-lebo.1(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
-    dependencies:
-      '@anthropic-ai/sdk': 0.33.1
-      '@azure/identity': 4.5.0
-      '@langchain/core': 0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
-      '@midscene/recorder': 0.30.4(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@midscene/shared': 0.30.4
-      '@ui-tars/action-parser': 1.2.3
-      dotenv: 16.6.1
-      https-proxy-agent: 7.0.2
-      js-yaml: 4.1.0
-      jsonrepair: 3.12.0
-      langsmith: 0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
+      langsmith: 0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
       openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3)
       semver: 7.5.2
       socks-proxy-agent: 8.0.4
@@ -7055,7 +7029,7 @@ snapshots:
       - supports-color
       - ws
 
-  '@midscene/mcp@0.30.4-lebo.1':
+  '@midscene/mcp@0.30.7':
     dependencies:
       '@silvia-odwyer/photon': 0.3.3
       '@silvia-odwyer/photon-node': 0.3.3
@@ -7063,10 +7037,10 @@ snapshots:
       sharp: 0.34.4
       utf-8-validate: 6.0.5
 
-  '@midscene/playground@0.30.4(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
+  '@midscene/playground@0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
     dependencies:
-      '@midscene/core': 0.30.4(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
-      '@midscene/shared': 0.30.4
+      '@midscene/core': 0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+      '@midscene/shared': 0.30.7
       cors: 2.8.5
       dotenv: 16.6.1
       express: 4.21.2
@@ -7082,10 +7056,10 @@ snapshots:
       - supports-color
       - ws
 
-  '@midscene/recorder@0.30.4(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
+  '@midscene/recorder@0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
     dependencies:
       '@ant-design/icons': 5.6.1(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@midscene/shared': 0.30.4
+      '@midscene/shared': 0.30.7
       antd: 5.28.0(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       dayjs: 1.11.19
       react: 19.1.1
@@ -7097,7 +7071,7 @@ snapshots:
       - moment
       - supports-color
 
-  '@midscene/shared@0.30.4':
+  '@midscene/shared@0.30.7':
     dependencies:
       '@silvia-odwyer/photon': 0.3.3
       '@silvia-odwyer/photon-node': 0.3.3
@@ -7110,11 +7084,11 @@ snapshots:
       - encoding
       - supports-color
 
-  '@midscene/web@0.30.4-lebo.1(bufferutil@4.0.9)(date-fns@4.1.0)(playwright@1.56.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(utf-8-validate@6.0.5)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
+  '@midscene/web@0.30.7-lebo.1(bufferutil@4.0.9)(date-fns@4.1.0)(playwright@1.56.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(utf-8-validate@6.0.5)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
     dependencies:
-      '@midscene/core': 0.30.4-lebo.1(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
-      '@midscene/playground': 0.30.4(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
-      '@midscene/shared': 0.30.4
+      '@midscene/core': 0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+      '@midscene/playground': 0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+      '@midscene/shared': 0.30.7
       cors: 2.8.5
       dayjs: 1.11.19
       dotenv: 16.6.1
@@ -10225,7 +10199,7 @@ snapshots:
       jwa: 2.0.1
       safe-buffer: 5.2.1
 
-  langsmith@0.2.15(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3)):
+  langsmith@0.2.15(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)):
     dependencies:
       '@types/uuid': 10.0.0
       commander: 10.0.1
@@ -10236,7 +10210,7 @@ snapshots:
     optionalDependencies:
       openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)
 
-  langsmith@0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3)):
+  langsmith@0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
@@ -10557,6 +10531,7 @@ snapshots:
       zod: 3.25.76
     transitivePeerDependencies:
       - encoding
+    optional: true
 
   openapi-types@12.1.3: {}
 

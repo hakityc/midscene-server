@@ -159,6 +159,150 @@ export function ConnectWindowForm({
   );
 }
 
+interface SummarizeFormProps {
+  fullPage: boolean;
+  locate?: {
+    rect: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    };
+  };
+  onFullPageChange: (fullPage: boolean) => void;
+  onLocateChange: (locate?: SummarizeFormProps['locate']) => void;
+}
+
+export function SummarizeForm({
+  fullPage,
+  locate,
+  onFullPageChange,
+  onLocateChange,
+}: SummarizeFormProps) {
+  return (
+    <div className="space-y-3">
+      <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">
+          ℹ️ 说明
+        </p>
+        <p className="text-xs text-blue-600 dark:text-blue-500">
+          将对当前浏览器中打开的网页进行总结，无需指定 URL
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="fullPage"
+          checked={fullPage}
+          onChange={(e) => onFullPageChange(e.target.checked)}
+          className="rounded"
+        />
+        <Label htmlFor="fullPage" className="text-sm font-semibold cursor-pointer">
+          全页截图
+        </Label>
+        <p className="text-xs text-muted-foreground">
+          (取消勾选则只截取当前视口)
+        </p>
+      </div>
+
+      <div>
+        <Label className="text-sm font-semibold">指定区域 (可选)</Label>
+        <p className="text-xs text-muted-foreground mb-2">
+          💡 如果指定了区域，AI 将重点总结该区域的内容
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-xs">Left (X)</Label>
+            <Input
+              type="number"
+              value={locate?.rect.left || ''}
+              onChange={(e) =>
+                onLocateChange({
+                  rect: {
+                    left: Number(e.target.value) || 0,
+                    top: locate?.rect.top || 0,
+                    width: locate?.rect.width || 0,
+                    height: locate?.rect.height || 0,
+                  },
+                })
+              }
+              placeholder="0"
+              className="text-xs"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Top (Y)</Label>
+            <Input
+              type="number"
+              value={locate?.rect.top || ''}
+              onChange={(e) =>
+                onLocateChange({
+                  rect: {
+                    left: locate?.rect.left || 0,
+                    top: Number(e.target.value) || 0,
+                    width: locate?.rect.width || 0,
+                    height: locate?.rect.height || 0,
+                  },
+                })
+              }
+              placeholder="0"
+              className="text-xs"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Width</Label>
+            <Input
+              type="number"
+              value={locate?.rect.width || ''}
+              onChange={(e) =>
+                onLocateChange({
+                  rect: {
+                    left: locate?.rect.left || 0,
+                    top: locate?.rect.top || 0,
+                    width: Number(e.target.value) || 0,
+                    height: locate?.rect.height || 0,
+                  },
+                })
+              }
+              placeholder="0"
+              className="text-xs"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Height</Label>
+            <Input
+              type="number"
+              value={locate?.rect.height || ''}
+              onChange={(e) =>
+                onLocateChange({
+                  rect: {
+                    left: locate?.rect.left || 0,
+                    top: locate?.rect.top || 0,
+                    width: locate?.rect.width || 0,
+                    height: Number(e.target.value) || 0,
+                  },
+                })
+              }
+              placeholder="0"
+              className="text-xs"
+            />
+          </div>
+        </div>
+        {locate && (
+          <button
+            type="button"
+            onClick={() => onLocateChange(undefined)}
+            className="mt-2 text-xs text-red-500 hover:text-red-700"
+          >
+            清除区域设置
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface GenericFormProps {
   actionType: string;
 }
