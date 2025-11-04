@@ -9,6 +9,7 @@ import {
   createCommandHandler as createWebCommandHandler,
   executeScriptHandler as executeWebScriptHandler,
   handleSiteScriptHandler,
+  createSummarizeHandler,
 } from '../actions/web';
 
 // Windows 端 Actions
@@ -35,6 +36,7 @@ export function createWebMessageHandlers(): Partial<
     [WebSocketAction.DOWNLOAD_VIDEO_CALLBACK]: async () => {},
     [WebSocketAction.SITE_SCRIPT]: handleSiteScriptHandler(),
     [WebSocketAction.COMMAND]: createWebCommandHandler(),
+    [WebSocketAction.SUMMARIZE]: createSummarizeHandler(),
   };
 }
 

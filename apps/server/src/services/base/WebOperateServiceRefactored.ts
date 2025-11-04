@@ -787,4 +787,59 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       throw new AppError(`JavaScript 执行失败`, 500);
     }
   }
+
+  /**
+   * 截图
+   */
+  async screenshot(params?: { fullPage?: boolean; locate?: any }): Promise<{
+    imageBase64: string;
+    locateRect?: { left: number; top: number; width: number; height: number };
+  }> {
+    if (!this.isStarted()) {
+      serviceLogger.info(
+        this.withState(),
+        '服务未启动，自动启动 WebOperateService...',
+      );
+      await this.start();
+    }
+
+    await this.ensureCurrentTabConnection();
+
+    if (!this.agent) {
+      throw new AppError('服务启动失败，无法执行截图', 503);
+    }
+
+    try {
+      serviceLogger.info(this.withState({ params }), '开始截图');
+      const result = await this.agent.screenshot(params);
+
+      // 检查返回结果是否有效
+      if (!result) {
+        throw new Error('截图返回结果为空');
+      }
+
+      if (!result.imageBase64) {
+        throw new Error('截图返回结果中缺少 imageBase64 字段');
+      }
+
+      serviceLogger.info(
+        this.withState({
+          imageSize: result.imageBase64.length,
+          hasLocateRect: !!result.locateRect,
+        }),
+        '截图完成',
+      );
+      return result;
+    } catch (error: any) {
+      serviceLogger.error(
+        this.withState({
+          error: error.message,
+          stack: error.stack,
+          params,
+        }),
+        '截图失败',
+      );
+      throw new AppError(`截图失败: ${error.message}`, 500);
+    }
+  }
 }
