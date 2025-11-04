@@ -7,7 +7,6 @@ import { exportRouter } from './modules/export';
 import { operateRouter } from './modules/operate';
 import { promptOptimizeRouter } from './modules/prompt-optimize';
 import { reportRouter } from './modules/report';
-import { summarizeRouter } from './modules/summarizeWithMidscene';
 
 const initAppRoute = (c: Context) => {
   return c.json({
@@ -38,7 +37,6 @@ export const setupRouter = (app: Hono) => {
 
   app.route('/api/report', reportRouter);
   app.route('/api/export', exportRouter);
-  app.route('/api/summarize-with-midscene', summarizeRouter);
 
   // 设置健康检查路由
   setupHealthRoutes(app);
