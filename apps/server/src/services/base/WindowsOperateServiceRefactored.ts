@@ -87,8 +87,8 @@ export class WindowsOperateServiceRefactored extends BaseOperateService<AgentOve
         // 创建 Agent，动态传入 onTaskStartTip 回调
         this.agent = new AgentOverWindows({
           ...this.defaultAgentConfig,
-          onTaskStartTip: (tip: string) => {
-            this.handleTaskStartTip(tip);
+          onTaskStartTip: (tip: string, stepIndex?: number) => {
+            this.handleTaskStartTip(tip, undefined, stepIndex);
           },
         });
 

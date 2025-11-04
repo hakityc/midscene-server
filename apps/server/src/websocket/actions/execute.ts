@@ -72,7 +72,6 @@ export function createAiHandler(): MessageHandler {
     } catch (error) {
       // 清理回调，避免内存泄漏
       try {
-        const webOperateService = WebOperateService.getInstance();
         webOperateService.offTaskTip(taskTipCallback);
       } catch (cleanupError) {
         // 忽略清理错误

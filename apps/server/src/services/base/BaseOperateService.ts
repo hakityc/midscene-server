@@ -27,7 +27,11 @@ export type AgentType = AgentOverChromeBridge | AgentOverWindows;
 /**
  * 任务提示回调类型
  */
-export type TaskTipCallback = (tip: string, bridgeError?: Error | null) => void;
+export type TaskTipCallback = (
+  tip: string,
+  bridgeError?: Error | null,
+  stepIndex?: number,
+) => void;
 
 /**
  * 任务错误记录
@@ -310,10 +314,11 @@ export abstract class BaseOperateService<
   protected triggerTaskTipCallbacks(
     tip: string,
     bridgeError?: Error | null,
+    stepIndex?: number,
   ): void {
     this.taskTipCallbacks.forEach((callback) => {
       try {
-        callback(tip, bridgeError);
+        callback(tip, bridgeError, stepIndex);
       } catch (error) {
         serviceLogger.error({ error }, '任务提示回调执行失败');
       }
@@ -323,7 +328,11 @@ export abstract class BaseOperateService<
   /**
    * 处理任务开始提示的统一方法
    */
-  protected handleTaskStartTip(tip: string, bridgeError?: Error | null): void {
+  protected handleTaskStartTip(
+    tip: string,
+    bridgeError?: Error | null,
+    stepIndex?: number,
+  ): void {
     try {
       const { formatted, category, icon, content, hint } = formatTaskTip(tip);
       const stageDescription = getTaskStageDescription(category);
@@ -354,6 +363,7 @@ export abstract class BaseOperateService<
           content,
           hint,
           stage: stageDescription,
+          stepIndex,
           bridgeError: bridgeError
             ? {
                 message: bridgeError.message,
@@ -370,7 +380,7 @@ export abstract class BaseOperateService<
       this.emit('taskStartTip', tip, bridgeError);
 
       // 触发注册的回调
-      this.triggerTaskTipCallbacks(tip, bridgeError);
+      this.triggerTaskTipCallbacks(tip, bridgeError, stepIndex);
     } catch (error: any) {
       console.error('❌ handleTaskStartTip 执行失败:', error);
       serviceLogger.error(
@@ -386,6 +396,7 @@ export abstract class BaseOperateService<
         this.triggerTaskTipCallbacks(
           tip || '未知任务',
           error instanceof Error ? error : new Error(String(error)),
+          stepIndex,
         );
       } catch (notifyError) {
         console.error('❌ 无法通知客户端错误:', notifyError);
@@ -411,7 +422,7 @@ export abstract class BaseOperateService<
       WebSocketAction,
     } = config;
 
-    return (tip: string, bridgeError?: Error | null) => {
+    return (tip: string, bridgeError?: Error | null, stepIndex?: number) => {
       try {
         const { formatted, category, icon, content, hint } = formatTaskTip(tip);
         const timestamp = new Date().toLocaleTimeString('zh-CN', {
@@ -456,6 +467,7 @@ export abstract class BaseOperateService<
             icon,
             content,
             hint,
+            stepIndex,
             bridgeError: bridgeError
               ? {
                   message: bridgeError.message,

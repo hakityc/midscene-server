@@ -237,7 +237,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         }
 
         try {
-          this.handleTaskStartTip(finalTip, bridgeError);
+          this.handleTaskStartTip(finalTip, bridgeError, stepIndex);
         } catch (handlerError: any) {
           serviceLogger.error(
             {
@@ -264,6 +264,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
           this.triggerTaskTipCallbacks(
             finalTip || '未知任务',
             error instanceof Error ? error : new Error(String(error)),
+            undefined,
           );
         } catch (notifyError) {
           serviceLogger.error({ notifyError }, '无法通知客户端错误');

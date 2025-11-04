@@ -106,19 +106,22 @@ describe('BaseOperateService', () => {
     it('应该能够注册和触发任务提示回调', async () => {
       let callbackCalled = false;
       let receivedTip = '';
+      let receivedStepIndex: number | undefined;
 
-      const callback: TaskTipCallback = (tip) => {
+      const callback: TaskTipCallback = (tip, _bridgeError, stepIndex) => {
         callbackCalled = true;
         receivedTip = tip;
+        receivedStepIndex = stepIndex;
       };
 
       service.onTaskTip(callback);
 
       // 触发回调
-      (service as any).triggerTaskTipCallbacks('test tip');
+      (service as any).triggerTaskTipCallbacks('test tip', undefined, 5);
 
       expect(callbackCalled).toBe(true);
       expect(receivedTip).toBe('test tip');
+      expect(receivedStepIndex).toBe(5);
     });
 
     it('应该能够移除任务提示回调', async () => {
