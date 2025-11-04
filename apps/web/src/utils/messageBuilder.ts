@@ -246,7 +246,14 @@ export function flowActionToApiFormat(
   }
 
   // 检查结果是否为空对象，如果是则返回 null
-  return isEmptyObject(result) ? null : result;
+  if (isEmptyObject(result)) return null;
+
+  // 追加可选的自定义步骤名称（统一放在 flowItem 顶层）
+  if (action.leboStepName) {
+    result.leboStepName = action.leboStepName;
+  }
+
+  return result;
 }
 
 /**

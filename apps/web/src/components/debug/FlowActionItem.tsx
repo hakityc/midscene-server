@@ -411,6 +411,17 @@ export function FlowActionItem({
         </Button>
       </div>
       <div className="space-y-2">{renderFields()}</div>
+      {/* 自定义步骤名称（可选） */}
+      <div className="mt-3">
+        <Label className="text-xs font-bold">自定义步骤名称（可选）</Label>
+        <VariableInput
+          value={(action as any).leboStepName || ''}
+          onChange={(val) => updateField('leboStepName', val === '' ? undefined : val)}
+          placeholder="例如：步骤1：打开登录页"
+          className="mt-1"
+        />
+        <p className="text-xs text-gray-500 mt-1">填写后将优先用于显示步骤提示（服务端基于 stepIndex 覆盖）。</p>
+      </div>
     </div>
   );
 }

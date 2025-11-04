@@ -106,6 +106,7 @@ cat apps/server/node_modules/@midscene/mcp/package.json | grep '"version"'
 ### 3. midscene 项目中的版本配置
 
 在 midscene 项目中，需要确保：
+
 - `packages/core/package.json`: `"version": "0.30.4-lebo.1"`
 - `packages/mcp/package.json`: `"version": "0.30.4-lebo.1"`
 - `packages/web-integration/package.json`: `"version": "0.30.4-lebo.1"`
@@ -130,6 +131,7 @@ cat apps/server/node_modules/@midscene/mcp/package.json | grep '"version"'
 ## 故障排除
 
 如果遇到依赖版本不匹配的错误：
+
 1. 彻底清理 node_modules 和 pnpm-lock.yaml
 2. 确认所有 tarball 文件都在 local-packages 目录中
 3. 验证 tarball 内的 package.json 依赖版本正确
@@ -138,6 +140,7 @@ cat apps/server/node_modules/@midscene/mcp/package.json | grep '"version"'
 ## 发布到生产环境
 
 当前配置下，生产构建会正常处理依赖：
+
 - tsup 构建时会将源代码复制到 `dist/server`
 - 部署脚本会生成正确的 `package.json`，包含所有依赖版本
 - 部署时运行 `npm install` 会使用远程依赖或保持本地文件引用

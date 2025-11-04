@@ -1,4 +1,4 @@
-import { WebOperateService } from '../../services/webOperateService';
+import { WebOperateServiceRefactored } from '../../services/base/WebOperateServiceRefactored';
 import type { MessageHandler } from '../../types/websocket';
 import { wsLogger } from '../../utils/logger';
 import {
@@ -17,7 +17,7 @@ export const createCommandHandler = (): MessageHandler => {
     try {
       const { meta, payload } = message;
       const command = payload.params as Command;
-      const webOperateService = WebOperateService.getInstance();
+      const webOperateService = WebOperateServiceRefactored.getInstance();
       wsLogger.info(
         {
           ...meta,

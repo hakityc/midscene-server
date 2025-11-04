@@ -63,6 +63,8 @@ export interface BaseFlowAction {
   id?: string; // 用于拖拽排序的唯一标识
   type: FlowActionType;
   enabled?: boolean; // 是否启用，默认为 true
+  // 自定义步骤名称（用于服务端自定义 tip），可选
+  leboStepName?: string;
 }
 
 // aiTap 动作

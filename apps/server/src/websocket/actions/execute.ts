@@ -1,11 +1,7 @@
-import { WebOperateService } from '../../services/webOperateService';
+import { WebOperateServiceRefactored } from '../../services/base/WebOperateServiceRefactored';
 import type { MessageHandler, WebSocketMessage } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
 import { wsLogger } from '../../utils/logger';
-import {
-  formatTaskTip,
-  getTaskStageDescription,
-} from '../../utils/taskTipFormatter';
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -18,7 +14,7 @@ export function createAiHandler(): MessageHandler {
     const { meta, payload } = message;
     wsLogger.info(message, '处理 AI 请求');
 
-    const webOperateService = WebOperateService.getInstance();
+    const webOperateService = WebOperateServiceRefactored.getInstance();
 
     // 使用封装好的方法创建任务提示回调
     const taskTipCallback = webOperateService.createTaskTipCallback({
@@ -28,8 +24,6 @@ export function createAiHandler(): MessageHandler {
       wsLogger,
       createSuccessResponseWithMeta: createSuccessResponseWithMeta as any,
       createErrorResponse: createErrorResponse as any,
-      formatTaskTip,
-      getTaskStageDescription,
       WebSocketAction,
     });
 

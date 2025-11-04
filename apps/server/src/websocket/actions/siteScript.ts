@@ -1,4 +1,4 @@
-import { WebOperateService } from '../../services/webOperateService';
+import { WebOperateServiceRefactored } from '../../services/base/WebOperateServiceRefactored';
 import type { MessageHandler } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
 import { wsLogger } from '../../utils/logger';
@@ -13,7 +13,7 @@ export function handleSiteScriptHandler(): MessageHandler {
     const { payload } = message;
     try {
       wsLogger.info(message, '处理站点脚本请求');
-      const webOperateService = WebOperateService.getInstance();
+      const webOperateService = WebOperateServiceRefactored.getInstance();
       const data = await webOperateService.evaluateJavaScript(
         payload.params,
         payload.originalCmd,

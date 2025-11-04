@@ -47,6 +47,8 @@ export function createAiHandlerFactory(
         messageId: meta.messageId,
         action: 'ai_request',
         service: serviceName,
+        params: payload?.params,
+        option: payload?.option,
       },
       `处理 ${serviceName} AI 请求`,
     );
@@ -183,6 +185,8 @@ export function createScriptHandlerFactory(
         messageId: meta.messageId,
         action: 'script_execution',
         service: serviceName,
+        script: payload?.params,
+        originalCmd: payload?.originalCmd,
       },
       `处理 ${serviceName} 脚本执行请求`,
     );
@@ -269,6 +273,9 @@ export function createCommandHandlerFactory(
         messageId: meta.messageId,
         action: payload.action,
         service: serviceName,
+        command: payload?.action || payload?.params,
+        params: payload?.params,
+        option: payload?.option,
       },
       `处理 ${serviceName} 命令请求`,
     );

@@ -3,10 +3,12 @@
 ## 问题分析
 
 ### 当前状态
+
 - midscene-server 现在使用**本地 tarball 文件**（`file:local-packages/xxx.tgz`）
 - 原因是之前尝试发布到私有源时遇到认证/配置问题，临时改用了本地文件方案
 
 ### 目标方案
+
 - 使用**私有 npm registry**（Nexus）
 - midscene 项目发布包到私有源
 - midscene-server 从私有源自动获取最新包
@@ -110,6 +112,7 @@ always-auth=true
 1. **在 midscene 项目中修改代码**
 
 2. **构建并发布**：
+
 ```bash
 cd /Users/lebo/lebo/project/midscene
 
@@ -126,6 +129,7 @@ pnpm --filter @midscene/web publish --no-git-checks
 ```
 
 3. **在 midscene-server 中更新**：
+
 ```bash
 cd /Users/lebo/lebo/project/midscene-server
 
@@ -139,7 +143,9 @@ pnpm install
 ## 常见问题
 
 ### Q: `pnpm run build` 会自动更新 midscene-server 吗？
+
 **A: 不会。** `pnpm run build` 只构建代码，不会：
+
 - 自动打包 tarball
 - 自动发布到私有源
 - 自动更新 midscene-server 的依赖
@@ -147,18 +153,23 @@ pnpm install
 需要手动执行发布流程。
 
 ### Q: 为什么现在用本地包？
+
 **A:** 之前尝试发布到私有源时遇到了认证/配置问题（400 Bad Request），临时使用了本地 tarball 方案。现在应该：
+
 1. 确认正确的 Nexus repository 配置
 2. 完成发布流程
 3. 切换 midscene-server 到私有源方案
 
 ### Q: 如何确认 Nexus repository 名称？
+
 需要联系 Nexus 管理员确认：
+
 - 用于发布的 hosted repository 名称
 - 是否有写权限
 - 认证方式是否正确
 
 ### Q: 本地包方案 vs 私有源方案？
+
 - **本地包方案**：需要手动同步，适合临时开发
 - **私有源方案**：自动同步，适合生产环境，需要正确的 Nexus 配置
 

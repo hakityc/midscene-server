@@ -1,4 +1,4 @@
-import { WebOperateService } from '../../services/webOperateService';
+import { WebOperateServiceRefactored } from '../../services/base/WebOperateServiceRefactored';
 import type { MessageHandler } from '../../types/websocket';
 import { wsLogger } from '../../utils/logger';
 import {
@@ -19,7 +19,7 @@ export function createConnectTabHandler(): MessageHandler {
     );
 
     try {
-      const webOperateService = WebOperateService.getInstance();
+      const webOperateService = WebOperateServiceRefactored.getInstance();
       const result = await webOperateService.connectLastTab();
       console.log(result, '标签页连接成功');
 

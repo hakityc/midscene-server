@@ -108,6 +108,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           xpath: action.xpath,
           deepThink: action.deepThink,
           cacheable: action.cacheable,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -119,6 +120,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           xpath: action.xpath,
           deepThink: action.deepThink,
           cacheable: action.cacheable,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -128,6 +130,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           assertion: action.aiAssert,
           errorMessage: action.errorMessage,
           name: action.name,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -138,6 +141,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           xpath: action.xpath,
           deepThink: action.deepThink,
           cacheable: action.cacheable,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -151,6 +155,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           xpath: action.aiScroll.xpath,
           deepThink: action.aiScroll.deepThink,
           cacheable: action.cacheable,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -159,6 +164,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           type: 'aiWaitFor' as const,
           assertion: action.aiWaitFor,
           timeoutMs: action.timeout || action.timeoutMs,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -170,6 +176,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           xpath: action.xpath,
           deepThink: action.deepThink,
           cacheable: action.cacheable,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -180,6 +187,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           xpath: action.xpath,
           deepThink: action.deepThink,
           cacheable: action.cacheable,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -190,6 +198,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           xpath: action.xpath,
           deepThink: action.deepThink,
           cacheable: action.cacheable,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -199,6 +208,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           type: 'aiQuery' as const,
           demand: action.aiQuery,
           name: action.name,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -206,6 +216,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
         return {
           type: 'aiString' as const,
           prompt: action.aiString,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -213,6 +224,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
         return {
           type: 'aiNumber' as const,
           prompt: action.aiNumber,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -220,6 +232,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
         return {
           type: 'aiBoolean' as const,
           prompt: action.aiBoolean,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -229,6 +242,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           type: 'aiAction' as const,
           prompt: action.aiAction,
           cacheable: action.cacheable,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -236,6 +250,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
         return {
           type: 'aiLocate' as const,
           prompt: action.aiLocate,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -244,6 +259,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
         return {
           type: 'sleep' as const,
           duration: action.sleep,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -251,6 +267,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
         return {
           type: 'screenshot' as const,
           name: action.screenshot,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -258,6 +275,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
         return {
           type: 'logText' as const,
           text: action.logText,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -266,6 +284,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           type: 'logScreenshot' as const,
           title: action.logScreenshot,
           content: action.content,
+          leboStepName: action.leboStepName,
         };
       }
 
@@ -275,6 +294,7 @@ export function parseFlow(flow: any[]): FlowAction[] {
           type: 'javascript' as const,
           code: action.javascript,
           name: action.name,
+          leboStepName: action.leboStepName,
         };
       }
 

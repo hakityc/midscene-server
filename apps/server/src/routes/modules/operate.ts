@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { WebOperateService } from '../../services/webOperateService';
+import { WebOperateServiceRefactored } from '../../services/base/WebOperateServiceRefactored';
 import { AppError } from '../../utils/error';
 import { errorResponse } from '../../utils/response';
 
@@ -12,7 +12,7 @@ const operateRouter = new Hono().post('/', async (c) => {
       return errorResponse(c, 'Prompt is required', 400);
     }
 
-    const webOperateService = WebOperateService.getInstance();
+    const webOperateService = WebOperateServiceRefactored.getInstance();
     await webOperateService.connectLastTab();
     await webOperateService.execute(prompt);
 
