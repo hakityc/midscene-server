@@ -40,12 +40,6 @@ export const CLIENT_TYPE_ACTIONS: Record<ClientType, ActionConfig[]> = {
       category: 'advanced',
     },
     {
-      action: WebSocketAction.DOWNLOAD_VIDEO,
-      name: 'Download Video',
-      description: '下载视频资源',
-      category: 'advanced',
-    },
-    {
       action: WebSocketAction.SITE_SCRIPT,
       name: 'Site Script',
       description: '在网页中执行 JavaScript',
@@ -56,6 +50,12 @@ export const CLIENT_TYPE_ACTIONS: Record<ClientType, ActionConfig[]> = {
       name: 'Service Command',
       description: '控制服务生命周期（启动/停止）',
       category: 'system',
+    },
+    {
+      action: WebSocketAction.SUMMARIZE,
+      name: 'Summarize',
+      description: '使用 AI 总结网页内容（支持全页截图、元素区域截图）',
+      category: 'advanced',
     },
   ],
   windows: [
