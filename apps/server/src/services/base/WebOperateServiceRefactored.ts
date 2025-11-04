@@ -3,6 +3,11 @@ import { AgentOverChromeBridge } from '@midscene/web/bridge-mode';
 import { setBrowserConnected } from '../../routes/health';
 import { AppError } from '../../utils/error';
 import { serviceLogger } from '../../utils/logger';
+import {
+  bufferToBase64DataUri,
+  type ScreenshotSegment,
+  stitchSegments,
+} from '../image/stitchBySharp';
 import { BaseOperateService, OperateServiceState } from './BaseOperateService';
 
 /**
@@ -831,15 +836,157 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       );
       return result;
     } catch (error: any) {
+      const errorMessage =
+        error?.message ||
+        error?.toString() ||
+        String(error) ||
+        'Unknown screenshot error';
+
+      // 检查是否是滚动截屏返回的段图数据
+      // Bridge client 会将错误包装成 "Error from bridge client when calling, method: ..., error: SCROLL_CAPTURE_SEGMENTS:{JSON}\n{STACK_TRACE}"
+      // 需要提取完整的 JSON 部分，移除后面的 stack trace
+      let segmentsDataStr: string | null = null;
+
+      if (errorMessage.includes('SCROLL_CAPTURE_SEGMENTS:')) {
+        // 提取 SCROLL_CAPTURE_SEGMENTS: 之后的所有内容
+        const match = errorMessage.match(/SCROLL_CAPTURE_SEGMENTS:([\s\S]*)/);
+        if (match?.[1]) {
+          const extracted = match[1].trim();
+
+          // 找到 JSON 的结束位置（最后一个匹配的 `}`）
+          // 因为 JSON 可能包含嵌套对象，需要找到最外层的 `}`
+          let braceCount = 0;
+          let jsonEndIndex = -1;
+          const jsonStartIndex = extracted.indexOf('{');
+
+          if (jsonStartIndex >= 0) {
+            for (let i = jsonStartIndex; i < extracted.length; i++) {
+              if (extracted[i] === '{') {
+                braceCount++;
+              } else if (extracted[i] === '}') {
+                braceCount--;
+                if (braceCount === 0) {
+                  jsonEndIndex = i;
+                  break;
+                }
+              }
+            }
+
+            if (jsonEndIndex > 0) {
+              segmentsDataStr = extracted.substring(
+                jsonStartIndex,
+                jsonEndIndex + 1,
+              );
+            } else {
+              // 如果找不到匹配的 `}`，尝试找到第一个换行符
+              const newlineIndex = extracted.indexOf('\n');
+              if (newlineIndex > jsonStartIndex) {
+                segmentsDataStr = extracted
+                  .substring(jsonStartIndex, newlineIndex)
+                  .trim();
+              } else {
+                segmentsDataStr = extracted.substring(jsonStartIndex);
+              }
+            }
+          } else {
+            // 如果没有找到 `{`，尝试 fallback
+            const newlineIndex = extracted.indexOf('\n');
+            if (newlineIndex > 0) {
+              segmentsDataStr = extracted.substring(0, newlineIndex).trim();
+            } else {
+              segmentsDataStr = extracted;
+            }
+          }
+        } else {
+          // Fallback: 直接替换前缀
+          const fallbackStr = errorMessage
+            .replace(/^.*SCROLL_CAPTURE_SEGMENTS:/, '')
+            .trim();
+          // 移除 stack trace
+          const newlineIndex = fallbackStr.indexOf('\n');
+          if (newlineIndex > 0) {
+            segmentsDataStr = fallbackStr.substring(0, newlineIndex).trim();
+          } else {
+            segmentsDataStr = fallbackStr;
+          }
+        }
+      }
+
+      if (segmentsDataStr) {
+        let segmentsData: { segments: ScreenshotSegment[] };
+
+        try {
+          segmentsData = JSON.parse(segmentsDataStr);
+        } catch (parseError) {
+          serviceLogger.error(
+            this.withState({
+              parseError: String(parseError),
+              segmentsDataStr: segmentsDataStr.substring(0, 200),
+              fullErrorMessage: errorMessage.substring(0, 500),
+            }),
+            '解析段图数据失败',
+          );
+          throw new AppError(`解析段图数据失败: ${parseError}`, 500);
+        }
+
+        serviceLogger.info(
+          this.withState({ segmentCount: segmentsData.segments.length }),
+          '检测到滚动截屏段图数据，开始拼接',
+        );
+
+        try {
+          // 使用 sharp 拼接
+          const stitched = await stitchSegments(segmentsData.segments, {
+            stickyOverlapThreshold: 120, // 粘性头重叠阈值
+            format: 'jpeg',
+            quality: 90,
+          });
+
+          const imageBase64 = bufferToBase64DataUri(
+            stitched.imageBuffer,
+            'jpeg',
+          );
+
+          serviceLogger.info(
+            this.withState({
+              imageSize: imageBase64.length,
+              finalDimensions: `${stitched.width}x${stitched.height}`,
+              segmentCount: stitched.segmentCount,
+            }),
+            '滚动截屏拼接完成',
+          );
+
+          return {
+            imageBase64,
+            locateRect: undefined, // 全页截图没有 locateRect
+          };
+        } catch (stitchError: any) {
+          serviceLogger.error(
+            this.withState({
+              stitchError: stitchError?.message || String(stitchError),
+            }),
+            '拼接段图失败',
+          );
+          throw new AppError(
+            `拼接段图失败: ${stitchError?.message || String(stitchError)}`,
+            500,
+          );
+        }
+      }
+
+      // 其他错误正常处理
       serviceLogger.error(
         this.withState({
-          error: error.message,
-          stack: error.stack,
+          error: errorMessage,
+          errorName: error?.name,
+          stack: error?.stack,
+          errorType: typeof error,
+          errorStringified: JSON.stringify(error),
           params,
         }),
         '截图失败',
       );
-      throw new AppError(`截图失败: ${error.message}`, 500);
+      throw new AppError(`截图失败: ${errorMessage}`, 500);
     }
   }
 }

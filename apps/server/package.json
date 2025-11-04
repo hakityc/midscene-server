@@ -52,7 +52,7 @@
     "@mastra/memory": "0.14.2",
     "@midscene/core": "0.30.7",
     "@midscene/mcp": "0.30.7",
-    "@midscene/web": "0.30.7-lebo.1",
+    "@midscene/web": "0.30.7-lebo.5",
     "@nut-tree/nut-js": "^4.2.0",
     "cos-nodejs-sdk-v5": "^2.14.4",
     "dotenv": "^17.2.1",
