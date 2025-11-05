@@ -1,6 +1,6 @@
 /**
  * 使用 sharp 进行图片拼接
- * 
+ *
  * 接收浏览器端传来的段图数组，使用 sharp 进行纵向拼接
  */
 
@@ -81,10 +81,38 @@ export async function stitchSegments(
     );
   }
 
-  // 2. 计算输出尺寸
+  // 2. 检测 scrollY 是否异常（所有段图的 scrollY 相同或非常接近）
+  // 如果所有 scrollY 的差值小于 10 像素，说明可能有问题，需要按顺序排列
+  const scrollYs = parsedSegments.map((s) => s.logicalY);
+  const minScrollY = Math.min(...scrollYs);
+  const maxScrollY = Math.max(...scrollYs);
+  const scrollYRange = maxScrollY - minScrollY;
+  const averageSegmentHeight =
+    parsedSegments.reduce((sum, s) => sum + s.actualHeight, 0) /
+    parsedSegments.length;
+  // 如果 scrollY 范围小于平均段图高度的 10%，很可能所有段图都在同一位置
+  const shouldUseSequentialLayout = scrollYRange < averageSegmentHeight * 0.1;
+
+  if (shouldUseSequentialLayout) {
+    console.warn(
+      `[Stitch] 检测到所有段图的 scrollY 非常接近（范围: ${scrollYRange.toFixed(1)}px），将按顺序垂直排列`,
+    );
+    // 按顺序垂直排列：每个段图紧接在前一个段图下方
+    let cumulativeY = 0;
+    for (let i = 0; i < parsedSegments.length; i++) {
+      const oldLogicalY = parsedSegments[i].logicalY;
+      parsedSegments[i].logicalY = cumulativeY / parsedSegments[i].dpr; // 转换为逻辑坐标
+      console.log(
+        `[Stitch] Segment ${i + 1}: 调整 logicalY 从 ${oldLogicalY.toFixed(1)} 到 ${parsedSegments[i].logicalY.toFixed(1)}, 物理位置 top=${cumulativeY}`,
+      );
+      cumulativeY += parsedSegments[i].actualHeight;
+    }
+  }
+
+  // 3. 计算输出尺寸
   // 宽度：使用第一个段图的宽度（所有段图应该相同）
   const outputWidth = parsedSegments[0].actualWidth;
-  
+
   // 高度：根据段图的逻辑位置和物理高度计算
   // 找到最大的 bottom 位置
   let maxBottom = 0;
@@ -99,7 +127,7 @@ export async function stitchSegments(
 
   console.log(`[Stitch] Output dimensions: ${outputWidth}x${outputHeight}`);
 
-  // 3. 检查是否需要分卷
+  // 4. 检查是否需要分卷
   if (outputHeight > maxOutputHeight) {
     console.warn(
       `[Stitch] Output height ${outputHeight} exceeds max ${maxOutputHeight}, will create multiple volumes`,
@@ -108,7 +136,7 @@ export async function stitchSegments(
     // 暂时返回第一卷
   }
 
-  // 4. 创建画布并拼接
+  // 5. 创建画布并拼接
   const canvas = sharp({
     create: {
       width: outputWidth,
@@ -118,7 +146,7 @@ export async function stitchSegments(
     },
   });
 
-  // 5. 准备 composite 操作
+  // 6. 准备 composite 操作
   const composites: Array<{
     input: Buffer;
     top: number;
@@ -127,7 +155,7 @@ export async function stitchSegments(
 
   for (let i = 0; i < parsedSegments.length; i++) {
     const segment = parsedSegments[i];
-    
+
     // 计算在输出画布中的位置
     // 物理像素位置 = 逻辑位置 * DPR
     const top = Math.round(segment.logicalY * segment.dpr);
@@ -139,7 +167,7 @@ export async function stitchSegments(
       const prevBottom = Math.round(
         prevSegment.logicalY * prevSegment.dpr + prevSegment.actualHeight,
       );
-      
+
       if (top < prevBottom && top + segment.actualHeight > prevBottom) {
         // 有重叠，调整位置或裁剪
         const overlap = prevBottom - top;
@@ -159,7 +187,7 @@ export async function stitchSegments(
     });
   }
 
-  // 6. 执行拼接
+  // 7. 执行拼接
   const result = await canvas
     .composite(composites)
     .toFormat(format, { quality })
@@ -188,4 +216,3 @@ export function bufferToBase64DataUri(
   const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
   return `data:${mimeType};base64,${base64}`;
 }
-

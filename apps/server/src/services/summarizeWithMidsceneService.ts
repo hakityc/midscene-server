@@ -58,11 +58,11 @@ export async function summarizeWebPageWithMidscene(
     );
 
     // 如果请求全页截图但尺寸很小，可能是回退到了视口截图
-    if (fullPage && imageInfo.height && imageInfo.height < 2000) {
-      console.warn(
-        `⚠️  请求了全页截图但实际尺寸只有 ${imageInfo.width}x${imageInfo.height}，可能是浏览器端全页截图失败，已回退到视口截图`,
-      );
-    }
+    // if (fullPage && imageInfo.height && imageInfo.height < 2000) {
+    //   console.warn(
+    //     `⚠️  请求了全页截图但实际尺寸只有 ${imageInfo.width}x${imageInfo.height}，可能是浏览器端全页截图失败，已回退到视口截图`,
+    //   );
+    // }
 
     // 保存截图到本地用于调试预览
     try {
