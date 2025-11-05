@@ -818,6 +818,17 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       throw new AppError('服务启动失败，无法执行截图', 503);
     }
 
+    // 截图前确保波纹动画被禁用（避免截图过程中的视觉干扰）
+    try {
+      await this.setRippleEnabled(false);
+    } catch (error) {
+      // 如果设置失败，记录警告但不中断截图流程
+      serviceLogger.warn(
+        this.withState({ error }),
+        '禁用波纹动画失败，继续执行截图',
+      );
+    }
+
     try {
       serviceLogger.info(this.withState({ params }), '开始截图');
       const result = await this.agent.screenshot(params);
@@ -951,6 +962,43 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         '截图失败',
       );
       throw new AppError(`截图失败: ${errorMessage}`, 500);
+    }
+  }
+
+  /**
+   * 设置波纹动画（water-flow）的启用状态
+   * @param enabled 是否启用波纹动画
+   */
+  async setRippleEnabled(enabled: boolean): Promise<void> {
+    if (!this.agent) {
+      throw new AppError('Agent 未初始化，无法设置波纹动画状态', 500);
+    }
+
+    // 兼容性检查：如果方法不存在（旧版本包），静默跳过
+    const agent = this.agent as any;
+    if (typeof agent.setRippleEnabled !== 'function') {
+      serviceLogger.warn(
+        this.withState({ enabled }),
+        'Agent.setRippleEnabled 方法不存在（可能是旧版本包），跳过波纹动画设置',
+      );
+      return;
+    }
+
+    try {
+      await agent.setRippleEnabled(enabled);
+      serviceLogger.info(
+        this.withState({ enabled }),
+        `波纹动画已${enabled ? '启用' : '禁用'}`,
+      );
+    } catch (error: any) {
+      serviceLogger.error(
+        this.withState({ error: error?.message || String(error), enabled }),
+        '设置波纹动画状态失败',
+      );
+      throw new AppError(
+        `设置波纹动画状态失败: ${error?.message || String(error)}`,
+        500,
+      );
     }
   }
 }

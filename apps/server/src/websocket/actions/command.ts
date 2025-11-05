@@ -10,6 +10,8 @@ enum Command {
   START = 'start',
   STOP = 'stop',
   RESTART = 'restart',
+  ENABLE_RIPPLE = 'enableRipple',
+  DISABLE_RIPPLE = 'disableRipple',
 }
 
 export const createCommandHandler = (): MessageHandler => {
@@ -31,6 +33,12 @@ export const createCommandHandler = (): MessageHandler => {
           break;
         case Command.STOP:
           await webOperateService.stop();
+          break;
+        case Command.ENABLE_RIPPLE:
+          await webOperateService.setRippleEnabled(true);
+          break;
+        case Command.DISABLE_RIPPLE:
+          await webOperateService.setRippleEnabled(false);
           break;
       }
 

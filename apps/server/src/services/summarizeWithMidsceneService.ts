@@ -37,13 +37,19 @@ export async function summarizeWebPageWithMidscene(
       await webService.start();
     }
 
-    // 2. 确保当前标签页已连接（不导航，直接使用当前页面）
+    // 2. 先禁用波纹动画，避免后续操作时自动启用
+    await webService.setRippleEnabled(false);
+
+    // 3. 确保当前标签页已连接（不导航，直接使用当前页面）
     const isConnected = await webService.checkAndReconnect();
     if (!isConnected) {
       throw new Error('浏览器连接断开，正在重连中，请稍后重试');
     }
 
-    // 3. 使用服务层的截图方法
+    // 4. 再次确保波纹动画被禁用（因为重连可能重新附加了调试器）
+    await webService.setRippleEnabled(false);
+
+    // 5. 使用服务层的截图方法
     const { imageBase64, locateRect } = await webService.screenshot({
       fullPage,
       locate,
@@ -140,6 +146,7 @@ export async function summarizeWebPageWithMidscene(
 
     // 临时返回截图信息（AI 总结功能已注释）
     const imageSizeInBytes = Math.floor((base64Data.length * 3) / 4);
+    // await webService.setRippleEnabled(true);
     return {
       summary: `截图完成 (${imageInfo.width}x${imageInfo.height})`,
       imageSize: imageSizeInBytes,
