@@ -796,7 +796,11 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
   /**
    * 截图
    */
-  async screenshot(params?: { fullPage?: boolean; locate?: any }): Promise<{
+  async screenshot(params?: {
+    fullPage?: boolean;
+    locate?: any;
+    stickyHeaderHeight?: number; // 粘滞头高度（像素），默认 120
+  }): Promise<{
     imageBase64: string;
     locateRect?: { left: number; top: number; width: number; height: number };
   }> {
@@ -835,8 +839,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
         try {
           // 使用 sharp 拼接
+          const stickyHeaderHeight = params?.stickyHeaderHeight ?? 0;
           const stitched = await stitchSegments(resultWithSegments.segments, {
-            stickyOverlapThreshold: 120, // 粘性头重叠阈值
+            stickyHeaderHeight, // 粘滞头高度，用于裁剪后续片段
             format: 'jpeg',
             quality: 90,
           });
@@ -873,16 +878,59 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         }
       }
 
-      // 正常返回 base64 字符串
+      // 正常返回 base64 字符串，但需要校验不为空
+      const imageBase64 = result.imageBase64 || '';
+      if (!imageBase64 || imageBase64.trim() === '') {
+        serviceLogger.warn(
+          this.withState({ params }),
+          '截图返回为空 base64，尝试回退为视口截图',
+        );
+
+        try {
+          const fallback = await this.agent.screenshot({
+            ...params,
+            fullPage: false,
+          });
+
+          const fallbackBase64 = fallback.imageBase64 || '';
+          if (!fallbackBase64 || fallbackBase64.trim() === '') {
+            throw new Error('视口截图回退仍然返回空 base64');
+          }
+
+          serviceLogger.info(
+            this.withState({ imageSize: fallbackBase64.length }),
+            '回退视口截图成功',
+          );
+
+          return {
+            imageBase64: fallbackBase64,
+            locateRect: fallback.locateRect,
+          };
+        } catch (fallbackErr: any) {
+          serviceLogger.error(
+            this.withState({
+              fallbackError: fallbackErr?.message,
+            }),
+            '回退视口截图失败',
+          );
+          throw new AppError(
+            `截图失败且回退失败: ${
+              fallbackErr?.message || String(fallbackErr)
+            }`,
+            500,
+          );
+        }
+      }
+
       serviceLogger.info(
         this.withState({
-          imageSize: result.imageBase64?.length || 0,
+          imageSize: imageBase64.length,
           hasLocateRect: !!result.locateRect,
         }),
         '截图完成',
       );
       return {
-        imageBase64: result.imageBase64 || '',
+        imageBase64,
         locateRect: result.locateRect,
       };
     } catch (error: any) {

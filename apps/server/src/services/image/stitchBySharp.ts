@@ -17,7 +17,8 @@ export interface ScreenshotSegment {
 }
 
 export interface StitchOptions {
-  stickyOverlapThreshold?: number; // 顶部可重叠阈值（像素），默认 0
+  stickyOverlapThreshold?: number; // 顶部可重叠阈值（像素），默认 0（已弃用，使用 stickyHeaderHeight）
+  stickyHeaderHeight?: number; // 粘滞头高度（像素），默认 0，用于裁剪后续片段的顶部
   maxOutputHeight?: number; // 最大输出高度（像素），默认 32000，超过则分卷
   format?: 'jpeg' | 'png'; // 输出格式，默认 jpeg
   quality?: number; // JPEG 质量，默认 90
@@ -38,7 +39,7 @@ export async function stitchSegments(
   segmentCount: number;
 }> {
   const {
-    stickyOverlapThreshold = 0,
+    stickyHeaderHeight = 0,
     maxOutputHeight = DEFAULT_MAX_OUTPUT_HEIGHT,
     format = 'jpeg',
     quality = 90,
@@ -50,34 +51,99 @@ export async function stitchSegments(
 
   console.log(`[Stitch] Starting to stitch ${segments.length} segments`);
 
-  // 1. 解析所有段图，获取实际尺寸
+  // 1. 解析所有段图，获取实际尺寸并裁剪粘滞头
   const parsedSegments: Array<{
     buffer: Buffer;
     actualWidth: number;
     actualHeight: number;
     logicalY: number;
     dpr: number;
+    croppedFromTop: number; // 从顶部裁剪的像素数
   }> = [];
 
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i];
-    const buffer = Buffer.from(segment.base64, 'base64');
+    let buffer = Buffer.from(segment.base64, 'base64');
     const metadata = await sharp(buffer).metadata();
 
     if (!metadata.width || !metadata.height) {
       throw new Error(`Segment ${i + 1} has invalid dimensions`);
     }
 
+    let actualHeight = metadata.height;
+    let croppedFromTop = 0;
+    const finalStickyHeaderHeight = stickyHeaderHeight * segment.dpr;
+
+    // 对于非第一个片段，裁剪掉顶部 stickyHeaderHeight 像素
+    if (finalStickyHeaderHeight > 0) {
+      if (i > 0 && i < segments.length - 1) {
+        // 中间片段：直接裁剪顶部 stickyHeaderHeight
+        const cropHeight = Math.min(finalStickyHeaderHeight, actualHeight - 1); // 确保至少保留 1px
+        if (cropHeight > 0 && cropHeight < actualHeight) {
+          const croppedBuffer = await sharp(buffer)
+            .extract({
+              left: 0,
+              top: cropHeight,
+              width: metadata.width,
+              height: actualHeight - cropHeight,
+            })
+            .toBuffer();
+          buffer = Buffer.from(croppedBuffer);
+          actualHeight = actualHeight - cropHeight;
+          croppedFromTop = cropHeight;
+          console.log(
+            `[Stitch] Segment ${i + 1}: 裁剪顶部 ${cropHeight}px (粘滞头), 剩余高度=${actualHeight}`,
+          );
+        }
+      } else if (i === segments.length - 1 && segments.length > 1) {
+        // 最后一个片段：只保留相对于上一个片段“新增”的底部内容
+        // 使用已解析的前一个片段（包含其实际裁剪后的高度）来计算重叠
+        const lastTopPx = Math.round(segment.scrollY * segment.dpr);
+        const prevParsed = parsedSegments[i - 1];
+        const prevTopPx = Math.round(prevParsed.logicalY * prevParsed.dpr);
+        const prevBottomPx = prevTopPx + prevParsed.actualHeight;
+
+        // 与前一片段的重叠高度（物理像素）
+        const overlapHeight = Math.max(0, prevBottomPx - lastTopPx);
+
+        // 对于最后一张，不再用 stickyHeaderHeight 限制裁剪量，
+        // 直接裁掉全部重叠，使得最后片段只包含新出现的底部区域
+        const cropHeight = Math.min(overlapHeight, actualHeight - 1);
+
+        if (cropHeight > 0 && cropHeight < actualHeight) {
+          const croppedBuffer = await sharp(buffer)
+            .extract({
+              left: 0,
+              top: cropHeight,
+              width: metadata.width,
+              height: actualHeight - cropHeight,
+            })
+            .toBuffer();
+          buffer = Buffer.from(croppedBuffer);
+          actualHeight = actualHeight - cropHeight;
+          croppedFromTop = cropHeight;
+          console.log(
+            `[Stitch] Segment ${i + 1} (最后一个): scrollY=${segment.scrollY.toFixed(1)}, 重叠高度=${overlapHeight.toFixed(1)}px, 裁剪顶部 ${cropHeight.toFixed(1)}px, 剩余高度=${actualHeight}`,
+          );
+        } else {
+          console.log(
+            `[Stitch] Segment ${i + 1} (最后一个): scrollY=${segment.scrollY.toFixed(1)}, 重叠高度=${overlapHeight.toFixed(1)}px, 无需裁剪 (cropHeight=${cropHeight.toFixed(1)}, actualHeight=${actualHeight})`,
+          );
+        }
+      }
+    }
+
     parsedSegments.push({
       buffer,
       actualWidth: metadata.width,
-      actualHeight: metadata.height,
+      actualHeight,
       logicalY: segment.scrollY,
       dpr: segment.dpr,
+      croppedFromTop,
     });
 
     console.log(
-      `[Stitch] Segment ${i + 1}: ${metadata.width}x${metadata.height}, logicalY=${segment.scrollY}, dpr=${segment.dpr}`,
+      `[Stitch] Segment ${i + 1}: ${metadata.width}x${actualHeight}, logicalY=${segment.scrollY}, dpr=${segment.dpr}, croppedFromTop=${croppedFromTop}`,
     );
   }
 
@@ -113,17 +179,28 @@ export async function stitchSegments(
   // 宽度：使用第一个段图的宽度（所有段图应该相同）
   const outputWidth = parsedSegments[0].actualWidth;
 
-  // 高度：根据段图的逻辑位置和物理高度计算
-  // 找到最大的 bottom 位置
-  let maxBottom = 0;
-  for (const segment of parsedSegments) {
-    const top = Math.round(segment.logicalY * segment.dpr);
-    const bottom = top + segment.actualHeight;
-    if (bottom > maxBottom) {
-      maxBottom = bottom;
+  // 高度：根据段图的逻辑位置和裁剪后的物理高度计算
+  let outputHeight: number;
+  if (shouldUseSequentialLayout) {
+    // 顺序布局：累积所有片段的高度
+    outputHeight = parsedSegments.reduce(
+      (sum, seg) => sum + seg.actualHeight,
+      0,
+    );
+    console.log(`[Stitch] 顺序布局总高度: ${outputHeight}`);
+  } else {
+    // 逻辑布局：找到最大的 bottom 位置
+    let maxBottom = 0;
+    for (const segment of parsedSegments) {
+      const top = Math.round(segment.logicalY * segment.dpr);
+      const bottom = top + segment.actualHeight;
+      if (bottom > maxBottom) {
+        maxBottom = bottom;
+      }
     }
+    outputHeight = maxBottom;
+    console.log(`[Stitch] 逻辑布局总高度: ${outputHeight}`);
   }
-  const outputHeight = maxBottom;
 
   console.log(`[Stitch] Output dimensions: ${outputWidth}x${outputHeight}`);
 
@@ -161,24 +238,7 @@ export async function stitchSegments(
     const top = Math.round(segment.logicalY * segment.dpr);
     const left = 0;
 
-    // 处理重叠（粘性头）
-    if (i > 0 && stickyOverlapThreshold > 0) {
-      const prevSegment = parsedSegments[i - 1];
-      const prevBottom = Math.round(
-        prevSegment.logicalY * prevSegment.dpr + prevSegment.actualHeight,
-      );
-
-      if (top < prevBottom && top + segment.actualHeight > prevBottom) {
-        // 有重叠，调整位置或裁剪
-        const overlap = prevBottom - top;
-        if (overlap <= stickyOverlapThreshold) {
-          // 重叠在阈值内，可以合并
-          console.log(
-            `[Stitch] Segment ${i + 1} overlaps with previous by ${overlap}px, adjusting`,
-          );
-        }
-      }
-    }
+    // 注意：粘滞头已经在步骤 1 中通过裁剪处理，这里不需要额外处理
 
     composites.push({
       input: segment.buffer,

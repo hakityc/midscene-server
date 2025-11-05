@@ -6,6 +6,7 @@ import { WebOperateServiceRefactored } from './base/WebOperateServiceRefactored'
 export type SummarizeWithMidsceneParams = {
   fullPage?: boolean; // 是否全页截图，默认 true
   locate?: any; // 指定要总结的区域
+  stickyHeaderHeight?: number; // 粘滞头高度（像素），默认 64
 };
 
 /**
@@ -26,7 +27,7 @@ export async function summarizeWebPageWithMidscene(
   imageSize: number;
   locateRect?: { left: number; top: number; width: number; height: number };
 }> {
-  const { fullPage = true, locate } = params;
+  const { fullPage = true, locate, stickyHeaderHeight = 64 } = params;
 
   const webService = WebOperateServiceRefactored.getInstance();
 
@@ -46,7 +47,13 @@ export async function summarizeWebPageWithMidscene(
     const { imageBase64, locateRect } = await webService.screenshot({
       fullPage,
       locate,
+      stickyHeaderHeight,
     });
+
+    // 基本校验，防止后续解析空图片
+    if (!imageBase64 || imageBase64.trim() === '') {
+      throw new Error('截图结果为空，请重试或检查浏览器扩展连接');
+    }
 
     // 解析图片尺寸以验证是否真的执行了全页截图
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');

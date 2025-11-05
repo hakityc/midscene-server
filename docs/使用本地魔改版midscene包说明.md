@@ -149,3 +149,4 @@ cat apps/server/node_modules/@midscene/mcp/package.json | grep '"version"'
 
 
 
+
