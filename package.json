@@ -5,7 +5,7 @@
   "packageManager": "pnpm@9",
   "scripts": {
     "build": "pnpm -r build",
-    "dev": "pnpm -r --parallel dev && pnpm mastra:dev",
+    "dev": "pnpm -r --parallel dev",
     "lint": "biome lint . && pnpm -r lint",
     "format": "biome format --write .",
     "check": "biome check .",
@@ -14,7 +14,6 @@
     "server:dev": "pnpm --filter @midscene/server dev",
     "server:build": "pnpm --filter @midscene/server build",
     "web:dev": "pnpm --filter @midscene/web dev",
-    "mastra:dev": "pnpm mastra:dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",

@@ -4,7 +4,6 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { envValidation } from './config';
 import { printValidationResult } from './config/envValidator';
-import { mastra } from './mastra';
 import { setupHealthRoutes } from './routes/health';
 import { setupRouter } from './routes/index';
 import { setupError } from './utils/error';

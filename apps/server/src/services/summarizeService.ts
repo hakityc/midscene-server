@@ -1,3 +1,4 @@
+import type { MessageInput } from '@mastra/core/agent/message-list';
 import { mastra } from '../mastra';
 
 export type SummarizeParams = {
@@ -18,17 +19,32 @@ export async function summarizeImage(
   if (!match) {
     throw new Error('无效的 DataURL，期望形如 data:image/png;base64,<...>');
   }
+  const mimeType = match[1];
   const base64Data = match[2];
   const imageBuffer = Buffer.from(base64Data, 'base64');
   const dataUrl = url;
 
+  const messages: MessageInput[] = [
+    {
+      role: 'user',
+      content: '帮我总结这张图片',
+    },
+    {
+      role: 'user',
+      content: JSON.stringify([
+        {
+          type: 'image',
+          imageUrl: dataUrl,
+          mimeType,
+        },
+      ]),
+    },
+  ];
+
   const agent = mastra.getAgent('documentSummaryAgent');
 
   // 由于当前 Agent 的 generate 接口期望字符串数组，这里将图片以 DataURL 形式作为第二条消息传入
-  const result = await agent.generateLegacy([
-    '请对这张网页整页截图进行结构化总结。',
-    dataUrl,
-  ]);
+  const result = await agent.generateLegacy(messages);
   const summary = result.text?.trim() || JSON.stringify(result);
   return { summary, imageSize: imageBuffer.byteLength };
 }

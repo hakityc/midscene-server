@@ -35,7 +35,7 @@ lerna-debug.log*
 midscene-server-deployment.tar.gz
 apps/server/midscene_run/
 apps/server/coverage/
-.mastra/
+**/**/.mastra/
 apps/server/data/mastra-memory.db
 apps/server/data/mastra-memory.db-shm
 apps/server/data/mastra-memory.db-wal
