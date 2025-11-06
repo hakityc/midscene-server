@@ -13,7 +13,7 @@
     "test": "pnpm -r test",
     "server:dev": "pnpm --filter @midscene/server dev",
     "server:build": "pnpm --filter @midscene/server build",
-    "web:dev": "pnpm --filter @midscene/web dev",
+    "web:dev": "pnpm --filter @midscene/web dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",

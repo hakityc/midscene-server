@@ -1,4 +1,5 @@
 import type { MessageInput } from '@mastra/core/agent/message-list';
+import sharp from 'sharp';
 import { mastra } from '../mastra';
 
 export type SummarizeParams = {
@@ -19,10 +20,23 @@ export async function summarizeImage(
   if (!match) {
     throw new Error('无效的 DataURL，期望形如 data:image/png;base64,<...>');
   }
-  const mimeType = match[1];
+  // 原始类型暂不使用，统一转为 JPEG 压缩
   const base64Data = match[2];
   const imageBuffer = Buffer.from(base64Data, 'base64');
-  const dataUrl = url;
+
+  // 使用 sharp 进行有损压缩（最长边 1600px，JPEG 质量 70）
+  const compressedBuffer = await sharp(imageBuffer)
+    .resize({
+      width: 1600,
+      height: 1600,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .jpeg({ quality: 70 })
+    .toBuffer();
+
+  const dataUrl = `data:image/jpeg;base64,${compressedBuffer.toString('base64')}`;
+  const mimeType = 'jpeg';
 
   const messages: MessageInput[] = [
     {
@@ -46,5 +60,5 @@ export async function summarizeImage(
   // 由于当前 Agent 的 generate 接口期望字符串数组，这里将图片以 DataURL 形式作为第二条消息传入
   const result = await agent.generateLegacy(messages);
   const summary = result.text?.trim() || JSON.stringify(result);
-  return { summary, imageSize: imageBuffer.byteLength };
+  return { summary, imageSize: compressedBuffer.byteLength };
 }
