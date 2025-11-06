@@ -3,7 +3,6 @@ import { requestLogger } from '../middleware/logger';
 import clientTypeActionsRouter from './clientTypeActions';
 import clientTypeFlowActionsRouter from './clientTypeFlowActions';
 import { setupHealthRoutes } from './health';
-import { exportRouter } from './modules/export';
 import { operateRouter } from './modules/operate';
 import { promptOptimizeRouter } from './modules/prompt-optimize';
 import { reportRouter } from './modules/report';
@@ -36,7 +35,6 @@ export const setupRouter = (app: Hono) => {
   app.route('/api/client-type-flow-actions', clientTypeFlowActionsRouter);
 
   app.route('/api/report', reportRouter);
-  app.route('/api/export', exportRouter);
 
   // 设置健康检查路由
   setupHealthRoutes(app);

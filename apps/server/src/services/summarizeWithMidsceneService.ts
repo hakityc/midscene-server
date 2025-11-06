@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { serviceLogger } from '../utils/logger';
 import { WebOperateServiceRefactored } from './base/WebOperateServiceRefactored';
+import { summarizeImage } from './summarizeService';
 
 export type SummarizeWithMidsceneParams = {
   fullPage?: boolean; // 是否全页截图，默认 true
@@ -102,54 +104,15 @@ export async function summarizeWebPageWithMidscene(
       console.error('保存截图失败:', error);
     }
 
-    //     // 4. 构建 AI 提示词
-    //     let prompt = '请对这张网页截图进行结构化总结。';
-    //     if (locate && locateRect) {
-    //       prompt = `请重点总结截图中指定区域的内容。该区域位于：
-    // - 左上角坐标：(${locateRect.left}, ${locateRect.top})
-    // - 宽度：${locateRect.width}px
-    // - 高度：${locateRect.height}px
-
-    // 请详细分析这个区域的内容，包括文字、结构和关键信息。`;
-    //     } else if (fullPage) {
-    //       prompt =
-    //         '这是一张完整的网页截图，请对整个页面进行结构化总结，包括主要内容、布局和关键信息。';
-    //     } else {
-    //       prompt = '这是网页的当前视口截图，请对可见部分进行总结。';
-    //     }
-
-    //     // 5. 调用 Mastra Agent 进行 AI 总结
-    //     const agent = mastra.getAgent('documentSummaryAgent');
-    //     const result = await agent.generateVNext({
-    //       messages: [
-    //         { role: 'user', content: prompt },
-    //         { role: 'user', content: imageBase64 },
-    //       ],
-    //     } as any);
-
-    //     const summary =
-    //       (result as any)?.text ||
-    //       (result as any)?.output ||
-    //       JSON.stringify(result);
-
-    //     // 6. 计算图片大小（base64 去掉前缀后的实际大小）
-    //     const base64Data = imageBase64.split(',')[1] || imageBase64;
-    //     const imageSize = Math.floor((base64Data.length * 3) / 4);
-
-    //     console.log(`总结完成: 图片大小=${imageSize} bytes`);
-
-    //     return {
-    //       summary,
-    //       imageSize,
-    //       locateRect,
-    //     };
-
-    // 临时返回截图信息（AI 总结功能已注释）
-    const imageSizeInBytes = Math.floor((base64Data.length * 3) / 4);
     // await webService.setRippleEnabled(true);
+    const { summary, imageSize } = await summarizeImage({
+      url: imageBase64,
+    });
+
+    serviceLogger.info({ summary }, '网页总结完成');
     return {
-      summary: `截图完成 (${imageInfo.width}x${imageInfo.height})`,
-      imageSize: imageSizeInBytes,
+      summary,
+      imageSize,
       locateRect,
     };
   } catch (error) {

@@ -1,34 +1,34 @@
 import { mastra } from '../mastra';
-import { exportPageScreenshot } from './puppeteerPdfService';
 
 export type SummarizeParams = {
+  // 仅支持传入 DataURL（data:image/<type>;base64,<data>）
   url: string;
-  deviceScaleFactor?: number;
-  segmentHeight?: number;
-  type?: 'png' | 'jpeg';
-  quality?: number;
 };
 
-export async function summarizeWebPage(params: SummarizeParams): Promise<{ summary: string; imageSize: number }>
-{
-  const { url, deviceScaleFactor = 2, segmentHeight, type = 'png', quality } = params;
+export async function summarizeImage(
+  params: SummarizeParams,
+): Promise<{ summary: string; imageSize: number }> {
+  const { url } = params;
+  if (!url || !url.startsWith('data:image/')) {
+    throw new Error('summarizeImage 仅支持 DataURL（data:image/...;base64,）');
+  }
 
-  const image = await exportPageScreenshot({ url, deviceScaleFactor, segmentHeight, type, quality });
-  const base64 = Buffer.from(image).toString('base64');
-  const dataUrl = `data:image/${type};base64,${base64}`;
+  // 提取类型与数据，用于计算大小
+  const match = url.match(/^data:image\/(png|jpeg);base64,(.+)$/i);
+  if (!match) {
+    throw new Error('无效的 DataURL，期望形如 data:image/png;base64,<...>');
+  }
+  const base64Data = match[2];
+  const imageBuffer = Buffer.from(base64Data, 'base64');
+  const dataUrl = url;
 
   const agent = mastra.getAgent('documentSummaryAgent');
 
-  // 以简单参数形式传给 Agent。具体字段取决于 Agent 的实现，这里采用通用 messages 结构。
-  const result = await agent.generate({
-    messages: [
-      { role: 'user', content: '请对这张网页整页截图进行结构化总结。' },
-      { role: 'user', content: dataUrl },
-    ],
-  } as any);
-
-  const summary = (result as any)?.text || (result as any)?.output || JSON.stringify(result);
-  return { summary, imageSize: image.byteLength };
+  // 由于当前 Agent 的 generate 接口期望字符串数组，这里将图片以 DataURL 形式作为第二条消息传入
+  const result = await agent.generateLegacy([
+    '请对这张网页整页截图进行结构化总结。',
+    dataUrl,
+  ]);
+  const summary = result.text?.trim() || JSON.stringify(result);
+  return { summary, imageSize: imageBuffer.byteLength };
 }
-
-
