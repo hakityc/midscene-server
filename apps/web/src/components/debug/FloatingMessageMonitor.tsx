@@ -567,7 +567,7 @@ export function FloatingMessageMonitor({
         {/* 消息列表 */}
         <div
           ref={containerRef}
-          className="relative z-40 w-full flex justify-center"
+          className="relative z-40 w-200 flex justify-center"
         >
           {isExpanded ? renderExpandedView() : renderStackedView()}
         </div>
