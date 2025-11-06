@@ -1,5 +1,14 @@
 ## 网页总结功能（基于 Puppeteer 整页截图 + Mastra Agent）
 
+> 状态：已弃用（2025-11）
+>
+> 当前服务已改为使用 Midscene 的浏览器接入管线获取截图，并直接传递 DataURL 给 Agent 进行总结。服务端不再依赖 `puppeteer-core` 进行网页加载与截图，相关导出接口 `POST /api/export/pdf` 与 `POST /api/export/screenshot` 已下线。
+>
+> 迁移要点：
+> - 截图来源：由 `WebOperateServiceRefactored` 提供整页/区域截图 DataURL
+> - 汇总入口：`summarizeWithMidsceneService` 直接将 DataURL 传给 `documentSummaryAgent`
+> - 旧文件：`apps/server/src/services/puppeteerPdfService.ts`、`apps/server/src/routes/modules/export.ts` 已移除
+
 ### 背景与目标
 - 通过服务端 Puppeteer 复用用户浏览器会话，稳定获取网页“所见即所得”的整页截图；
 - 将截图发给 Mastra 的文档总结 Agent，输出结构化摘要；
