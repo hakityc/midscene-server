@@ -7,6 +7,7 @@ import {
 } from '../../utils/taskTipFormatter';
 import type AgentOverWindows from '../customMidsceneDevice/agentOverWindows';
 import { ossService } from '../ossService';
+import dayjs from 'dayjs';
 
 // ==================== 统一的服务状态枚举 ====================
 export enum OperateServiceState {
@@ -425,12 +426,7 @@ export abstract class BaseOperateService<
     return (tip: string, bridgeError?: Error | null, stepIndex?: number) => {
       try {
         const { formatted, category, icon, content, hint } = formatTaskTip(tip);
-        const timestamp = new Date().toLocaleTimeString('zh-CN', {
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        });
+        const timestamp = dayjs().format('HH:mm:ss');
 
         console.log(`🎯 WebSocket 监听到任务提示: ${tip}`);
 
