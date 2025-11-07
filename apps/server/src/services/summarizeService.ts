@@ -41,7 +41,7 @@ export async function summarizeImage(
   const messages: MessageInput[] = [
     {
       role: 'user',
-      content: '帮我总结这张图片',
+      content: '帮我总结',
     },
     {
       role: 'user',
