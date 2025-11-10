@@ -3,6 +3,7 @@ import { AgentOverChromeBridge } from '@midscene/web/bridge-mode';
 import { setBrowserConnected } from '../../routes/health';
 import { AppError } from '../../utils/error';
 import { serviceLogger } from '../../utils/logger';
+import type { StepMetadata } from '../../websocket/utils/scriptParamsParser';
 import {
   bufferToBase64DataUri,
   type ScreenshotSegment,
@@ -45,7 +46,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
   };
 
   // ==================== 自定义 tip 映射 ====================
-  private stepTipMap: Map<number, string> = new Map();
+  private stepMetadataMap: Map<number, StepMetadata> = new Map();
 
   private constructor() {
     super();
@@ -164,6 +165,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
     // 重置状态
     this.resetReconnectState();
     setBrowserConnected(false);
+    this.clearStepMetadata();
   }
 
   // ==================== Web 特定方法 ====================
@@ -171,8 +173,23 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
   /**
    * 设置自定义 tip 映射
    */
-  public setStepTipMap(stepTipMap: Map<number, string>): void {
-    this.stepTipMap = stepTipMap;
+  public setStepMetadata(stepMetadata: Map<number, StepMetadata>): void {
+    this.stepMetadataMap = stepMetadata;
+  }
+
+  public clearStepMetadata(): void {
+    this.stepMetadataMap.clear();
+  }
+
+  protected resolveCustomTip(
+    stepIndex: number | undefined,
+    tip: string,
+  ): string {
+    console.log(this.stepMetadataMap, 'this.stepMetadataMap');
+    if (stepIndex === undefined || Number.isNaN(stepIndex)) return tip;
+    return (
+      (this.stepMetadataMap.get(stepIndex) as StepMetadata).customTip || tip
+    );
   }
 
   /**
@@ -186,11 +203,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
     const originalCallback = this.agent.onTaskStartTip;
 
     this.agent.onTaskStartTip = (tip: string, stepIndex?: number) => {
-      // 如果有 stepIndex 且在映射表中存在，使用自定义 tip；否则使用自动生成的 tip
-      const finalTip =
-        stepIndex !== undefined && this.stepTipMap.has(stepIndex)
-          ? this.stepTipMap.get(stepIndex)!
-          : tip;
+      const finalTip = this.resolveCustomTip(stepIndex, tip);
 
       const safeCall = async () => {
         let bridgeError: Error | null = null;

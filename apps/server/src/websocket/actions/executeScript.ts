@@ -1,4 +1,3 @@
-import yaml from 'yaml';
 import { WebOperateServiceRefactored } from '../../services/base/WebOperateServiceRefactored';
 import type { MessageHandler } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
@@ -9,6 +8,7 @@ import {
   createSuccessResponseWithMeta,
 } from '../builders/messageBuilder';
 import { ClientCommandHelper } from '../helpers/clientCommandHelper';
+import { parseScriptParams } from '../utils/scriptParamsParser';
 
 // AI 请求处理器
 export function executeScriptHandler(): MessageHandler {
@@ -38,47 +38,10 @@ export function executeScriptHandler(): MessageHandler {
       // 注册任务提示回调
       webOperateService.onTaskTip(taskTipCallback);
 
-      const rawParams = payload?.params as unknown;
-      let parsedParams: unknown = rawParams;
+      const { script, stepMetadata } = parseScriptParams(payload?.params);
 
-      if (typeof rawParams === 'string') {
-        try {
-          // 如果是字符串，优先按 JSON 解析，处理形如 "{\n  \"tasks\": ... }" 的转义内容
-          parsedParams = JSON.parse(rawParams);
-        } catch {
-          // 忽略解析错误，保持原始字符串（可能是已是 YAML 或普通文本）
-          parsedParams = rawParams;
-        }
-      }
-
-      // 建立 stepIndex -> customTip 映射
-      const stepTipMap = new Map<number, string>();
-      if (
-        parsedParams &&
-        typeof parsedParams === 'object' &&
-        'tasks' in parsedParams
-      ) {
-        const tasks = (parsedParams as any).tasks;
-        if (Array.isArray(tasks)) {
-          let globalStepIndex = 0;
-          for (const task of tasks) {
-            if (task.flow && Array.isArray(task.flow)) {
-              for (const flowItem of task.flow) {
-                const customTip = (flowItem as any).leboStepName;
-                if (customTip && typeof customTip === 'string') {
-                  stepTipMap.set(globalStepIndex, customTip);
-                }
-                globalStepIndex++;
-              }
-            }
-          }
-        }
-      }
-
-      // 设置 stepTipMap 到 service
-      webOperateService.setStepTipMap(stepTipMap);
-
-      const script = yaml.stringify(parsedParams);
+      // 设置步骤元数据到 service
+      webOperateService.setStepMetadata(stepMetadata);
 
       let scriptResult: any;
       try {
@@ -112,8 +75,9 @@ export function executeScriptHandler(): MessageHandler {
         });
         send(response);
       } finally {
-        // 清理回调，避免内存泄漏
+        // 清理回调和元数据，避免内存泄漏
         webOperateService.offTaskTip(taskTipCallback);
+        webOperateService.clearStepMetadata();
       }
     } catch (error) {
       // 清理回调，避免内存泄漏
@@ -123,6 +87,8 @@ export function executeScriptHandler(): MessageHandler {
         // 忽略清理错误
         console.warn('清理回调时出错:', cleanupError);
       }
+
+      webOperateService.clearStepMetadata();
 
       wsLogger.error(
         {
