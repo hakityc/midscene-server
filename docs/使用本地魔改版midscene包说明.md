@@ -82,11 +82,11 @@ cat apps/server/node_modules/@midscene/mcp/package.json | grep '"version"'
 ```json
 "pnpm": {
   "overrides": {
-    "@midscene/core": "file:local-packages/midscene-core-0.30.4-lebo.1.tgz",
-    "@midscene/mcp": "file:local-packages/midscene-mcp-0.30.4-lebo.1.tgz",
-    "@midscene/web": "file:local-packages/midscene-web-0.30.4-lebo.1.tgz",
-    "@midscene/shared": "file:local-packages/midscene-shared-0.30.4.tgz",
-    "@midscene/playground": "file:local-packages/midscene-playground-0.30.4.tgz"
+    "@midscene/core": "file:local-packages/midscene-core.tgz",
+    "@midscene/mcp": "file:local-packages/midscene-mcp.tgz",
+    "@midscene/web": "file:local-packages/midscene-web.tgz",
+    "@midscene/shared": "file:local-packages/midscene-shared.tgz",
+    "@midscene/playground": "file:local-packages/midscene-playground.tgz"
   }
 }
 ```
@@ -97,35 +97,35 @@ cat apps/server/node_modules/@midscene/mcp/package.json | grep '"version"'
 
 ```json
 "dependencies": {
-  "@midscene/core": "file:../../local-packages/midscene-core-0.30.4-lebo.1.tgz",
-  "@midscene/mcp": "file:../../local-packages/midscene-mcp-0.30.4-lebo.1.tgz",
-  "@midscene/web": "file:../../local-packages/midscene-web-0.30.4-lebo.1.tgz"
+  "@midscene/core": "file:../../local-packages/midscene-core.tgz",
+  "@midscene/mcp": "file:../../local-packages/midscene-mcp.tgz",
+  "@midscene/web": "file:../../local-packages/midscene-web.tgz"
 }
 ```
 
-### 3. midscene 项目中的版本配置
+### 3. midscene 项目中的同步命令
 
-在 midscene 项目中，需要确保：
-
-- `packages/core/package.json`: `"version": "0.30.4-lebo.1"`
-- `packages/mcp/package.json`: `"version": "0.30.4-lebo.1"`
-- `packages/web-integration/package.json`: `"version": "0.30.4-lebo.1"`
-
-并且 `packages/web-integration/package.json` 和 `packages/playground/package.json` 中的依赖需要使用版本号而非 `workspace:*`：
+在 `midscene` 仓库中新增了 `scripts/sync-midscene-packages.mjs`，并在 `package.json` 中配置：
 
 ```json
-"dependencies": {
-  "@midscene/core": "0.30.4-lebo.1",
-  "@midscene/shared": "0.30.4",
-  "@midscene/playground": "0.30.4"
+"scripts": {
+  "build": "nx run-many --target=build --exclude=doc --verbose",
+  "postbuild": "node scripts/sync-midscene-packages.mjs",
+  "sync-midscene-packages": "node scripts/sync-midscene-packages.mjs"
 }
 ```
+
+执行 `pnpm build` 或手动运行 `pnpm run sync-midscene-packages` 时，会自动：
+
+- 分别对 `@midscene/core`、`@midscene/mcp`、`@midscene/web` 执行 `pnpm pack`
+- 将生成的 `*.tgz` 文件复制到 `midscene-server/apps/server/local-packages/`
+- 固定输出文件名为 `midscene-xxx.tgz`，避免频繁修改 `package.json`
 
 ## 注意事项
 
 1. **不提交 node_modules**：确保 `.gitignore` 中包含 `node_modules/` 和 `local-packages/`
-2. **版本号管理**：每次更新魔改版时，可以使用后缀区分，如 `0.30.4-lebo.1`, `0.30.4-lebo.2`
-3. **构建顺序**：打包时必须按照依赖关系顺序：shared → core → recorder/playground → web/mcp
+2. **保持脚本路径正确**：`midscene` 与 `midscene-server` 需要位于同级目录，脚本默认写死为 `../midscene-server/apps/server/local-packages`
+3. **构建顺序**：仍按依赖顺序构建（shared → core → recorder/playground → web/mcp），确保 `pnpm pack` 输出内容完整
 4. **验证完整性**：重新打包后务必验证所有依赖版本正确，避免缓存导致的问题
 
 ## 故障排除
@@ -146,8 +146,3 @@ cat apps/server/node_modules/@midscene/mcp/package.json | grep '"version"'
 - 部署时运行 `npm install` 会使用远程依赖或保持本地文件引用
 
 如果是通过文件引用，需要确保部署环境中 `local-packages/` 目录存在，或者改为发布到私有 npm registry。
-
-
-
-
-

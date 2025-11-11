@@ -73,14 +73,14 @@ importers:
         specifier: 0.15.11
         version: 0.15.11(@mastra/core@0.24.0(openapi-types@12.1.3)(react@19.1.1)(zod@3.25.76))(react@19.1.1)(zod@3.25.76)
       '@midscene/core':
-        specifier: 0.30.7-lebo.2
-        version: 0.30.7-lebo.2(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+        specifier: file:local-packages/midscene-core.tgz
+        version: file:apps/server/local-packages/midscene-core.tgz(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
       '@midscene/mcp':
-        specifier: 0.30.7
-        version: 0.30.7
+        specifier: file:local-packages/midscene-mcp.tgz
+        version: file:apps/server/local-packages/midscene-mcp.tgz
       '@midscene/web':
-        specifier: 0.30.7-lebo.8
-        version: 0.30.7-lebo.8(bufferutil@4.0.9)(date-fns@4.1.0)(playwright@1.56.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(utf-8-validate@6.0.5)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+        specifier: file:local-packages/midscene-web.tgz
+        version: file:apps/server/local-packages/midscene-web.tgz(bufferutil@4.0.9)(date-fns@4.1.0)(playwright@1.56.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(utf-8-validate@6.0.5)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
       '@nut-tree/nut-js':
         specifier: ^4.2.0
         version: 4.2.0
@@ -1266,32 +1266,35 @@ packages:
       ai: ^4.0.0 || ^5.0.0
       zod: ^3.25.0 || ^4.0.0
 
-  '@midscene/core@0.30.7':
-    resolution: {integrity: sha512-XELmC7aSBxoXn/u2Y7aiIZYCXUc7w9YQpuLAP3BRH3yDps50PMx5sXh83q7TyA6wVFRPU19hkGVthwJX8a13gA==}
+  '@midscene/core@0.30.8':
+    resolution: {integrity: sha512-RwIstwGVlHdJUsOwQoBjwk2pUiIk8DfrrSkYbYnuRucRd3RcGfSQEOHjFit67tydZsKo6ie3e4uiVHQcD3lPDQ==}
     engines: {node: '>=18.0.0'}
 
-  '@midscene/core@0.30.7-lebo.2':
-    resolution: {integrity: sha512-YPzkgxOiGY7KYLqBF7wnYDR00afL6/4lTzSG/bMS9/N6wWUNvVZmn8MJxqOxpW8HJKA8FP9UaB2RW0OLdAmdSA==}
+  '@midscene/core@file:apps/server/local-packages/midscene-core.tgz':
+    resolution: {integrity: sha512-ALf7KJfZj+SljnKFqbQqKhkYEaziRbtqyw1TSuM7ekzAkhY76z+fI5I6Py37AB54k3E3FQ4SiEafE7gmKW58cQ==, tarball: file:apps/server/local-packages/midscene-core.tgz}
+    version: 0.30.8
     engines: {node: '>=18.0.0'}
 
-  '@midscene/mcp@0.30.7':
-    resolution: {integrity: sha512-8JmeRsbiMhh+I2cJEKv0FlPTbjw57jUouvXGcrN5WS7Naa4ZCe4s6Wa3w3j6YuaLnF703s4OdgCgA8HSxi+6mg==}
+  '@midscene/mcp@file:apps/server/local-packages/midscene-mcp.tgz':
+    resolution: {integrity: sha512-+ASZ+fvqbAYIyRJo9CGteumQB1B/QuBBbgfHsGK7jQ3yt7OEDPR11jg+YC6AKE8ks3LtGyhGIAUaWlpKBv8ipA==, tarball: file:apps/server/local-packages/midscene-mcp.tgz}
+    version: 0.30.8
     hasBin: true
 
-  '@midscene/playground@0.30.7':
-    resolution: {integrity: sha512-ha5vQeOcPD8+KYtzLwoNmMwDTEP2y8hqGSAaUUWs8C6bnuMV9frlb98ERxsEAXQ0dCm+wGoUoEgS2XQnV/kMfg==}
+  '@midscene/playground@0.30.8':
+    resolution: {integrity: sha512-umjnBaarhwGvMf47O+VS/8zubFRUlwd7RVcXXPNEEM4AujL+2Ng65x82j2Ih1zxY2RTOW1MZJET6Tm+WVpMPCQ==}
 
-  '@midscene/recorder@0.30.7':
-    resolution: {integrity: sha512-1KsyTxd81RLlL56SVT1mhaTm89bxLDsclGW06WG9fngUmvCzeW0cv7QBkQjfhfDK8UyRpIBUI0pX17S5PXW96A==}
+  '@midscene/recorder@0.30.8':
+    resolution: {integrity: sha512-zgDn/6fHaTA2dQHVAvBO3u35JULt74hWs7XQqKPcujLW8YhN05LvcwzKpg/ugDxwqMeatDIvYTE2/i35op7Fbw==}
     peerDependencies:
       react: 18.3.1
       react-dom: 18.3.1
 
-  '@midscene/shared@0.30.7':
-    resolution: {integrity: sha512-fEpmCteB44NVNEuxM7xWGoPAPjF2hiDaWwFlW0qDGNVd5c5mGJ7KEb3ExztT7wUJJ1w9C73BDOVWAoDf0onMfQ==}
+  '@midscene/shared@0.30.8':
+    resolution: {integrity: sha512-jt1txKn3LvOxYCIYhtkevAsSZU6efvoqV6GcF5WiHgq/0olaCiyReA618j5dRVM9vrN8fRsQP/jgZL0ifGJ6aw==}
 
-  '@midscene/web@0.30.7-lebo.8':
-    resolution: {integrity: sha512-QU899EJCgXpbDbD1soqvlNBkIyxJAjAtapp38CMdc5/WjRrpwsHrRRrMu7CjHCAEjx0ye80LpGqgzFYJdDv0Fg==}
+  '@midscene/web@file:apps/server/local-packages/midscene-web.tgz':
+    resolution: {integrity: sha512-yItQ+efFJCA/TApm7nPneMR7fRU3HGzUMgX4NkOVPEzz5t9RCz1cz8kOApXHpE9YXbiA3AZC76z4d/sT/VxcFw==, tarball: file:apps/server/local-packages/midscene-web.tgz}
+    version: 0.30.8
     engines: {node: '>=18.0.0'}
     hasBin: true
     peerDependencies:
@@ -7366,13 +7369,13 @@ snapshots:
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
       zod-to-json-schema: 3.24.6(zod@3.25.76)
 
-  '@midscene/core@0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
+  '@midscene/core@0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
     dependencies:
       '@anthropic-ai/sdk': 0.33.1
       '@azure/identity': 4.5.0
       '@langchain/core': 0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
-      '@midscene/recorder': 0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@midscene/shared': 0.30.7
+      '@midscene/recorder': 0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      '@midscene/shared': 0.30.8
       '@ui-tars/action-parser': 1.2.3
       dotenv: 16.6.1
       https-proxy-agent: 7.0.2
@@ -7393,13 +7396,13 @@ snapshots:
       - supports-color
       - ws
 
-  '@midscene/core@0.30.7-lebo.2(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
+  '@midscene/core@file:apps/server/local-packages/midscene-core.tgz(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
     dependencies:
       '@anthropic-ai/sdk': 0.33.1
       '@azure/identity': 4.5.0
       '@langchain/core': 0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
-      '@midscene/recorder': 0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@midscene/shared': 0.30.7
+      '@midscene/recorder': 0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      '@midscene/shared': 0.30.8
       '@ui-tars/action-parser': 1.2.3
       dotenv: 16.6.1
       https-proxy-agent: 7.0.2
@@ -7420,7 +7423,7 @@ snapshots:
       - supports-color
       - ws
 
-  '@midscene/mcp@0.30.7':
+  '@midscene/mcp@file:apps/server/local-packages/midscene-mcp.tgz':
     dependencies:
       '@silvia-odwyer/photon': 0.3.3
       '@silvia-odwyer/photon-node': 0.3.3
@@ -7428,10 +7431,10 @@ snapshots:
       sharp: 0.34.4
       utf-8-validate: 6.0.5
 
-  '@midscene/playground@0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
+  '@midscene/playground@0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
     dependencies:
-      '@midscene/core': 0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
-      '@midscene/shared': 0.30.7
+      '@midscene/core': 0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+      '@midscene/shared': 0.30.8
       cors: 2.8.5
       dotenv: 16.6.1
       express: 4.21.2
@@ -7447,10 +7450,10 @@ snapshots:
       - supports-color
       - ws
 
-  '@midscene/recorder@0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
+  '@midscene/recorder@0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
     dependencies:
       '@ant-design/icons': 5.6.1(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
-      '@midscene/shared': 0.30.7
+      '@midscene/shared': 0.30.8
       antd: 5.28.0(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       dayjs: 1.11.19
       react: 19.1.1
@@ -7462,7 +7465,7 @@ snapshots:
       - moment
       - supports-color
 
-  '@midscene/shared@0.30.7':
+  '@midscene/shared@0.30.8':
     dependencies:
       '@silvia-odwyer/photon': 0.3.3
       '@silvia-odwyer/photon-node': 0.3.3
@@ -7475,11 +7478,11 @@ snapshots:
       - encoding
       - supports-color
 
-  '@midscene/web@0.30.7-lebo.8(bufferutil@4.0.9)(date-fns@4.1.0)(playwright@1.56.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(utf-8-validate@6.0.5)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
+  '@midscene/web@file:apps/server/local-packages/midscene-web.tgz(bufferutil@4.0.9)(date-fns@4.1.0)(playwright@1.56.1)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(utf-8-validate@6.0.5)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
     dependencies:
-      '@midscene/core': 0.30.7-lebo.2(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
-      '@midscene/playground': 0.30.7(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
-      '@midscene/shared': 0.30.7
+      '@midscene/core': 0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+      '@midscene/playground': 0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+      '@midscene/shared': 0.30.8
       cors: 2.8.5
       dayjs: 1.11.19
       dotenv: 16.6.1
@@ -11108,7 +11111,7 @@ snapshots:
       semver: 7.7.3
       uuid: 10.0.0
     optionalDependencies:
-      openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3)
+      openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)
 
   langsmith@0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)):
     dependencies:
@@ -11120,7 +11123,7 @@ snapshots:
       semver: 7.7.3
       uuid: 10.0.0
     optionalDependencies:
-      openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3)
+      openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)
 
   libsql@0.5.22:
     dependencies:
@@ -11410,6 +11413,22 @@ snapshots:
       zod: 3.24.3
     transitivePeerDependencies:
       - encoding
+
+  openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76):
+    dependencies:
+      '@types/node': 18.19.130
+      '@types/node-fetch': 2.6.13
+      abort-controller: 3.0.0
+      agentkeepalive: 4.6.0
+      form-data-encoder: 1.7.2
+      formdata-node: 4.4.1
+      node-fetch: 2.7.0
+    optionalDependencies:
+      ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - encoding
+    optional: true
 
   openapi-types@12.1.3: {}
 
