@@ -1271,12 +1271,12 @@ packages:
     engines: {node: '>=18.0.0'}
 
   '@midscene/core@file:apps/server/local-packages/midscene-core.tgz':
-    resolution: {integrity: sha512-ALf7KJfZj+SljnKFqbQqKhkYEaziRbtqyw1TSuM7ekzAkhY76z+fI5I6Py37AB54k3E3FQ4SiEafE7gmKW58cQ==, tarball: file:apps/server/local-packages/midscene-core.tgz}
+    resolution: {integrity: sha512-Jy+SnQ3oJCzaNxE8v5ah29h7tKputsnYLem43xx32l/51oIOUjiwWa412D56j/A4yBxoCBgfwTvxRCTDbXy4Vg==, tarball: file:apps/server/local-packages/midscene-core.tgz}
     version: 0.30.8
     engines: {node: '>=18.0.0'}
 
   '@midscene/mcp@file:apps/server/local-packages/midscene-mcp.tgz':
-    resolution: {integrity: sha512-+ASZ+fvqbAYIyRJo9CGteumQB1B/QuBBbgfHsGK7jQ3yt7OEDPR11jg+YC6AKE8ks3LtGyhGIAUaWlpKBv8ipA==, tarball: file:apps/server/local-packages/midscene-mcp.tgz}
+    resolution: {integrity: sha512-559ObYwe/7ehK+CAa0r0rUyf/eE5r9RBUq9EPER5hFMr/yjimcn39RCgB0vxosfUFoHmIx9alTBBwg/kdYj05A==, tarball: file:apps/server/local-packages/midscene-mcp.tgz}
     version: 0.30.8
     hasBin: true
 
@@ -1293,7 +1293,7 @@ packages:
     resolution: {integrity: sha512-jt1txKn3LvOxYCIYhtkevAsSZU6efvoqV6GcF5WiHgq/0olaCiyReA618j5dRVM9vrN8fRsQP/jgZL0ifGJ6aw==}
 
   '@midscene/web@file:apps/server/local-packages/midscene-web.tgz':
-    resolution: {integrity: sha512-yItQ+efFJCA/TApm7nPneMR7fRU3HGzUMgX4NkOVPEzz5t9RCz1cz8kOApXHpE9YXbiA3AZC76z4d/sT/VxcFw==, tarball: file:apps/server/local-packages/midscene-web.tgz}
+    resolution: {integrity: sha512-AYjfRcDK2YggH0NvX+btBKnRZGonIzy8zhGPO10vJdc9lqDcgQUo6Vq4i76y6UotKs80XrrffqPdwmwMPIgQQQ==, tarball: file:apps/server/local-packages/midscene-web.tgz}
     version: 0.30.8
     engines: {node: '>=18.0.0'}
     hasBin: true
@@ -7164,14 +7164,14 @@ snapshots:
 
   '@jsdevtools/ono@7.1.3': {}
 
-  '@langchain/core@0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))':
+  '@langchain/core@0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
-      langsmith: 0.2.15(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
+      langsmith: 0.2.15(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -7373,7 +7373,7 @@ snapshots:
     dependencies:
       '@anthropic-ai/sdk': 0.33.1
       '@azure/identity': 4.5.0
-      '@langchain/core': 0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
+      '@langchain/core': 0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
       '@midscene/recorder': 0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@midscene/shared': 0.30.8
       '@ui-tars/action-parser': 1.2.3
@@ -7381,8 +7381,8 @@ snapshots:
       https-proxy-agent: 7.0.2
       js-yaml: 4.1.0
       jsonrepair: 3.12.0
-      langsmith: 0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
-      openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3)
+      langsmith: 0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
+      openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)
       semver: 7.5.2
       socks-proxy-agent: 8.0.4
       zod: 3.24.3
@@ -7400,7 +7400,7 @@ snapshots:
     dependencies:
       '@anthropic-ai/sdk': 0.33.1
       '@azure/identity': 4.5.0
-      '@langchain/core': 0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
+      '@langchain/core': 0.3.26(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
       '@midscene/recorder': 0.30.8(date-fns@4.1.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@midscene/shared': 0.30.8
       '@ui-tars/action-parser': 1.2.3
@@ -7408,7 +7408,7 @@ snapshots:
       https-proxy-agent: 7.0.2
       js-yaml: 4.1.0
       jsonrepair: 3.12.0
-      langsmith: 0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76))
+      langsmith: 0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3))
       openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3)
       semver: 7.5.2
       socks-proxy-agent: 8.0.4
@@ -11102,7 +11102,7 @@ snapshots:
       jwa: 2.0.1
       safe-buffer: 5.2.1
 
-  langsmith@0.2.15(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)):
+  langsmith@0.2.15(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3)):
     dependencies:
       '@types/uuid': 10.0.0
       commander: 10.0.1
@@ -11113,7 +11113,7 @@ snapshots:
     optionalDependencies:
       openai: 4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)
 
-  langsmith@0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.25.76)):
+  langsmith@0.3.7(openai@4.81.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@6.0.5))(zod@3.24.3)):
     dependencies:
       '@types/uuid': 10.0.0
       chalk: 4.1.2
@@ -11428,7 +11428,6 @@ snapshots:
       zod: 3.25.76
     transitivePeerDependencies:
       - encoding
-    optional: true
 
   openapi-types@12.1.3: {}
 
