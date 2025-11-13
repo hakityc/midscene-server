@@ -304,7 +304,35 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         '浏览器标签页列表',
       );
       if (tabs.length > 0) {
+        // ✅ 检查桥接服务器连接状态
+        const bridgeServer = (this.agent as any).page?.bridgeServer;
+        if (bridgeServer && !bridgeServer.socket) {
+          throw new Error(
+            '桥接服务器未连接。请确保 Chrome 扩展已启动并连接到桥接服务器。',
+          );
+        }
+
         const tab = tabs[tabs.length - 1];
+        const targetTabId = Number.parseInt(tab.id, 10);
+
+        const agentPage = (this.agent as any).page;
+        const currentActiveTabId =
+          agentPage && typeof agentPage.getActiveTabId === 'function'
+            ? await agentPage.getActiveTabId()
+            : null;
+
+        if (
+          typeof currentActiveTabId === 'number' &&
+          Number.isFinite(currentActiveTabId) &&
+          targetTabId === currentActiveTabId
+        ) {
+          serviceLogger.info(
+            this.withState({ tab: JSON.stringify(tab) }),
+            '目标标签页已处于激活状态，跳过重新连接',
+          );
+          return;
+        }
+
         await this.agent.setActiveTabId(tab.id);
         serviceLogger.info(
           this.withState({ tab: JSON.stringify(tab) }),
