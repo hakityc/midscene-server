@@ -148,9 +148,14 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       'AgentOverChromeBridge 初始化最终失败，所有重试已用尽',
     );
     setBrowserConnected(false);
-    throw new Error(
-      `初始化失败，已重试${maxRetries}次。最后错误: ${lastError?.message}`,
-    );
+
+    const finalMessage = `初始化失败，已重试${maxRetries}次。最后错误: ${
+      lastError?.message ?? '未知错误'
+    }`;
+    const restartError = new AppError(finalMessage, 500);
+    (restartError as any).restartRequired = true;
+    (restartError as any).lastError = lastError;
+    throw restartError;
   }
 
   protected async destroyAgent(): Promise<void> {
@@ -392,6 +397,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         );
         this.stopAutoReconnect();
         setBrowserConnected(false);
+
         return;
       }
 

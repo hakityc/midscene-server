@@ -2,6 +2,7 @@ import { WebOperateServiceRefactored } from '../../services/base/WebOperateServi
 import type { MessageHandler } from '../../types/websocket';
 import { wsLogger } from '../../utils/logger';
 import {
+  createCommandMessage,
   createErrorResponse,
   createSuccessResponse,
 } from '../builders/messageBuilder';
@@ -45,11 +46,33 @@ export const createCommandHandler = (): MessageHandler => {
       wsLogger.info({ messageId: message.meta.messageId }, '服务命令执行成功');
       const response = createSuccessResponse(message, `服务命令执行成功`);
       send(response);
-    } catch (error) {
+    } catch (error: any) {
       wsLogger.error(
         { error, messageId: message.meta.messageId },
         '服务命令执行失败',
       );
+
+      // 检查是否需要发送重启指令
+      if (error?.restartRequired === true) {
+        const errorMessage =
+          error?.message || '浏览器连接失败，已达到最大重连次数';
+        const restartCommandData = JSON.stringify({
+          command: 'restart',
+          reason: 'max_reconnect_attempts_reached',
+          error: errorMessage,
+          timestamp: Date.now(),
+        });
+        const restartMessage = createCommandMessage(
+          message,
+          restartCommandData,
+        );
+        send(restartMessage);
+        wsLogger.info(
+          { messageId: message.meta.messageId, errorMessage },
+          '已发送重启指令给客户端',
+        );
+      }
+
       const response = createErrorResponse(message, error, '服务命令执行失败');
       send(response);
     }
