@@ -304,22 +304,26 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         '浏览器标签页列表',
       );
       if (tabs.length > 0) {
-        // ✅ 检查桥接服务器连接状态
-        const bridgeServer = (this.agent as any).page?.bridgeServer;
-        if (bridgeServer && !bridgeServer.socket) {
-          throw new Error(
-            '桥接服务器未连接。请确保 Chrome 扩展已启动并连接到桥接服务器。',
-          );
-        }
-
         const tab = tabs[tabs.length - 1];
         const targetTabId = Number.parseInt(tab.id, 10);
 
         const agentPage = (this.agent as any).page;
-        const currentActiveTabId =
-          agentPage && typeof agentPage.getActiveTabId === 'function'
-            ? await agentPage.getActiveTabId()
-            : null;
+        let currentActiveTabId: number | null = null;
+
+        if (agentPage && typeof agentPage.getActiveTabId === 'function') {
+          try {
+            currentActiveTabId = await agentPage.getActiveTabId();
+          } catch (getActiveTabError: any) {
+            serviceLogger.warn(
+              this.withState({
+                tab: JSON.stringify(tab),
+                getActiveTabError:
+                  getActiveTabError?.message ?? String(getActiveTabError),
+              }),
+              '获取当前激活标签页失败，继续尝试连接目标标签页',
+            );
+          }
+        }
 
         if (
           typeof currentActiveTabId === 'number' &&
@@ -342,10 +346,17 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
     } catch (error: any) {
       serviceLogger.error(this.withState({ error }), '浏览器标签页连接失败');
 
-      if (error.message?.includes('connect')) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : JSON.stringify(error ?? {}) || '未知错误';
+
+      if (errorMessage?.includes('connect')) {
         throw new AppError('浏览器连接失败', 503);
       }
-      throw new AppError(`浏览器连接错误: ${error.message}`, 500);
+      throw new AppError(`浏览器连接错误: ${errorMessage}`, 500);
     }
   }
 
