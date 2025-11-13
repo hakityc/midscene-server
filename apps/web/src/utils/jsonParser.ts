@@ -236,6 +236,16 @@ export function parseFlow(flow: any[]): FlowAction[] {
         };
       }
 
+      if ('aiAsk' in action) {
+        return {
+          type: 'aiAsk' as const,
+          prompt: action.aiAsk,
+          domIncluded: action.domIncluded,
+          screenshotIncluded: action.screenshotIncluded,
+          leboStepName: action.leboStepName,
+        };
+      }
+
       // ==================== 高级操作 ====================
       if ('aiAction' in action) {
         return {
@@ -250,6 +260,22 @@ export function parseFlow(flow: any[]): FlowAction[] {
         return {
           type: 'aiLocate' as const,
           prompt: action.aiLocate,
+          leboStepName: action.leboStepName,
+        };
+      }
+
+      if ('runYaml' in action) {
+        return {
+          type: 'runYaml' as const,
+          yaml: action.runYaml,
+          leboStepName: action.leboStepName,
+        };
+      }
+
+      if ('setAIActionContext' in action) {
+        return {
+          type: 'setAIActionContext' as const,
+          actionContext: action.setAIActionContext,
           leboStepName: action.leboStepName,
         };
       }
@@ -288,11 +314,25 @@ export function parseFlow(flow: any[]): FlowAction[] {
         };
       }
 
+      if ('freezePageContext' in action) {
+        return {
+          type: 'freezePageContext' as const,
+          leboStepName: action.leboStepName,
+        };
+      }
+
+      if ('unfreezePageContext' in action) {
+        return {
+          type: 'unfreezePageContext' as const,
+          leboStepName: action.leboStepName,
+        };
+      }
+
       // ==================== Web 特有 ====================
       if ('javascript' in action) {
         return {
-          type: 'javascript' as const,
-          code: action.javascript,
+          type: 'evaluateJavaScript' as const,
+          script: action.javascript,
           name: action.name,
           leboStepName: action.leboStepName,
         };

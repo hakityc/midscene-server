@@ -43,16 +43,22 @@ export type FlowActionType =
   | 'aiString'
   | 'aiNumber'
   | 'aiBoolean'
+  | 'aiAsk'
   // 高级操作
   | 'aiAction'
   | 'aiLocate'
+  | 'runYaml'
+  | 'setAIActionContext'
   // 工具方法
   | 'sleep'
   | 'screenshot'
   | 'logText'
   | 'logScreenshot'
+  | 'freezePageContext'
+  | 'unfreezePageContext'
   // Web 特有
   | 'javascript'
+  | 'evaluateJavaScript'
   // Windows 特有
   | 'getClipboard'
   | 'setClipboard'
@@ -183,6 +189,14 @@ export interface AiBooleanAction extends BaseFlowAction {
   prompt: string; // 查询内容
 }
 
+// aiAsk 动作
+export interface AiAskAction extends BaseFlowAction {
+  type: 'aiAsk';
+  prompt: string; // 提问内容
+  domIncluded?: boolean | 'visible-only'; // 是否包含简化 DOM
+  screenshotIncluded?: boolean; // 是否包含截图
+}
+
 // aiAction 动作
 export interface AiActionAction extends BaseFlowAction {
   type: 'aiAction';
@@ -194,6 +208,18 @@ export interface AiActionAction extends BaseFlowAction {
 export interface AiLocateAction extends BaseFlowAction {
   type: 'aiLocate';
   prompt: string; // 元素描述
+}
+
+// runYaml 动作
+export interface RunYamlAction extends BaseFlowAction {
+  type: 'runYaml';
+  yaml: string; // YAML 脚本内容
+}
+
+// setAIActionContext 动作
+export interface SetAIActionContextAction extends BaseFlowAction {
+  type: 'setAIActionContext';
+  actionContext: string; // 上下文内容
 }
 
 // screenshot 动作
@@ -215,10 +241,28 @@ export interface LogScreenshotAction extends BaseFlowAction {
   content?: string; // 截图描述
 }
 
+// freezePageContext 动作
+export interface FreezePageContextAction extends BaseFlowAction {
+  type: 'freezePageContext';
+}
+
+// unfreezePageContext 动作
+export interface UnfreezePageContextAction extends BaseFlowAction {
+  type: 'unfreezePageContext';
+}
+
 // javascript 动作
 export interface JavascriptAction extends BaseFlowAction {
   type: 'javascript';
   code: string; // JavaScript 代码
+  name?: string; // 返回值名称
+  script?: string; // 兼容 evaluateJavaScript 的脚本字段
+}
+
+// evaluateJavaScript 动作
+export interface EvaluateJavaScriptAction extends BaseFlowAction {
+  type: 'evaluateJavaScript';
+  script: string; // JavaScript 表达式
   name?: string; // 返回值名称
 }
 
@@ -260,12 +304,18 @@ export type FlowAction =
   | AiStringAction
   | AiNumberAction
   | AiBooleanAction
+  | AiAskAction
   | AiActionAction
   | AiLocateAction
+  | RunYamlAction
+  | SetAIActionContextAction
   | ScreenshotAction
   | LogTextAction
   | LogScreenshotAction
+  | FreezePageContextAction
+  | UnfreezePageContextAction
   | JavascriptAction
+  | EvaluateJavaScriptAction
   | GetClipboardAction
   | SetClipboardAction
   | GetWindowListAction

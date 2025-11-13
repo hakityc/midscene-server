@@ -29,16 +29,22 @@ export type FlowActionType =
   | 'aiString' // AI 查询字符串
   | 'aiNumber' // AI 查询数字
   | 'aiBoolean' // AI 查询布尔值
+  | 'aiAsk' // AI 提问
   // 高级操作
   | 'aiAction' // AI 自动规划
   | 'aiLocate' // AI 定位
+  | 'runYaml' // 执行 YAML 脚本
+  | 'setAIActionContext' // 设置 AI 行为上下文
   // 工具方法
   | 'sleep' // 等待/延迟
   | 'screenshot' // 截图
   | 'logText' // 记录文本
   | 'logScreenshot' // 记录截图到报告
+  | 'freezePageContext' // 冻结页面上下文
+  | 'unfreezePageContext' // 解冻页面上下文
   // Web 特有
-  | 'javascript' // 执行 JavaScript 代码
+  | 'javascript' // 执行 JavaScript 代码（兼容旧版）
+  | 'evaluateJavaScript' // 执行 JavaScript 代码
   // Windows 特有
   | 'getClipboard' // 获取剪贴板
   | 'setClipboard' // 设置剪贴板
@@ -88,7 +94,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       // ==================== 基础操作 ====================
       {
         type: 'aiTap',
-        label: 'AI 点击',
+        label: 'aiTap',
         description: '点击指定元素',
         category: 'basic',
         params: [
@@ -132,7 +138,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiInput',
-        label: 'AI 输入',
+        label: 'aiInput',
         description: '在指定元素输入文本',
         category: 'basic',
         params: [
@@ -185,7 +191,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiAssert',
-        label: 'AI 断言',
+        label: 'aiAssert',
         description: '验证条件是否满足',
         category: 'basic',
         params: [
@@ -218,7 +224,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiHover',
-        label: 'AI 悬停',
+        label: 'aiHover',
         description: '鼠标悬停在指定元素',
         category: 'basic',
         params: [
@@ -262,7 +268,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiScroll',
-        label: 'AI 滚动',
+        label: 'aiScroll',
         description: '滚动页面或元素',
         category: 'basic',
         params: [
@@ -331,7 +337,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiWaitFor',
-        label: 'AI 等待条件',
+        label: 'aiWaitFor',
         description: '等待条件满足',
         category: 'basic',
         params: [
@@ -356,7 +362,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiKeyboardPress',
-        label: 'AI 按键',
+        label: 'aiKeyboardPress',
         description: '按下键盘按键',
         category: 'basic',
         params: [
@@ -408,7 +414,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiDoubleClick',
-        label: 'AI 双击',
+        label: 'aiDoubleClick',
         description: '双击指定元素',
         category: 'basic',
         params: [
@@ -452,7 +458,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiRightClick',
-        label: 'AI 右键',
+        label: 'aiRightClick',
         description: '右键点击指定元素',
         category: 'basic',
         params: [
@@ -498,7 +504,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       // ==================== 查询操作 ====================
       {
         type: 'aiQuery',
-        label: 'AI 查询',
+        label: 'aiQuery',
         description: 'AI 查询，返回任意类型数据',
         category: 'query',
         params: [
@@ -523,7 +529,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiString',
-        label: 'AI 查询字符串',
+        label: 'aiString',
         description: 'AI 查询，返回字符串',
         category: 'query',
         params: [
@@ -539,7 +545,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiNumber',
-        label: 'AI 查询数字',
+        label: 'aiNumber',
         description: 'AI 查询，返回数字',
         category: 'query',
         params: [
@@ -555,7 +561,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiBoolean',
-        label: 'AI 查询布尔值',
+        label: 'aiBoolean',
         description: 'AI 查询，返回布尔值',
         category: 'query',
         params: [
@@ -569,11 +575,46 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         ],
         example: 'const enabled = await agent.aiBoolean("按钮是否可点击")',
       },
+      {
+        type: 'aiAsk',
+        label: 'aiAsk',
+        description: 'AI 提问，返回字符串答案',
+        category: 'query',
+        params: [
+          {
+            name: 'prompt',
+            label: '提问内容',
+            type: 'string',
+            required: true,
+            placeholder: '例如：当前页面的标题是什么',
+            description: '用自然语言描述要提问的问题',
+          },
+          {
+            name: 'domIncluded',
+            label: '包含 DOM',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否向模型发送简化 DOM 信息（提取隐藏属性时使用）',
+          },
+          {
+            name: 'screenshotIncluded',
+            label: '包含截图',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: true,
+            description: '是否向模型发送截图，默认开启',
+          },
+        ],
+        example: 'const answer = await agent.aiAsk("当前页面的标题是什么？")',
+      },
 
       // ==================== 高级操作 ====================
       {
         type: 'aiAction',
-        label: 'AI 自动规划',
+        label: 'aiAction',
         description: '执行复杂任务，AI 自动规划步骤',
         category: 'advanced',
         params: [
@@ -599,7 +640,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiLocate',
-        label: 'AI 定位',
+        label: 'aiLocate',
         description: '定位页面元素',
         category: 'advanced',
         params: [
@@ -613,11 +654,44 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         ],
         example: 'const element = await agent.aiLocate("搜索按钮")',
       },
+      {
+        type: 'runYaml',
+        label: 'runYaml',
+        description: '执行 YAML 自动化脚本任务列表',
+        category: 'advanced',
+        params: [
+          {
+            name: 'yaml',
+            label: 'YAML 脚本内容',
+            type: 'string',
+            required: true,
+            placeholder: 'tasks:\\n  - name: example',
+            description: '需要执行的 YAML 脚本，仅支持 tasks 段',
+          },
+        ],
+        example: 'await agent.runYaml("tasks:\\n  - name: 示例任务")',
+      },
+      {
+        type: 'setAIActionContext',
+        label: 'setAIActionContext',
+        description: '设置 AI 执行复杂任务时的上下文提示',
+        category: 'advanced',
+        params: [
+          {
+            name: 'actionContext',
+            label: '上下文内容',
+            type: 'string',
+            required: true,
+            placeholder: '例如：操作前先关闭弹窗',
+          },
+        ],
+        example: 'await agent.setAIActionContext("操作前先关闭 cookie 弹窗")',
+      },
 
       // ==================== 工具方法 ====================
       {
         type: 'sleep',
-        label: '等待',
+        label: 'sleep',
         description: '等待指定时间',
         category: 'utility',
         params: [
@@ -632,8 +706,24 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         example: 'await sleep(1000)',
       },
       {
+        type: 'freezePageContext',
+        label: 'freezePageContext',
+        description: '冻结当前页面上下文，复用相同快照',
+        category: 'utility',
+        params: [],
+        example: 'await agent.freezePageContext()',
+      },
+      {
+        type: 'unfreezePageContext',
+        label: 'unfreezePageContext',
+        description: '解冻页面上下文，恢复实时状态',
+        category: 'utility',
+        params: [],
+        example: 'await agent.unfreezePageContext()',
+      },
+      {
         type: 'screenshot',
-        label: '截图',
+        label: 'screenshot',
         description: '截取当前页面',
         category: 'utility',
         params: [
@@ -649,7 +739,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'logText',
-        label: '记录文本',
+        label: 'logText',
         description: '记录文本到报告',
         category: 'utility',
         params: [
@@ -665,7 +755,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'logScreenshot',
-        label: '记录截图',
+        label: 'logScreenshot',
         description: '在报告文件中记录当前截图',
         category: 'utility',
         params: [
@@ -691,18 +781,18 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
 
       // ==================== Web 特有操作 ====================
       {
-        type: 'javascript',
-        label: '执行 JavaScript',
+        type: 'evaluateJavaScript',
+        label: 'evaluateJavaScript',
         description: '在页面上下文中执行 JavaScript 代码',
         category: 'web-specific',
         params: [
           {
-            name: 'code',
-            label: 'JavaScript 代码',
+            name: 'script',
+            label: 'JavaScript 表达式',
             type: 'string',
             required: true,
             placeholder: '例如：document.title',
-            description: '要执行的 JavaScript 代码',
+            description: '要执行的 JavaScript 表达式或脚本',
           },
           {
             name: 'name',
@@ -714,7 +804,35 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
               '可选，给返回值一个名称，会在 JSON 输出中作为 key 使用',
           },
         ],
-        example: 'const title = await agent.javascript("document.title")',
+        example:
+          'const title = await agent.evaluateJavaScript("document.title")',
+      },
+      {
+        type: 'javascript',
+        label: 'javascript',
+        description: '（兼容旧版）执行 JavaScript 代码',
+        category: 'web-specific',
+        params: [
+          {
+            name: 'code',
+            label: 'JavaScript 代码',
+            type: 'string',
+            required: true,
+            placeholder: '例如：document.title',
+            description: '要执行的 JavaScript 代码（旧版字段名）',
+          },
+          {
+            name: 'name',
+            label: '名称',
+            type: 'string',
+            required: false,
+            placeholder: '可选，返回值的名称',
+            description:
+              '可选，给返回值一个名称，会在 JSON 输出中作为 key 使用',
+          },
+        ],
+        example:
+          'const title = await agent.evaluateJavaScript("document.title")',
       },
     ],
 
@@ -723,7 +841,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       // Windows 支持所有 Web 的基础操作，但不支持 xpath
       {
         type: 'aiTap',
-        label: 'AI 点击',
+        label: 'aiTap',
         description: '点击指定元素',
         category: 'basic',
         params: [
@@ -758,7 +876,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiInput',
-        label: 'AI 输入',
+        label: 'aiInput',
         description: '在指定元素输入文本',
         category: 'basic',
         params: [
@@ -801,7 +919,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiAssert',
-        label: 'AI 断言',
+        label: 'aiAssert',
         description: '验证条件是否满足',
         category: 'basic',
         params: [
@@ -834,7 +952,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiHover',
-        label: 'AI 悬停',
+        label: 'aiHover',
         description: '鼠标悬停在指定元素',
         category: 'basic',
         params: [
@@ -869,7 +987,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiScroll',
-        label: 'AI 滚动',
+        label: 'aiScroll',
         description: '滚动窗口或元素',
         category: 'basic',
         params: [
@@ -929,7 +1047,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiWaitFor',
-        label: 'AI 等待条件',
+        label: 'aiWaitFor',
         description: '等待条件满足',
         category: 'basic',
         params: [
@@ -954,7 +1072,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiKeyboardPress',
-        label: 'AI 按键',
+        label: 'aiKeyboardPress',
         description: '按下键盘按键',
         category: 'basic',
         params: [
@@ -997,7 +1115,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiDoubleClick',
-        label: 'AI 双击',
+        label: 'aiDoubleClick',
         description: '双击指定元素',
         category: 'basic',
         params: [
@@ -1032,7 +1150,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiRightClick',
-        label: 'AI 右键',
+        label: 'aiRightClick',
         description: '右键点击指定元素',
         category: 'basic',
         params: [
@@ -1069,7 +1187,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       // ==================== 查询操作 ====================
       {
         type: 'aiQuery',
-        label: 'AI 查询',
+        label: 'aiQuery',
         description: 'AI 查询，返回任意类型数据',
         category: 'query',
         params: [
@@ -1094,7 +1212,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiString',
-        label: 'AI 查询字符串',
+        label: 'aiString',
         description: 'AI 查询，返回字符串',
         category: 'query',
         params: [
@@ -1110,7 +1228,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiNumber',
-        label: 'AI 查询数字',
+        label: 'aiNumber',
         description: 'AI 查询，返回数字',
         category: 'query',
         params: [
@@ -1126,7 +1244,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiBoolean',
-        label: 'AI 查询布尔值',
+        label: 'aiBoolean',
         description: 'AI 查询，返回布尔值',
         category: 'query',
         params: [
@@ -1140,11 +1258,46 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         ],
         example: 'const maximized = await agent.aiBoolean("窗口是否最大化")',
       },
+      {
+        type: 'aiAsk',
+        label: 'aiAsk',
+        description: 'AI 提问，返回字符串答案',
+        category: 'query',
+        params: [
+          {
+            name: 'prompt',
+            label: '提问内容',
+            type: 'string',
+            required: true,
+            placeholder: '例如：当前窗口的标题是什么',
+            description: '用自然语言描述要提问的问题',
+          },
+          {
+            name: 'domIncluded',
+            label: '包含界面结构',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: false,
+            description: '是否向模型发送界面结构信息，辅助提取隐藏属性',
+          },
+          {
+            name: 'screenshotIncluded',
+            label: '包含截图',
+            type: 'boolean',
+            required: false,
+            isOption: true,
+            defaultValue: true,
+            description: '是否向模型发送截图，默认开启',
+          },
+        ],
+        example: 'const answer = await agent.aiAsk("当前窗口的标题是什么？")',
+      },
 
       // ==================== 高级操作 ====================
       {
         type: 'aiAction',
-        label: 'AI 自动规划',
+        label: 'aiAction',
         description: '执行复杂任务，AI 自动规划步骤',
         category: 'advanced',
         params: [
@@ -1170,7 +1323,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'aiLocate',
-        label: 'AI 定位',
+        label: 'aiLocate',
         description: '定位界面元素',
         category: 'advanced',
         params: [
@@ -1184,11 +1337,44 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         ],
         example: 'const element = await agent.aiLocate("关闭按钮")',
       },
+      {
+        type: 'runYaml',
+        label: 'runYaml',
+        description: '执行 YAML 自动化脚本任务列表',
+        category: 'advanced',
+        params: [
+          {
+            name: 'yaml',
+            label: 'YAML 脚本内容',
+            type: 'string',
+            required: true,
+            placeholder: 'tasks:\\n  - name: example',
+            description: '需要执行的 YAML 脚本，仅支持 tasks 段',
+          },
+        ],
+        example: 'await agent.runYaml("tasks:\\n  - name: 示例任务")',
+      },
+      {
+        type: 'setAIActionContext',
+        label: 'setAIActionContext',
+        description: '设置 AI 执行复杂任务时的上下文提示',
+        category: 'advanced',
+        params: [
+          {
+            name: 'actionContext',
+            label: '上下文内容',
+            type: 'string',
+            required: true,
+            placeholder: '例如：操作前先激活目标窗口',
+          },
+        ],
+        example: 'await agent.setAIActionContext("执行任务前请激活目标窗口")',
+      },
 
       // ==================== 工具方法 ====================
       {
         type: 'sleep',
-        label: '等待',
+        label: 'sleep',
         description: '等待指定时间',
         category: 'utility',
         params: [
@@ -1203,8 +1389,24 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
         example: 'await sleep(1000)',
       },
       {
+        type: 'freezePageContext',
+        label: 'freezePageContext',
+        description: '冻结当前桌面上下文，复用相同快照',
+        category: 'utility',
+        params: [],
+        example: 'await agent.freezePageContext()',
+      },
+      {
+        type: 'unfreezePageContext',
+        label: 'unfreezePageContext',
+        description: '解冻上下文，恢复实时状态',
+        category: 'utility',
+        params: [],
+        example: 'await agent.unfreezePageContext()',
+      },
+      {
         type: 'screenshot',
-        label: '截图',
+        label: 'screenshot',
         description: '截取当前屏幕',
         category: 'utility',
         params: [
@@ -1220,7 +1422,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'logText',
-        label: '记录文本',
+        label: 'logText',
         description: '记录文本到报告',
         category: 'utility',
         params: [
@@ -1236,7 +1438,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'logScreenshot',
-        label: '记录截图',
+        label: 'logScreenshot',
         description: '在报告文件中记录当前截图',
         category: 'utility',
         params: [
@@ -1263,7 +1465,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       // ==================== Windows 特有操作 ====================
       {
         type: 'getClipboard',
-        label: '获取剪贴板',
+        label: 'getClipboard',
         description: '获取剪贴板内容',
         category: 'windows-specific',
         params: [],
@@ -1271,7 +1473,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'setClipboard',
-        label: '设置剪贴板',
+        label: 'setClipboard',
         description: '设置剪贴板内容',
         category: 'windows-specific',
         params: [
@@ -1287,7 +1489,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'getWindowList',
-        label: '获取窗口列表',
+        label: 'getWindowList',
         description: '获取所有打开的窗口',
         category: 'windows-specific',
         params: [],
@@ -1295,7 +1497,7 @@ export const CLIENT_TYPE_FLOW_ACTIONS: Record<ClientType, FlowActionConfig[]> =
       },
       {
         type: 'activateWindow',
-        label: '激活窗口',
+        label: 'activateWindow',
         description: '激活指定窗口',
         category: 'windows-specific',
         params: [

@@ -175,6 +175,15 @@ export function flowActionToApiFormat(
       result = { aiBoolean: action.prompt || '' };
       break;
 
+    case 'aiAsk':
+      // prompt 是必填字段
+      result = filterUndefined({
+        aiAsk: action.prompt || '',
+        domIncluded: action.domIncluded,
+        screenshotIncluded: action.screenshotIncluded,
+      });
+      break;
+
     // ==================== 高级操作 ====================
     case 'aiAction':
       // prompt 是必填字段
@@ -187,6 +196,14 @@ export function flowActionToApiFormat(
     case 'aiLocate':
       // prompt 是必填字段
       result = { aiLocate: action.prompt || '' };
+      break;
+
+    case 'runYaml':
+      result = { runYaml: action.yaml || '' };
+      break;
+
+    case 'setAIActionContext':
+      result = { setAIActionContext: action.actionContext || '' };
       break;
 
     // ==================== 工具方法 ====================
@@ -215,12 +232,17 @@ export function flowActionToApiFormat(
 
     // ==================== Web 特有 ====================
     case 'javascript':
-      // code 是必填字段
+    case 'evaluateJavaScript': {
+      const script =
+        (action as any).code ??
+        (action as any).script ??
+        '';
       result = filterUndefined({
-        javascript: action.code || '',
+        javascript: script || '',
         name: action.name,
       });
       break;
+    }
 
     // ==================== Windows 特有 ====================
     case 'getClipboard':
@@ -239,6 +261,14 @@ export function flowActionToApiFormat(
     case 'activateWindow':
       // windowHandle 是必填字段
       result = { activateWindow: action.windowHandle || '' };
+      break;
+
+    case 'freezePageContext':
+      result = { freezePageContext: true };
+      break;
+
+    case 'unfreezePageContext':
+      result = { unfreezePageContext: true };
       break;
 
     default:

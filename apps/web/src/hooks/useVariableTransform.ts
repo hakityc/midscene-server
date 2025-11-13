@@ -73,6 +73,7 @@ export function useVariableTransform() {
         case 'aiBoolean':
         case 'aiAction':
         case 'aiLocate':
+        case 'aiAsk':
           fields.push('prompt');
           break;
         case 'screenshot':
@@ -86,7 +87,9 @@ export function useVariableTransform() {
           if (action.content) fields.push('content');
           break;
         case 'javascript':
+        case 'evaluateJavaScript':
           fields.push('code');
+          fields.push('script');
           if (action.name) fields.push('name');
           break;
         case 'setClipboard':
@@ -94,6 +97,12 @@ export function useVariableTransform() {
           break;
         case 'activateWindow':
           fields.push('windowHandle');
+          break;
+        case 'runYaml':
+          fields.push('yaml');
+          break;
+        case 'setAIActionContext':
+          fields.push('actionContext');
           break;
         // sleep, getClipboard, getWindowList 没有字符串字段需要处理
       }
@@ -138,15 +147,21 @@ export function useVariableTransform() {
         'aiBoolean',
         'aiAction',
         'aiLocate',
+        'aiAsk',
         'screenshot',
         'logText',
         'logScreenshot',
         'javascript',
+        'evaluateJavaScript',
         'setClipboard',
         'activateWindow',
         'sleep',
         'getClipboard',
         'getWindowList',
+        'runYaml',
+        'setAIActionContext',
+        'freezePageContext',
+        'unfreezePageContext',
       ];
 
       apiFields.forEach((field) => {

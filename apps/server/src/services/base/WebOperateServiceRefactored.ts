@@ -42,7 +42,6 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
     cacheId: 'midscene',
     generateReport: true,
     autoPrintReportMsg: true,
-    aiActionContext: '如果当前需要用户登录或者扫码，抛出异常，提示用户手动操作',
   };
 
   // ==================== 自定义 tip 映射 ====================

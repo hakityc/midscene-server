@@ -1,3 +1,4 @@
+// 此文件已弃用。请改用 base/WebOperateServiceRefactored.ts。
 import { EventEmitter } from 'node:events';
 import type { AgentOpt } from '@midscene/web';
 import { AgentOverChromeBridge } from '@midscene/web/bridge-mode';

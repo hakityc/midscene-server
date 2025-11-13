@@ -184,17 +184,23 @@ const actionRulesMap: Record<FlowActionType, OptimizationRule[]> = {
   aiString: [],
   aiNumber: [],
   aiBoolean: [],
+  aiAsk: [],
   aiAction: [],
   aiLocate: [],
+  runYaml: [],
+  setAIActionContext: [],
   sleep: [],
   screenshot: [],
   logText: [],
   logScreenshot: [],
   javascript: [],
+  evaluateJavaScript: [],
   getClipboard: [],
   setClipboard: [],
   getWindowList: [],
   activateWindow: [],
+  freezePageContext: [],
+  unfreezePageContext: [],
 };
 
 /**
