@@ -90,7 +90,7 @@ describe('MessageBuilder', () => {
       expect(response.meta.conversationId).toBe('test-conversation-id');
       expect(response.payload.action).toBe(WebSocketAction.AI);
       expect(response.payload.status).toBe('failed');
-      expect(response.payload.error).toBe('操作失败: 测试错误');
+      expect(response.payload.error).toBe('操作失败: midscene-server内部错误');
       expect(response.payload.result).toBeUndefined();
     });
 
@@ -99,7 +99,7 @@ describe('MessageBuilder', () => {
       const response = createErrorResponse(mockInboundMessage, error);
 
       expect(response.payload.status).toBe('failed');
-      expect(response.payload.error).toBe('操作失败: 字符串错误');
+      expect(response.payload.error).toBe('操作失败: midscene-server内部错误');
     });
 
     it('应该支持自定义错误前缀', () => {
@@ -107,14 +107,14 @@ describe('MessageBuilder', () => {
       const prefix = '网络错误';
       const response = createErrorResponse(mockInboundMessage, error, prefix);
 
-      expect(response.payload.error).toBe('网络错误: 连接失败');
+      expect(response.payload.error).toBe('网络错误: midscene-server内部错误');
     });
 
     it('应该处理未知类型的错误', () => {
       const error = { code: 500 };
       const response = createErrorResponse(mockInboundMessage, error);
 
-      expect(response.payload.error).toContain('操作失败:');
+      expect(response.payload.error).toBe('操作失败: midscene-server内部错误');
     });
   });
 

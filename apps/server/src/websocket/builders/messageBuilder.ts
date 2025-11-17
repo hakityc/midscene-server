@@ -5,6 +5,8 @@ import type {
 } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
 
+const INTERNAL_BUSINESS_ERROR_MESSAGE = 'midscene-server内部错误';
+
 /**
  * 构建出站消息（服务端 -> 客户端）- 基于原始消息的 meta
  */
@@ -94,35 +96,11 @@ export function createSuccessResponseWithMeta<
  */
 export function createErrorResponse(
   originalMessage: WsInboundMessage,
-  error: unknown,
+  _error: unknown,
   prefix: string = '操作失败',
 ): WsOutboundMessage<string> {
-  let errorMessage = '';
-
-  if (error instanceof Error) {
-    errorMessage = error.message;
-
-    // 在开发环境中，提供更详细的错误信息
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    if (isDevelopment && error.stack) {
-      // 提取 stack 的前几行（不包含完整路径，避免信息过长）
-      const stackLines = error.stack.split('\n').slice(0, 5);
-      errorMessage = `${errorMessage}\n堆栈信息: ${stackLines.join('\n')}`;
-    }
-
-    // 如果是自定义错误类（如 AppError），包含额外信息
-    if ('statusCode' in error || 'isOperational' in error) {
-      const customProps = Object.entries(error)
-        .filter(([key]) => !['name', 'message', 'stack'].includes(key))
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(', ');
-      if (customProps) {
-        errorMessage = `${errorMessage} (${customProps})`;
-      }
-    }
-  } else {
-    errorMessage = String(error);
-  }
+  // 所有错误详情通过日志记录，WebSocket 仅返回业务错误提示
+  const sanitizedMessage = `${prefix}: ${INTERNAL_BUSINESS_ERROR_MESSAGE}`;
 
   return buildOutboundFromMeta<string>(
     originalMessage.meta,
@@ -130,7 +108,7 @@ export function createErrorResponse(
     originalMessage.payload.action as any,
     'failed',
     {
-      error: `${prefix}: ${errorMessage}`,
+      error: sanitizedMessage,
     },
   );
 }
