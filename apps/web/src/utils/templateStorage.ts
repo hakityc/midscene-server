@@ -37,6 +37,7 @@ export function createTemplateFromTasks(
   description: string,
   enableLoadingShade: boolean,
   clientType?: 'web' | 'windows',
+  context?: string,
 ): Template {
   const meta = generateMeta();
   if (clientType) {
@@ -56,6 +57,7 @@ export function createTemplateFromTasks(
         params: {
           tasks,
         },
+        context: context,
         option: enableLoadingShade ? 'LOADING_SHADE' : undefined,
       },
     } as WsInboundMessage,

@@ -45,6 +45,10 @@ export function executeScriptHandler(): MessageHandler {
 
       let scriptResult: any;
       try {
+        // 从 payload 中提取 context（如果存在）
+        const context = (payload as any)?.context;
+
+        await webOperateService.setAiContext(context);
         await maskController.executeWithMask(
           async () => {
             scriptResult = await webOperateService.executeScript(script);

@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import type { ClientType, FlowAction, Task } from '@/types/debug';
 import { addTemplate, createTemplateFromTasks } from '@/utils/templateStorage';
@@ -40,6 +41,8 @@ interface TaskItemProps {
   onChange: (task: Task) => void;
   onRemove: () => void;
   clientType: ClientType;
+  context?: string;
+  onContextChange?: (context: string) => void;
 }
 
 export function TaskItem({
@@ -48,6 +51,8 @@ export function TaskItem({
   onChange,
   onRemove,
   clientType,
+  context,
+  onContextChange,
 }: TaskItemProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -148,6 +153,7 @@ export function TaskItem({
       `基于任务"${task.name}"的流程模板`, // 自动生成描述
       false, // 默认不启用加载遮罩
       clientType, // 传入客户端类型
+      context, // 传入上下文（从 prop 获取，而不是从 task）
     );
 
     addTemplate(template);
@@ -219,6 +225,20 @@ export function TaskItem({
                   className="mt-1 h-8 text-xs"
                 />
               </div>
+
+              {onContextChange && index === 0 && (
+                <div>
+                  <Textarea
+                    value={context || ''}
+                    onChange={(e) => onContextChange(e.target.value)}
+                    placeholder="设置 AI 行为上下文"
+                    className="min-h-[40px]"
+                  />
+                  <p className="text-xs text-gray-600 mt-2 font-medium">
+                    此上下文会在执行任务前设置，用于指导 AI 的行为
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center gap-2">
                 <Switch

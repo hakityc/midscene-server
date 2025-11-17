@@ -233,10 +233,7 @@ export function flowActionToApiFormat(
     // ==================== Web 特有 ====================
     case 'javascript':
     case 'evaluateJavaScript': {
-      const script =
-        (action as any).code ??
-        (action as any).script ??
-        '';
+      const script = (action as any).code ?? (action as any).script ?? '';
       result = filterUndefined({
         javascript: script || '',
         name: action.name,
@@ -293,6 +290,7 @@ export function buildAiScriptMessage(
   tasks: Task[],
   meta: MessageMeta,
   option?: string,
+  context?: string,
 ): WsInboundMessage {
   const formattedTasks = tasks.map((task) => ({
     name: task.name,
@@ -312,6 +310,7 @@ export function buildAiScriptMessage(
         tasks: formattedTasks,
       },
       option,
+      ...(context && context.trim() ? { context } : {}),
     },
   };
 }
@@ -323,6 +322,7 @@ export function buildAiMessage(
   prompt: string,
   meta: MessageMeta,
   option?: string,
+  context?: string,
 ): WsInboundMessage {
   return {
     meta,
@@ -330,6 +330,7 @@ export function buildAiMessage(
       action: 'ai',
       params: prompt,
       option,
+      ...(context && context.trim() ? { context } : {}),
     },
   };
 }

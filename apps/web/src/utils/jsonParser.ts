@@ -29,6 +29,7 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
     meta: MessageMeta;
     tasks?: Task[];
     enableLoadingShade?: boolean;
+    aiScriptContext?: string;
     aiPrompt?: string;
     siteScript?: string;
     siteScriptCmd?: string;
@@ -44,12 +45,22 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
       const { tasks, option } = payload.params as any;
       result.tasks = parseTasks(tasks);
       result.enableLoadingShade = option === 'LOADING_SHADE';
+      // 解析 context（如果存在）
+      const context = (payload as any)?.context;
+      if (context && typeof context === 'string') {
+        result.aiScriptContext = context;
+      }
       break;
     }
 
     case 'ai': {
       const { prompt } = payload.params as any;
       result.aiPrompt = prompt;
+      // 解析 context（如果存在）
+      const context = (payload as any)?.context;
+      if (context && typeof context === 'string') {
+        result.aiScriptContext = context;
+      }
       break;
     }
 

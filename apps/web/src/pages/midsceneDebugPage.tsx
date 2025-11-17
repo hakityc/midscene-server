@@ -56,6 +56,7 @@ export default function MidsceneDebugPage() {
     meta,
     tasks,
     enableLoadingShade,
+    aiScriptContext,
     aiPrompt,
     siteScript,
     siteScriptCmd,
@@ -71,6 +72,7 @@ export default function MidsceneDebugPage() {
     refreshMessageId,
     setTasks,
     setEnableLoadingShade,
+    setAiScriptContext,
     setAiPrompt,
     setSiteScript,
     setSiteScriptCmd,
@@ -118,10 +120,15 @@ export default function MidsceneDebugPage() {
           // 根据模式选择是否转换变量
           const tasksToUse =
             mode === 'runtime' ? transformTasks(tasks, 'runtime') : tasks;
-          return buildAiScriptMessage(tasksToUse, meta, option);
+          return buildAiScriptMessage(
+            tasksToUse,
+            meta,
+            option,
+            aiScriptContext,
+          );
         }
         case 'ai':
-          return buildAiMessage(aiPrompt, meta, option);
+          return buildAiMessage(aiPrompt, meta, option, aiScriptContext);
         case 'siteScript':
           return buildSiteScriptMessage(siteScript, siteScriptCmd, meta);
         case 'command':
@@ -153,6 +160,7 @@ export default function MidsceneDebugPage() {
       meta,
       tasks,
       enableLoadingShade,
+      aiScriptContext,
       aiPrompt,
       siteScript,
       siteScriptCmd,
@@ -207,6 +215,14 @@ export default function MidsceneDebugPage() {
           } else {
             setEnableLoadingShade(false);
           }
+
+          // 加载 context（如果存在）
+          const context = (msg.payload as any)?.context;
+          if (context && typeof context === 'string') {
+            setAiScriptContext(context);
+          } else {
+            setAiScriptContext('');
+          }
         }
       }
 
@@ -233,6 +249,7 @@ export default function MidsceneDebugPage() {
       meta,
       tasks,
       enableLoadingShade,
+      aiScriptContext,
       aiPrompt,
       siteScript,
       siteScriptCmd,
@@ -251,8 +268,10 @@ export default function MidsceneDebugPage() {
           <AiScriptForm
             tasks={tasks}
             enableLoadingShade={enableLoadingShade}
+            context={aiScriptContext}
             onTasksChange={setTasks}
             onLoadingShadeChange={setEnableLoadingShade}
+            onContextChange={setAiScriptContext}
             clientType={meta.clientType || 'web'}
           />
         );

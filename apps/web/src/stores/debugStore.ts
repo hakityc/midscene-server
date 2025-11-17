@@ -24,6 +24,7 @@ interface DebugState {
   // AI Script 状态
   tasks: Task[];
   enableLoadingShade: boolean;
+  aiScriptContext: string; // AI Action Context
 
   // 其他 Action 状态
   aiPrompt: string;
@@ -54,6 +55,7 @@ interface DebugState {
   refreshMessageId: () => void;
   setTasks: (tasks: Task[]) => void;
   setEnableLoadingShade: (enable: boolean) => void;
+  setAiScriptContext: (context: string) => void;
   setAiPrompt: (prompt: string) => void;
   setSiteScript: (script: string) => void;
   setSiteScriptCmd: (cmd: string) => void;
@@ -113,6 +115,7 @@ export const useDebugStore = create<DebugState>()(
         },
       ],
       enableLoadingShade: true,
+      aiScriptContext: '',
 
       aiPrompt: '点击搜索按钮',
       siteScript: 'console.log("Hello from Midscene");',
@@ -143,6 +146,7 @@ export const useDebugStore = create<DebugState>()(
 
       setTasks: (tasks) => set({ tasks }),
       setEnableLoadingShade: (enable) => set({ enableLoadingShade: enable }),
+      setAiScriptContext: (context) => set({ aiScriptContext: context }),
       setAiPrompt: (prompt) => set({ aiPrompt: prompt }),
       setSiteScript: (script) => set({ siteScript: script }),
       setSiteScriptCmd: (cmd) => set({ siteScriptCmd: cmd }),
@@ -193,8 +197,22 @@ export const useDebugStore = create<DebugState>()(
           }
           newState.enableLoadingShade =
             msg.payload.option?.includes('LOADING_SHADE') || false;
+          // 恢复 context（如果存在）
+          const context = (msg.payload as any)?.context;
+          if (context && typeof context === 'string') {
+            newState.aiScriptContext = context;
+          } else {
+            newState.aiScriptContext = '';
+          }
         } else if (msg.payload.action === 'ai') {
           newState.aiPrompt = msg.payload.params as string;
+          // 恢复 context（如果存在）
+          const context = (msg.payload as any)?.context;
+          if (context && typeof context === 'string') {
+            newState.aiScriptContext = context;
+          } else {
+            newState.aiScriptContext = '';
+          }
         } else if (msg.payload.action === 'siteScript') {
           newState.siteScript = msg.payload.params as string;
           newState.siteScriptCmd = msg.payload.originalCmd || '';

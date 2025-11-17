@@ -24,16 +24,20 @@ import { TaskItem } from './TaskItem';
 interface AiScriptFormProps {
   tasks: Task[];
   enableLoadingShade: boolean;
+  context?: string;
   onTasksChange: (tasks: Task[]) => void;
   onLoadingShadeChange: (enabled: boolean) => void;
+  onContextChange: (context: string) => void;
   clientType: ClientType;
 }
 
 export function AiScriptForm({
   tasks,
   enableLoadingShade,
+  context,
   onTasksChange,
   onLoadingShadeChange,
+  onContextChange,
   clientType,
 }: AiScriptFormProps) {
   // 拖拽传感器配置
@@ -107,6 +111,8 @@ export function AiScriptForm({
                   onChange={(updatedTask) => updateTask(taskIndex, updatedTask)}
                   onRemove={() => removeTask(taskIndex)}
                   clientType={clientType}
+                  context={context}
+                  onContextChange={onContextChange}
                 />
               ))}
             </div>

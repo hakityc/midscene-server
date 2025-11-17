@@ -1,9 +1,17 @@
 import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
+import { codeInspectorPlugin } from 'code-inspector-plugin';
 import { defineConfig } from 'vite';
+import Inspect from 'vite-plugin-inspect';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    Inspect(),
+    codeInspectorPlugin({
+      bundler: 'vite',
+    }),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

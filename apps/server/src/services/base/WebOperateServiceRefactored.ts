@@ -1058,4 +1058,12 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       );
     }
   }
+
+  async setAiContext(context: string): Promise<void> {
+    if (!this.agent) {
+      throw new AppError('服务未启动', 503);
+    }
+
+    await this.agent.setAIActionContext(context);
+  }
 }
