@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import type { AgentOverChromeBridge } from '@midscene/web/bridge-mode';
+import dayjs from 'dayjs';
 import { serviceLogger } from '../../utils/logger';
 import {
   formatTaskTip,
@@ -7,7 +8,6 @@ import {
 } from '../../utils/taskTipFormatter';
 import type AgentOverWindows from '../customMidsceneDevice/agentOverWindows';
 import { ossService } from '../ossService';
-import dayjs from 'dayjs';
 
 // ==================== 统一的服务状态枚举 ====================
 export enum OperateServiceState {
@@ -30,8 +30,8 @@ export type AgentType = AgentOverChromeBridge | AgentOverWindows;
  */
 export type TaskTipCallback = (
   tip: string,
-  bridgeError?: Error | null,
-  stepIndex?: number,
+  bridgeError: Error | null | undefined,
+  stepIndex: number,
 ) => void;
 
 /**
@@ -79,6 +79,20 @@ export abstract class BaseOperateService<
 
   // ==================== 回调机制属性 ====================
   protected taskTipCallbacks: TaskTipCallback[] = [];
+  private generatedStepIndex = 0;
+
+  protected resetGeneratedStepIndex(): void {
+    this.generatedStepIndex = 0;
+  }
+
+  protected acquireStepIndex(stepIndex?: number): number {
+    if (typeof stepIndex === 'number' && Number.isFinite(stepIndex)) {
+      return stepIndex;
+    }
+    const resolvedIndex = this.generatedStepIndex;
+    this.generatedStepIndex += 1;
+    return resolvedIndex;
+  }
 
   // ==================== 错误跟踪属性 ====================
   protected taskErrors: TaskError[] = [];
@@ -314,8 +328,8 @@ export abstract class BaseOperateService<
    */
   protected triggerTaskTipCallbacks(
     tip: string,
-    bridgeError?: Error | null,
-    stepIndex?: number,
+    bridgeError: Error | null | undefined = undefined,
+    stepIndex: number = this.acquireStepIndex(),
   ): void {
     this.taskTipCallbacks.forEach((callback) => {
       try {
@@ -331,8 +345,8 @@ export abstract class BaseOperateService<
    */
   protected handleTaskStartTip(
     tip: string,
-    bridgeError?: Error | null,
-    stepIndex?: number,
+    bridgeError: Error | null | undefined = undefined,
+    stepIndex: number,
   ): void {
     try {
       const { formatted, category, icon, content, hint } = formatTaskTip(tip);
@@ -340,6 +354,8 @@ export abstract class BaseOperateService<
 
       console.log(`🤖 AI 任务开始: ${tip}`);
       console.log(`${icon} ${formatted} (${stageDescription})`);
+      // 调试日志：显示 stepIndex
+      console.log(`[DEBUG] handleTaskStartTip stepIndex:`, stepIndex);
       if (content) {
         console.log(`📝 详细内容: ${content}`);
       }
@@ -423,7 +439,11 @@ export abstract class BaseOperateService<
       WebSocketAction,
     } = config;
 
-    return (tip: string, bridgeError?: Error | null, stepIndex?: number) => {
+    return (
+      tip: string,
+      bridgeError: Error | null | undefined = undefined,
+      stepIndex: number = this.acquireStepIndex(),
+    ) => {
       try {
         const { formatted, category, icon, content, hint } = formatTaskTip(tip);
         const timestamp = dayjs().format('HH:mm:ss');
@@ -506,6 +526,7 @@ export abstract class BaseOperateService<
     }
 
     try {
+      this.resetGeneratedStepIndex();
       // 重置 dump，确保每个任务的报告独立
       if (
         'resetDump' in this.agent &&

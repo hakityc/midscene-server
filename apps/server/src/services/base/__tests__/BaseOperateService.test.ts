@@ -141,8 +141,9 @@ describe('BaseOperateService', () => {
     });
 
     it('应该能够清空所有回调', () => {
-      const callback1: TaskTipCallback = () => {};
-      const callback2: TaskTipCallback = () => {};
+      const noop: TaskTipCallback = () => {};
+      const callback1: TaskTipCallback = noop;
+      const callback2: TaskTipCallback = noop;
 
       service.onTaskTip(callback1);
       service.onTaskTip(callback2);
@@ -152,6 +153,42 @@ describe('BaseOperateService', () => {
       service.clearTaskTipCallbacks();
 
       expect((service as any).taskTipCallbacks.length).toBe(0);
+    });
+
+    it('未显式传入 stepIndex 时应该自动生成递增索引', () => {
+      const receivedStepIndexes: number[] = [];
+      const callback: TaskTipCallback = (_tip, _error, stepIndex) => {
+        receivedStepIndexes.push(stepIndex);
+      };
+
+      service.onTaskTip(callback);
+
+      (service as any).triggerTaskTipCallbacks('auto step 1');
+      (service as any).triggerTaskTipCallbacks('auto step 2');
+
+      expect(receivedStepIndexes).toEqual([0, 1]);
+    });
+
+    it('beforeOperate 应该在每个任务开始前重置自动 stepIndex', async () => {
+      const receivedStepIndexes: number[] = [];
+      const callback: TaskTipCallback = (_tip, _error, stepIndex) => {
+        receivedStepIndexes.push(stepIndex);
+      };
+
+      service.onTaskTip(callback);
+
+      (service as any).triggerTaskTipCallbacks('task-1-step-1');
+      (service as any).triggerTaskTipCallbacks('task-1-step-2');
+
+      const resetDump = vi.fn();
+      (service as any).agent = { resetDump } as any;
+
+      await (service as any).beforeOperate('mock-task');
+
+      (service as any).triggerTaskTipCallbacks('task-2-step-1');
+
+      expect(resetDump).toHaveBeenCalled();
+      expect(receivedStepIndexes).toEqual([0, 1, 0]);
     });
   });
 

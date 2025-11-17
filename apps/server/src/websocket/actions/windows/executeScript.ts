@@ -12,6 +12,10 @@ import {
   createSuccessResponse,
   createSuccessResponseWithMeta,
 } from '../../builders/messageBuilder';
+import {
+  taskExecutionGuard,
+  TaskLockKey,
+} from '../../utils/taskExecutionGuard';
 
 /**
  * Windows 端 AI 脚本执行处理器
@@ -30,6 +34,21 @@ export function executeWindowsScriptHandler(): MessageHandler {
       },
       '处理 Windows AI 脚本请求',
     );
+
+    const acquireResult = taskExecutionGuard.tryAcquire(
+      TaskLockKey.WINDOWS,
+      message,
+    );
+    if (!acquireResult.acquired) {
+      const busyAction = acquireResult.current?.action || '进行中的任务';
+      const response = createErrorResponse(
+        message,
+        new Error(`当前有任务执行中（${busyAction}），请稍后再试`),
+        '任务排队中',
+      );
+      send(response);
+      return;
+    }
 
     const windowsOperateService = WindowsOperateService.getInstance();
 
@@ -140,6 +159,8 @@ export function executeWindowsScriptHandler(): MessageHandler {
         'Windows AI 脚本处理失败',
       );
       send(response);
+    } finally {
+      taskExecutionGuard.release(TaskLockKey.WINDOWS, meta.messageId);
     }
   };
 }

@@ -185,15 +185,12 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
     this.stepMetadataMap.clear();
   }
 
-  protected resolveCustomTip(
-    stepIndex: number | undefined,
-    tip: string,
-  ): string {
-    console.log(this.stepMetadataMap, 'this.stepMetadataMap');
-    if (stepIndex === undefined || Number.isNaN(stepIndex)) return tip;
-    return (
-      (this.stepMetadataMap.get(stepIndex) as StepMetadata).customTip || tip
-    );
+  protected resolveCustomTip(stepIndex: number, tip: string): string {
+    const metadata = this.stepMetadataMap.get(stepIndex);
+    if (!metadata) {
+      return tip;
+    }
+    return metadata.customTip || tip;
   }
 
   /**
@@ -206,8 +203,17 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
     const originalCallback = this.agent.onTaskStartTip;
 
-    this.agent.onTaskStartTip = (tip: string, stepIndex?: number) => {
-      const finalTip = this.resolveCustomTip(stepIndex, tip);
+    this.agent.onTaskStartTip = (tip: string) => {
+      const resolvedStepIndex = this.acquireStepIndex();
+
+      console.log(
+        `[DEBUG] onTaskStartTip 生成 stepIndex:`,
+        resolvedStepIndex,
+        `tip:`,
+        tip,
+      );
+
+      const finalTip = this.resolveCustomTip(resolvedStepIndex, tip);
 
       const safeCall = async () => {
         let bridgeError: Error | null = null;
@@ -215,8 +221,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         if (originalCallback) {
           try {
             Promise.resolve(
-              // 使用本地包扩展后的双参数签名 (tip, stepIndex)
-              (originalCallback as any).call(this.agent, finalTip, stepIndex),
+              (originalCallback as any).call(this.agent, finalTip),
             ).catch((error: any) => {
               const isConnectionError =
                 error?.message?.includes('Connection lost') ||
@@ -259,7 +264,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         }
 
         try {
-          this.handleTaskStartTip(finalTip, bridgeError, stepIndex);
+          this.handleTaskStartTip(finalTip, bridgeError, resolvedStepIndex);
         } catch (handlerError: any) {
           serviceLogger.error(
             {
@@ -286,7 +291,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
           this.triggerTaskTipCallbacks(
             finalTip || '未知任务',
             error instanceof Error ? error : new Error(String(error)),
-            undefined,
+            resolvedStepIndex,
           );
         } catch (notifyError) {
           serviceLogger.error({ notifyError }, '无法通知客户端错误');

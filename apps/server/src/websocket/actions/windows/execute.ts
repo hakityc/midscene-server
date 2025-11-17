@@ -15,6 +15,10 @@ import {
   createSuccessResponseWithMeta,
 } from '../../builders/messageBuilder';
 import { ClientCommandHelper } from '../../helpers/clientCommandHelper';
+import {
+  taskExecutionGuard,
+  TaskLockKey,
+} from '../../utils/taskExecutionGuard';
 
 /**
  * Windows 端 AI 请求处理器
@@ -33,6 +37,21 @@ export function createWindowsAiHandler(): MessageHandler {
       },
       '处理 Windows AI 请求',
     );
+
+    const acquireResult = taskExecutionGuard.tryAcquire(
+      TaskLockKey.WINDOWS,
+      message as WebSocketMessage,
+    );
+    if (!acquireResult.acquired) {
+      const busyAction = acquireResult.current?.action || '进行中的任务';
+      const response = createErrorResponse(
+        message as WebSocketMessage,
+        new Error(`当前有任务执行中（${busyAction}），请稍后再试`),
+        '任务排队中',
+      );
+      send(response);
+      return;
+    }
 
     const windowsOperateService = WindowsOperateService.getInstance();
 
@@ -112,6 +131,8 @@ export function createWindowsAiHandler(): MessageHandler {
         );
         send(response);
       }
+    } finally {
+      taskExecutionGuard.release(TaskLockKey.WINDOWS, meta.messageId);
     }
   };
 }

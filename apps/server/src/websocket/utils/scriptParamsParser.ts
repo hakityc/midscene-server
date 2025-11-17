@@ -133,7 +133,6 @@ function extractStepMetadata(parsedParams: unknown): Map<number, StepMetadata> {
           const customTip = deriveCustomTip(customFields);
           metadata.set(globalStepIndex, {
             customTip,
-            finalTip: customTip,
             customFields,
           });
         }

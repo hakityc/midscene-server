@@ -9,6 +9,7 @@ import {
 } from '../builders/messageBuilder';
 import { ClientCommandHelper } from '../helpers/clientCommandHelper';
 import { parseScriptParams } from '../utils/scriptParamsParser';
+import { TaskLockKey, taskExecutionGuard } from '../utils/taskExecutionGuard';
 
 // AI 请求处理器
 export function executeScriptHandler(): MessageHandler {
@@ -19,6 +20,21 @@ export function executeScriptHandler(): MessageHandler {
     // 可以使用 createClientCommandHelper(message, send)
 
     wsLogger.info(message, '处理 AI 请求');
+
+    const acquireResult = taskExecutionGuard.tryAcquire(
+      TaskLockKey.WEB,
+      message,
+    );
+    if (!acquireResult.acquired) {
+      const busyAction = acquireResult.current?.action || '进行中的任务';
+      const response = createErrorResponse(
+        message,
+        new Error(`当前有任务执行中（${busyAction}），请稍后再试`),
+        '任务排队中',
+      );
+      send(response);
+      return;
+    }
 
     const webOperateService = WebOperateServiceRefactored.getInstance();
 
@@ -104,6 +120,8 @@ export function executeScriptHandler(): MessageHandler {
       );
       const response = createErrorResponse(message, error, 'AI 处理失败');
       send(response);
+    } finally {
+      taskExecutionGuard.release(TaskLockKey.WEB, meta.messageId);
     }
   };
 }
