@@ -277,3 +277,4 @@ this.agent.onTaskStartTip = (tip: string, stepIndex?: number) => {
 1. 添加日志验证 stepIndex 的传递
 2. 在 Server 端添加对 stepIndex 的验证和处理
 3. 确保 `resolveCustomTip()` 能够正确处理 undefined 的 stepIndex
+
