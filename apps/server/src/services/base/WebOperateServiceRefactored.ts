@@ -47,6 +47,9 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
   // ==================== 自定义 tip 映射 ====================
   private stepMetadataMap: Map<number, StepMetadata> = new Map();
 
+  // ==================== 最后标签页跟踪 ====================
+  private lastConnectedTabId: number | null = null;
+
   private constructor() {
     super();
   }
@@ -170,6 +173,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
     this.resetReconnectState();
     setBrowserConnected(false);
     this.clearStepMetadata();
+    this.lastConnectedTabId = null;
   }
 
   // ==================== Web 特定方法 ====================
@@ -344,10 +348,12 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
             this.withState({ tab: JSON.stringify(tab) }),
             '目标标签页已处于激活状态，跳过重新连接',
           );
+          this.lastConnectedTabId = targetTabId;
           return;
         }
 
         await this.agent.setActiveTabId(tab.id);
+        this.lastConnectedTabId = targetTabId;
         serviceLogger.info(
           this.withState({ tab: JSON.stringify(tab) }),
           '浏览器标签页连接成功',
@@ -532,15 +538,57 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         return;
       }
 
+      if (!this.agent) {
+        throw new Error('Agent 未初始化');
+      }
+
+      // 检查最后标签页是否变化
+      try {
+        const tabs = await (this.agent as any).getBrowserTabList({});
+        if (tabs.length > 0) {
+          const latestTab = tabs[tabs.length - 1];
+          const latestTabId = Number.parseInt(latestTab.id, 10);
+
+          if (
+            this.lastConnectedTabId !== null &&
+            this.lastConnectedTabId !== latestTabId
+          ) {
+            serviceLogger.info(
+              this.withState({
+                lastConnectedTabId: this.lastConnectedTabId,
+                latestTabId,
+              }),
+              `最后标签页已变化 (${this.lastConnectedTabId} -> ${latestTabId})，重新连接`,
+            );
+            await this.connectLastTab();
+          } else if (this.lastConnectedTabId === null) {
+            // 首次连接，设置 lastConnectedTabId
+            this.lastConnectedTabId = latestTabId;
+            serviceLogger.info(
+              this.withState({ latestTabId }),
+              '首次设置最后标签页ID',
+            );
+          } else {
+            // lastConnectedTabId 与 latestTabId 相同，无需处理
+            serviceLogger.debug(
+              this.withState({ tabId: latestTabId }),
+              '最后标签页未变化，跳过重新连接',
+            );
+          }
+        }
+      } catch (tabCheckError: any) {
+        serviceLogger.warn(
+          this.withState({ error: tabCheckError?.message }),
+          '检查最后标签页时出错，继续执行连接检查',
+        );
+      }
+
       const isConnected = await this.quickConnectionCheck();
       if (!isConnected) {
         serviceLogger.warn('连接已断开，尝试重新连接...');
         await this.forceReconnect();
       }
 
-      if (!this.agent) {
-        throw new Error('Agent 未初始化');
-      }
       serviceLogger.info(this.withState(), '确保当前标签页连接成功');
     } catch (error: any) {
       serviceLogger.warn(
