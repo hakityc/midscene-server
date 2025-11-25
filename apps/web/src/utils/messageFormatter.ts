@@ -49,25 +49,15 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
 
     case 'callback': {
       // 总任务完成回调
-      let callbackDesc = '任务已完成';
-      if (typeof result === 'string') {
-        callbackDesc = result;
-      } else if (result && typeof result === 'object') {
-        // 尝试提取有用信息
-        if ('data' in result) {
-          const callbackResult = result as { data: any; meta?: any };
-          callbackDesc =
-            typeof callbackResult.data === 'string'
-              ? callbackResult.data
-              : JSON.stringify(callbackResult.data);
-        } else {
-          callbackDesc = '任务已成功完成';
-        }
-      }
+      const { description, detail, hasErrors } = extractResultInfo(
+        result,
+        '任务已成功完成',
+      );
       return {
-        title: '✅ 任务执行完成',
-        description: callbackDesc,
-        icon: '✅',
+        title: hasErrors ? '⚠️ 任务执行完成（存在失败）' : '✅ 任务执行完成',
+        description,
+        icon: hasErrors ? '⚠️' : '✅',
+        detail,
       };
     }
 
@@ -97,13 +87,22 @@ export function formatWebSocketMessage(data: WsOutboundMessage): {
       };
     }
 
-    case 'aiScript':
+    case 'aiScript': {
       // AI 脚本执行完成
+      const {
+        description: aiScriptDesc,
+        detail: aiScriptDetail,
+        hasErrors: scriptHasErrors,
+      } = extractResultInfo(result, 'AI 脚本执行成功');
       return {
-        title: '📝 AI 脚本执行完成',
-        description: typeof result === 'string' ? result : 'AI 脚本执行成功',
-        icon: '📝',
+        title: scriptHasErrors
+          ? '⚠️ AI 脚本执行完成（存在失败）'
+          : '📝 AI 脚本执行完成',
+        description: aiScriptDesc,
+        icon: scriptHasErrors ? '⚠️' : '📝',
+        detail: aiScriptDetail,
       };
+    }
 
     case 'siteScript':
       // 站点脚本执行完成
@@ -223,4 +222,63 @@ export function formatSentMessage(action: string): {
       icon: '📤',
     }
   );
+}
+
+function extractResultInfo(
+  result: unknown,
+  fallbackDescription: string,
+): {
+  description: string;
+  detail?: string;
+  hasErrors?: boolean;
+} {
+  if (typeof result === 'string') {
+    return {
+      description: result,
+    };
+  }
+
+  if (result && typeof result === 'object') {
+    const resultObj = result as Record<string, any>;
+    let description = fallbackDescription;
+
+    if (typeof resultObj.message === 'string') {
+      description = resultObj.message;
+    } else if (
+      typeof resultObj.data === 'string' ||
+      typeof resultObj.data === 'number'
+    ) {
+      description = String(resultObj.data);
+    } else if (
+      resultObj.data &&
+      typeof resultObj.data === 'object' &&
+      typeof resultObj.data.message === 'string'
+    ) {
+      description = resultObj.data.message;
+    } else if (typeof resultObj.result === 'string') {
+      description = resultObj.result;
+    }
+
+    const hasErrors =
+      Boolean(resultObj.hasErrors) ||
+      (Array.isArray(resultObj.taskErrors) && resultObj.taskErrors.length > 0);
+
+    return {
+      description,
+      detail: safeStringify(resultObj),
+      hasErrors,
+    };
+  }
+
+  return {
+    description: fallbackDescription,
+  };
+}
+
+function safeStringify(value: unknown): string | undefined {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return undefined;
+  }
 }

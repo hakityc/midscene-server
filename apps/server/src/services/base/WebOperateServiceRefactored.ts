@@ -9,7 +9,12 @@ import {
   type ScreenshotSegment,
   stitchSegments,
 } from '../image/stitchBySharp';
-import { BaseOperateService, OperateServiceState } from './BaseOperateService';
+import {
+  BaseOperateService,
+  OperateServiceState,
+  type TaskTipCallback,
+  type TaskTipCallbackConfig,
+} from './BaseOperateService';
 
 /**
  * WebOperateService - Web 浏览器操作服务（重构版）
@@ -195,6 +200,31 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       return tip;
     }
     return metadata.customTip || tip;
+  }
+
+  public override createTaskTipCallback<T>(
+    config: TaskTipCallbackConfig<T>,
+  ): TaskTipCallback {
+    const baseCallback = super.createTaskTipCallback(config);
+
+    return (
+      tip: string,
+      bridgeError: Error | null | undefined = undefined,
+      stepIndex?: number,
+    ) => {
+      const resolvedStepIndex = this.acquireStepIndex(stepIndex);
+      const finalTip = this.resolveCustomTip(resolvedStepIndex, tip);
+      serviceLogger.info(
+        {
+          originalTip: tip,
+          finalTip,
+          stepIndex: resolvedStepIndex,
+        },
+        'Resolved task tip for callback',
+      );
+        
+      baseCallback(finalTip, bridgeError, resolvedStepIndex);
+    };
   }
 
   /**

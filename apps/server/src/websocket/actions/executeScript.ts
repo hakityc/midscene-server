@@ -38,8 +38,7 @@ export function executeScriptHandler(): MessageHandler {
 
     const webOperateService = WebOperateServiceRefactored.getInstance();
 
-    //TODO 这里需要使用 leboStepName 来展示任务名称
-    // 使用封装好的方法创建任务提示回调
+      // 使用封装好的方法创建任务提示回调
     const taskTipCallback = webOperateService.createTaskTipCallback({
       send,
       message,
@@ -68,7 +67,10 @@ export function executeScriptHandler(): MessageHandler {
         await maskController.executeWithMask(
           async () => {
             scriptResult = await webOperateService.executeScript(script);
-            console.log('🚀 AI 处理完成，返回结果:', scriptResult);
+            console.log(
+              '🚀 AI 处理完成，返回结果:',
+              JSON.stringify(scriptResult),
+            );
           },
           {
             enabled: payload.option?.includes('LOADING_SHADE'),
