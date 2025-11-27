@@ -20,6 +20,8 @@ const logger = {
     console.error(`[ERROR] ${message}`, data || ''),
   warn: (message: string, data?: any) =>
     console.warn(`[WARN] ${message}`, data || ''),
+  debug: (message: string, data?: any) =>
+    console.debug(`[DEBUG] ${message}`, data || ''),
 };
 
 /**
@@ -53,8 +55,8 @@ export class EnhancedBrowserAgent {
 
       this.initialized = true;
 
-      logger.info('✅ 增强浏览器自动化助手初始化完成');
-      logger.info('🎯 可用功能:', {
+      logger.debug('增强浏览器自动化助手初始化完成');
+      logger.debug('可用功能:', {
         智能元素定位: '✓',
         视觉页面理解: '✓',
         上下文感知操作: '✓',

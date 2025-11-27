@@ -92,32 +92,32 @@ export async function ensurePortAvailable(
   port: number,
   maxRetries = 3,
 ): Promise<boolean> {
-  serverLogger.info({ port }, '🔍 检查端口占用情况...');
+  serverLogger.debug({ port }, '检查端口占用情况');
 
   for (let retry = 0; retry < maxRetries; retry++) {
     const pids = await checkPortInUse(port);
 
     if (pids.length === 0) {
-      serverLogger.info({ port }, '✅ 端口可用');
+      serverLogger.debug({ port }, '端口可用');
       return true;
     }
 
     // 端口被占用，获取详细信息
     const processInfo = await getPortProcessInfo(port);
-    serverLogger.warn(
+    serverLogger.debug(
       { port, pids, processInfo },
-      `⚠️  端口 ${port} 被 ${pids.length} 个进程占用: ${pids.join(', ')}`,
+      `端口 ${port} 被 ${pids.length} 个进程占用: ${pids.join(', ')}`,
     );
 
     // 尝试终止占用端口的进程
-    serverLogger.info({ pids }, '🔄 正在终止占用端口的进程...');
+    serverLogger.debug({ pids }, '正在终止占用端口的进程');
     const killed = await killProcesses(pids);
 
     if (!killed) {
-      serverLogger.error({ port, pids }, '❌ 部分进程无法终止');
+      serverLogger.error({ port, pids }, '部分进程无法终止');
       if (retry < maxRetries - 1) {
-        serverLogger.info(
-          `⏳ 将在 2 秒后重试 (${retry + 1}/${maxRetries - 1})`,
+        serverLogger.debug(
+          `将在 2 秒后重试 (${retry + 1}/${maxRetries - 1})`,
         );
         await new Promise((resolve) => setTimeout(resolve, 2000));
         continue;
@@ -131,25 +131,25 @@ export async function ensurePortAvailable(
     // 再次检查端口是否已释放
     const stillInUse = await checkPortInUse(port);
     if (stillInUse.length > 0) {
-      serverLogger.warn(
+      serverLogger.debug(
         { port, pids: stillInUse },
-        `⚠️  端口仍被占用: ${stillInUse.join(', ')}`,
+        `端口仍被占用: ${stillInUse.join(', ')}`,
       );
       if (retry < maxRetries - 1) {
-        serverLogger.info(
-          `⏳ 将在 2 秒后重试 (${retry + 1}/${maxRetries - 1})`,
+        serverLogger.debug(
+          `将在 2 秒后重试 (${retry + 1}/${maxRetries - 1})`,
         );
         await new Promise((resolve) => setTimeout(resolve, 2000));
         continue;
       }
       serverLogger.error(
         { port, pids: stillInUse },
-        '❌ 端口仍被占用，无法释放',
+        '端口仍被占用，无法释放',
       );
       return false;
     }
 
-    serverLogger.info({ port, pids }, '✅ 成功释放端口');
+    serverLogger.debug({ port, pids }, '成功释放端口');
     return true;
   }
 

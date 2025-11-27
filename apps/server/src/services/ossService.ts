@@ -60,7 +60,7 @@ export class OssService {
    */
   private initialize(): void {
     if (!config.cos) {
-      serviceLogger.info('COS 配置未找到，OSS 上传功能已禁用');
+      serviceLogger.debug('COS 配置未找到，OSS 上传功能已禁用');
       this.isEnabled = false;
       return;
     }
@@ -77,17 +77,24 @@ export class OssService {
       this.customUrl = config.cos.url;
 
       this.isEnabled = true;
-      serviceLogger.info(
+      serviceLogger.debug(
         {
           bucket: this.bucket,
           region: this.region,
           reportPath: this.reportPath,
           customUrl: this.customUrl,
         },
-        '✅ OSS 服务初始化成功',
+        'OSS 服务初始化完成',
       );
     } catch (error) {
-      serviceLogger.error({ error }, '❌ OSS 服务初始化失败');
+      serviceLogger.error(
+        {
+          error,
+          bucket: config.cos?.bucket,
+          region: config.cos?.region,
+        },
+        'OSS 服务初始化失败',
+      );
       this.isEnabled = false;
     }
   }

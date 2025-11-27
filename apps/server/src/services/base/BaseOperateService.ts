@@ -205,7 +205,7 @@ export abstract class BaseOperateService<
     }
 
     this.setState(OperateServiceState.STARTING);
-    serviceLogger.info(`启动 ${this.getServiceName()}...`);
+    serviceLogger.debug(`启动 ${this.getServiceName()}`);
 
     try {
       // 创建 Agent 实例
@@ -352,14 +352,6 @@ export abstract class BaseOperateService<
       const { formatted, category, icon, content, hint } = formatTaskTip(tip);
       const stageDescription = getTaskStageDescription(category);
 
-      console.log(`🤖 AI 任务开始: ${tip}`);
-      console.log(`${icon} ${formatted} (${stageDescription})`);
-      // 调试日志：显示 stepIndex
-      console.log(`[DEBUG] handleTaskStartTip stepIndex:`, stepIndex);
-      if (content) {
-        console.log(`📝 详细内容: ${content}`);
-      }
-
       // 如果有错误，记录到错误跟踪中
       if (bridgeError) {
         this.taskErrors.push({
@@ -367,8 +359,6 @@ export abstract class BaseOperateService<
           error: bridgeError,
           timestamp: Date.now(),
         });
-
-        console.warn(`⚠️ 记录任务错误: ${tip} - ${bridgeError.message}`);
       }
 
       serviceLogger.info(

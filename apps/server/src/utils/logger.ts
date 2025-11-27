@@ -41,41 +41,6 @@ const logLevel =
   process.env.LOG_LEVEL ||
   (process.env['NODE_ENV'] === 'production' ? 'info' : 'debug');
 
-// 创建腾讯云CLS传输器（仅在配置了CLS相关环境变量时启用）
-let clsTransport: TencentCLSTransport | null = null;
-if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
-  try {
-    clsTransport = new TencentCLSTransport({
-      endpoint: process.env.CLS_ENDPOINT,
-      topicId: process.env.CLS_TOPIC_ID,
-      maxCount: parseInt(process.env.CLS_MAX_COUNT || '100', 10),
-      maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
-      appendFieldsFn: () => {
-        // 动态读取环境变量，避免被 tsup 静态替换
-        const nodeEnv = process.env['NODE_ENV'] || 'development';
-        return {
-          appId: process.env.APP_ID || 'midscene-server',
-          version: process.env.npm_package_version || '1.0.0',
-          environment: nodeEnv,
-          hostname: hostname(),
-        };
-      },
-    });
-    console.log('✅ CLS传输器初始化成功');
-  } catch (error) {
-    console.error('❌ CLS传输器初始化失败:', error);
-    console.error('请检查CLS配置是否正确:', {
-      endpoint: process.env.CLS_ENDPOINT,
-      topicId: process.env.CLS_TOPIC_ID,
-      hasSecretId: !!process.env.CLS_SECRET_ID,
-      hasSecretKey: !!process.env.CLS_SECRET_KEY,
-    });
-    clsTransport = null;
-  }
-} else {
-  console.log('ℹ️ CLS环境变量未配置，跳过CLS日志上报功能');
-}
-
 // 创建 Pino 实例
 // 使用方括号语法避免 tsup 静态替换
 const nodeEnv = process.env['NODE_ENV'] || 'development';
@@ -104,6 +69,41 @@ const logger = pino({
     timestamp: pino.stdTimeFunctions.isoTime,
   }),
 });
+
+// 创建腾讯云CLS传输器（仅在配置了CLS相关环境变量时启用）
+let clsTransport: TencentCLSTransport | null = null;
+if (process.env.CLS_ENDPOINT && process.env.CLS_TOPIC_ID) {
+  try {
+    clsTransport = new TencentCLSTransport({
+      endpoint: process.env.CLS_ENDPOINT,
+      topicId: process.env.CLS_TOPIC_ID,
+      maxCount: parseInt(process.env.CLS_MAX_COUNT || '100', 10),
+      maxSize: parseFloat(process.env.CLS_MAX_SIZE || '0.1'),
+      appendFieldsFn: () => {
+        // 动态读取环境变量，避免被 tsup 静态替换
+        const nodeEnv = process.env['NODE_ENV'] || 'development';
+        return {
+          appId: process.env.APP_ID || 'midscene-server',
+          version: process.env.npm_package_version || '1.0.0',
+          environment: nodeEnv,
+          hostname: hostname(),
+        };
+      },
+    });
+    logger.debug('CLS传输器初始化成功');
+  } catch (error) {
+    logger.error({ error }, 'CLS传输器初始化失败');
+    console.error('请检查CLS配置是否正确:', {
+      endpoint: process.env.CLS_ENDPOINT,
+      topicId: process.env.CLS_TOPIC_ID,
+      hasSecretId: !!process.env.CLS_SECRET_ID,
+      hasSecretKey: !!process.env.CLS_SECRET_KEY,
+    });
+    clsTransport = null;
+  }
+} else {
+  logger.debug('CLS环境变量未配置，跳过CLS日志上报功能');
+}
 
 // 创建子 logger 的工厂函数
 export const createLogger = (name: string) => {

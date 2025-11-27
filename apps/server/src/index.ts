@@ -47,7 +47,7 @@ const startServer = async () => {
   // 检查并释放端口
   const portAvailable = await ensurePortAvailable(port);
   if (!portAvailable) {
-    serverLogger.error({ port }, '❌ 端口不可用，服务启动失败');
+    serverLogger.error({ port }, '端口不可用，服务启动失败');
     process.exit(1);
   }
 
@@ -77,17 +77,17 @@ const startServer = async () => {
       },
       (info) => {
         // 这个回调在服务器成功启动后才会执行
-        serverLogger.info({ port: info.port }, '✅ 服务启动成功');
+        serverLogger.info({ port: info.port }, '服务启动成功');
       },
     );
 
     // 监听服务器错误
     server.on('error', (error: Error) => {
-      serverLogger.error({ error, port }, '❌ 服务器错误');
+      serverLogger.error({ error, port }, '服务器错误');
       if (error.message.includes('EADDRINUSE')) {
         serverLogger.error(
           { port },
-          '❌ 端口被占用，请检查是否有其他进程在使用该端口',
+          '端口被占用，请检查是否有其他进程在使用该端口',
         );
         process.exit(1);
       }
@@ -96,7 +96,7 @@ const startServer = async () => {
     // 注入 WebSocket
     injectWebSocket(server);
   } catch (error) {
-    serverLogger.error({ error, port }, '❌ 启动服务器失败');
+    serverLogger.error({ error, port }, '启动服务器失败');
     process.exit(1);
   }
 };

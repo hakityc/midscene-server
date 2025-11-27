@@ -105,14 +105,14 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       }
     }
 
-    serviceLogger.info(this.withState(), '正在创建 AgentOverChromeBridge...');
+    serviceLogger.debug(this.withState(), '正在创建 AgentOverChromeBridge');
 
     this.agent = new AgentOverChromeBridge(this.defaultAgentConfig);
 
     // 设置任务开始提示回调
     this.setupTaskStartTipCallback();
 
-    serviceLogger.info(this.withState(), 'AgentOverChromeBridge 创建完成');
+    serviceLogger.debug(this.withState(), 'AgentOverChromeBridge 创建完成');
   }
 
   protected async initializeConnection(): Promise<void> {
@@ -121,15 +121,15 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        serviceLogger.info(
+        serviceLogger.debug(
           this.withState({ attempt, maxRetries }),
-          `尝试初始化连接 (${attempt}/${maxRetries})...`,
+          `尝试初始化连接 (${attempt}/${maxRetries})`,
         );
         await this.connectLastTab();
         setBrowserConnected(true);
-        serviceLogger.info(
+        serviceLogger.debug(
           this.withState(),
-          'AgentOverChromeBridge 初始化成功',
+          'AgentOverChromeBridge 初始化完成',
         );
         return;
       } catch (error) {
@@ -222,7 +222,7 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         },
         'Resolved task tip for callback',
       );
-        
+
       baseCallback(finalTip, bridgeError, resolvedStepIndex);
     };
   }
@@ -239,13 +239,6 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
 
     this.agent.onTaskStartTip = (tip: string) => {
       const resolvedStepIndex = this.acquireStepIndex();
-
-      console.log(
-        `[DEBUG] onTaskStartTip 生成 stepIndex:`,
-        resolvedStepIndex,
-        `tip:`,
-        tip,
-      );
 
       const finalTip = this.resolveCustomTip(resolvedStepIndex, tip);
 
