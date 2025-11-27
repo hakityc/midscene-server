@@ -116,9 +116,7 @@ export async function ensurePortAvailable(
     if (!killed) {
       serverLogger.error({ port, pids }, '部分进程无法终止');
       if (retry < maxRetries - 1) {
-        serverLogger.debug(
-          `将在 2 秒后重试 (${retry + 1}/${maxRetries - 1})`,
-        );
+        serverLogger.debug(`将在 2 秒后重试 (${retry + 1}/${maxRetries - 1})`);
         await new Promise((resolve) => setTimeout(resolve, 2000));
         continue;
       }
@@ -136,16 +134,11 @@ export async function ensurePortAvailable(
         `端口仍被占用: ${stillInUse.join(', ')}`,
       );
       if (retry < maxRetries - 1) {
-        serverLogger.debug(
-          `将在 2 秒后重试 (${retry + 1}/${maxRetries - 1})`,
-        );
+        serverLogger.debug(`将在 2 秒后重试 (${retry + 1}/${maxRetries - 1})`);
         await new Promise((resolve) => setTimeout(resolve, 2000));
         continue;
       }
-      serverLogger.error(
-        { port, pids: stillInUse },
-        '端口仍被占用，无法释放',
-      );
+      serverLogger.error({ port, pids: stillInUse }, '端口仍被占用，无法释放');
       return false;
     }
 
