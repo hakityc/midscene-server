@@ -271,7 +271,7 @@ export function formatTaskTip(rawTip: string): {
 
   // 如果没有匹配的规则，返回默认格式
   return {
-    formatted: `${config.botName}${trimmedTip}`,
+    formatted: `${config.botName}正在处理中...`,
     icon: '🤖',
     category: 'general',
     content: trimmedTip,
