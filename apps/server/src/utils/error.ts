@@ -1,5 +1,6 @@
 import type { Context, Hono } from 'hono';
-import { serverLogger } from './logger';
+import { ErrorCategory } from './logFields';
+import { logErrorWithCategory, serverLogger } from './logger';
 
 // 自定义错误类型
 export class AppError extends Error {
@@ -23,11 +24,19 @@ interface ErrorResponse {
 
 export const setupError = (app: Hono) => {
   app.onError((err: Error, c: Context) => {
-    // 记录错误日志
-    serverLogger.error({ err }, 'Error occurred');
-    if (err.stack) {
-      serverLogger.error({ stack: err.stack }, 'Stack trace');
+    // 根据错误类型确定分类
+    let errorCategory = ErrorCategory.SYSTEM_INTERNAL;
+    if (err.name === 'ZodError' || err.name === 'TypeError') {
+      errorCategory = ErrorCategory.CLIENT_INPUT;
+    } else if (err instanceof AppError && err.statusCode >= 500) {
+      errorCategory = ErrorCategory.SYSTEM_INTERNAL;
     }
+
+    // 记录错误日志（使用分类）
+    logErrorWithCategory(serverLogger, err, errorCategory, {
+      path: c.req.path,
+      method: c.req.method,
+    });
 
     // 默认错误响应
     const errorResponse: ErrorResponse = {

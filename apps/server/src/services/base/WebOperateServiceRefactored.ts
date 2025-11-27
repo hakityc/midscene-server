@@ -2,7 +2,8 @@ import type { AgentOpt } from '@midscene/web';
 import { AgentOverChromeBridge } from '@midscene/web/bridge-mode';
 import { setBrowserConnected } from '../../routes/health';
 import { AppError } from '../../utils/error';
-import { serviceLogger } from '../../utils/logger';
+import { ErrorCategory } from '../../utils/logFields';
+import { logErrorWithCategory, serviceLogger } from '../../utils/logger';
 import type { StepMetadata } from '../../websocket/utils/scriptParamsParser';
 import {
   bufferToBase64DataUri,
@@ -134,9 +135,14 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         return;
       } catch (error) {
         lastError = error as Error;
-        serviceLogger.error(
-          this.withState({ error, attempt, maxRetries }),
-          `AgentOverChromeBridge 初始化失败 (尝试 ${attempt}/${maxRetries})`,
+        logErrorWithCategory(
+          serviceLogger,
+          error as Error,
+          ErrorCategory.MIDSCENE_FLOW,
+          {
+            ...this.withState({ attempt, maxRetries }),
+            action: 'initializeConnection',
+          },
         );
         setBrowserConnected(false);
 
@@ -151,9 +157,14 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       }
     }
 
-    serviceLogger.error(
-      this.withState(),
-      'AgentOverChromeBridge 初始化最终失败，所有重试已用尽',
+    logErrorWithCategory(
+      serviceLogger,
+      new Error('AgentOverChromeBridge 初始化最终失败，所有重试已用尽'),
+      ErrorCategory.MIDSCENE_FLOW,
+      {
+        ...this.withState(),
+        action: 'initializeConnection',
+      },
     );
     setBrowserConnected(false);
 
@@ -293,25 +304,29 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         try {
           this.handleTaskStartTip(finalTip, bridgeError, resolvedStepIndex);
         } catch (handlerError: any) {
-          serviceLogger.error(
+          logErrorWithCategory(
+            serviceLogger,
+            handlerError instanceof Error
+              ? handlerError
+              : new Error(String(handlerError)),
+            ErrorCategory.SYSTEM_INTERNAL,
             {
               tip: finalTip,
-              error: handlerError?.message,
-              stack: handlerError?.stack,
+              action: 'handleTaskStartTip',
             },
-            'handleTaskStartTip 执行失败',
           );
         }
       };
 
       safeCall().catch((error: any) => {
-        serviceLogger.error(
+        logErrorWithCategory(
+          serviceLogger,
+          error instanceof Error ? error : new Error(String(error)),
+          ErrorCategory.SYSTEM_INTERNAL,
           {
             tip: finalTip,
-            error: error?.message,
-            stack: error?.stack,
+            action: 'onTaskStartTip',
           },
-          'onTaskStartTip 回调执行失败（最外层捕获）',
         );
 
         try {
@@ -383,7 +398,15 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         );
       }
     } catch (error: any) {
-      serviceLogger.error(this.withState({ error }), '浏览器标签页连接失败');
+      logErrorWithCategory(
+        serviceLogger,
+        error as Error,
+        ErrorCategory.CONNECTION,
+        {
+          ...this.withState(),
+          action: 'ensureCurrentTabConnection',
+        },
+      );
 
       const errorMessage =
         error instanceof Error
@@ -521,7 +544,15 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
       setBrowserConnected(true);
       this.emit('reconnected');
     } catch (error) {
-      serviceLogger.error(this.withState({ error }), '强制重连失败');
+      logErrorWithCategory(
+        serviceLogger,
+        error as Error,
+        ErrorCategory.CONNECTION,
+        {
+          ...this.withState(),
+          action: 'forceReconnect',
+        },
+      );
       this.setState(OperateServiceState.STOPPED);
       setBrowserConnected(false);
       this.startAutoReconnect();
@@ -672,9 +703,14 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         return;
       } catch (error: any) {
         lastError = error;
-        serviceLogger.error(
-          this.withState({ prompt, error: error.message }),
-          'AI 任务执行失败',
+        logErrorWithCategory(
+          serviceLogger,
+          error as Error,
+          ErrorCategory.MIDSCENE_EXECUTION,
+          {
+            ...this.withState({ prompt }),
+            action: 'execute',
+          },
         );
 
         if (this.isConnectionError(error) && attempt < maxRetries) {
@@ -842,14 +878,20 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
           );
           return undefined;
         } catch (fallbackErr: any) {
-          serviceLogger.error(
-            this.withState({
-              prompt,
-              originalCmd,
-              originalError: error,
-              fallbackError: fallbackErr,
-            }),
-            'YAML 执行失败，兜底执行也失败',
+          logErrorWithCategory(
+            serviceLogger,
+            fallbackErr instanceof Error
+              ? fallbackErr
+              : new Error(String(fallbackErr)),
+            ErrorCategory.MIDSCENE_EXECUTION,
+            {
+              ...this.withState({
+                prompt,
+                originalCmd,
+                originalError: error?.message,
+              }),
+              action: 'executeScriptFallback',
+            },
           );
           throw new AppError(
             `YAML 脚本执行失败: ${error?.message} | 兜底失败: ${fallbackErr?.message}`,
@@ -1009,11 +1051,16 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
             locateRect: resultWithSegments.locateRect,
           };
         } catch (stitchError: any) {
-          serviceLogger.error(
-            this.withState({
-              stitchError: stitchError?.message || String(stitchError),
-            }),
-            '拼接段图失败',
+          logErrorWithCategory(
+            serviceLogger,
+            stitchError instanceof Error
+              ? stitchError
+              : new Error(String(stitchError)),
+            ErrorCategory.SYSTEM_INTERNAL,
+            {
+              ...this.withState(),
+              action: 'stitchSegments',
+            },
           );
           throw new AppError(
             `拼接段图失败: ${stitchError?.message || String(stitchError)}`,
@@ -1051,11 +1098,16 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
             locateRect: fallback.locateRect,
           };
         } catch (fallbackErr: any) {
-          serviceLogger.error(
-            this.withState({
-              fallbackError: fallbackErr?.message,
-            }),
-            '回退视口截图失败',
+          logErrorWithCategory(
+            serviceLogger,
+            fallbackErr instanceof Error
+              ? fallbackErr
+              : new Error(String(fallbackErr)),
+            ErrorCategory.MIDSCENE_EXECUTION,
+            {
+              ...this.withState(),
+              action: 'screenshotFallback',
+            },
           );
           throw new AppError(
             `截图失败且回退失败: ${
@@ -1083,16 +1135,14 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         error?.toString() ||
         String(error) ||
         'Unknown screenshot error';
-      serviceLogger.error(
-        this.withState({
-          error: errorMessage,
-          errorName: error?.name,
-          stack: error?.stack,
-          errorType: typeof error,
-          errorStringified: JSON.stringify(error),
-          params,
-        }),
-        '截图失败',
+      logErrorWithCategory(
+        serviceLogger,
+        error instanceof Error ? error : new Error(errorMessage),
+        ErrorCategory.MIDSCENE_EXECUTION,
+        {
+          ...this.withState({ params }),
+          action: 'screenshot',
+        },
       );
       throw new AppError(`截图失败: ${errorMessage}`, 500);
     }
@@ -1124,9 +1174,14 @@ export class WebOperateServiceRefactored extends BaseOperateService<AgentOverChr
         `波纹动画已${enabled ? '启用' : '禁用'}`,
       );
     } catch (error: any) {
-      serviceLogger.error(
-        this.withState({ error: error?.message || String(error), enabled }),
-        '设置波纹动画状态失败',
+      logErrorWithCategory(
+        serviceLogger,
+        error instanceof Error ? error : new Error(String(error)),
+        ErrorCategory.SYSTEM_INTERNAL,
+        {
+          ...this.withState({ enabled }),
+          action: 'setRippleEnabled',
+        },
       );
       throw new AppError(
         `设置波纹动画状态失败: ${error?.message || String(error)}`,

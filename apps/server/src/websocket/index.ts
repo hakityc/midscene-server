@@ -3,7 +3,11 @@ import type { Hono } from 'hono';
 import { validateMessageAction } from '../config/clientTypeActions';
 import type { WebSocketClient, WebSocketMessage } from '../types/websocket';
 import { WebSocketAction } from '../utils/enums';
-import { setLogContextFromMessage, wsLogger } from '../utils/logger';
+import {
+  logCommandInput,
+  setLogContextFromMessage,
+  wsLogger,
+} from '../utils/logger';
 import { MessageBuilder } from './builders/messageBuilder';
 import {
   handleConnectionError,
@@ -132,6 +136,11 @@ export const setupWebSocket = (app: Hono) => {
   ) => {
     // 设置日志上下文，包含 messageId 等信息
     setLogContextFromMessage(message, connectionId);
+
+    // 记录命令输入（在验证之前记录，确保所有指令都被记录）
+    if ((message as any).payload?.action) {
+      logCommandInput(wsLogger, message as any, connectionId);
+    }
 
     const action =
       (message as any).payload?.action ?? (message as any).content?.action;

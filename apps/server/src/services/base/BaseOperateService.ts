@@ -1,7 +1,8 @@
 import { EventEmitter } from 'node:events';
 import type { AgentOverChromeBridge } from '@midscene/web/bridge-mode';
 import dayjs from 'dayjs';
-import { serviceLogger } from '../../utils/logger';
+import { ErrorCategory } from '../../utils/logFields';
+import { logErrorWithCategory, serviceLogger } from '../../utils/logger';
 import {
   formatTaskTip,
   getTaskStageDescription,
@@ -218,7 +219,15 @@ export abstract class BaseOperateService<
       serviceLogger.info(`${this.getServiceName()} 启动成功`);
     } catch (error) {
       this.setState(OperateServiceState.STOPPED);
-      serviceLogger.error({ error }, `${this.getServiceName()} 启动失败`);
+      logErrorWithCategory(
+        serviceLogger,
+        error instanceof Error ? error : new Error(String(error)),
+        ErrorCategory.MIDSCENE_FLOW,
+        {
+          service: this.getServiceName(),
+          action: 'start',
+        },
+      );
       throw error;
     }
   }
@@ -245,7 +254,15 @@ export abstract class BaseOperateService<
 
       serviceLogger.info(`${this.getServiceName()} 已停止`);
     } catch (error) {
-      serviceLogger.error({ error }, `停止 ${this.getServiceName()} 时出错`);
+      logErrorWithCategory(
+        serviceLogger,
+        error instanceof Error ? error : new Error(String(error)),
+        ErrorCategory.SYSTEM_INTERNAL,
+        {
+          service: this.getServiceName(),
+          action: 'stop',
+        },
+      );
       throw error;
     } finally {
       // 确保状态总是被重置为 STOPPED
@@ -335,7 +352,14 @@ export abstract class BaseOperateService<
       try {
         callback(tip, bridgeError, stepIndex);
       } catch (error) {
-        serviceLogger.error({ error }, '任务提示回调执行失败');
+        logErrorWithCategory(
+          serviceLogger,
+          error instanceof Error ? error : new Error(String(error)),
+          ErrorCategory.SYSTEM_INTERNAL,
+          {
+            action: 'triggerTaskTipCallbacks',
+          },
+        );
       }
     });
   }
@@ -389,14 +413,14 @@ export abstract class BaseOperateService<
       // 触发注册的回调
       this.triggerTaskTipCallbacks(tip, bridgeError, stepIndex);
     } catch (error: any) {
-      console.error('❌ handleTaskStartTip 执行失败:', error);
-      serviceLogger.error(
+      logErrorWithCategory(
+        serviceLogger,
+        error instanceof Error ? error : new Error(String(error)),
+        ErrorCategory.SYSTEM_INTERNAL,
         {
           tip,
-          error: error?.message,
-          stack: error?.stack,
+          action: 'handleTaskStartTip',
         },
-        'handleTaskStartTip 执行失败',
       );
 
       try {
@@ -581,9 +605,15 @@ export abstract class BaseOperateService<
       }
     } catch (hookError: any) {
       // afterOperate 失败不应该抛出异常，避免覆盖原始错误
-      serviceLogger.error(
-        { hookError, taskType, success },
-        '❌ afterOperate 钩子执行失败',
+      logErrorWithCategory(
+        serviceLogger,
+        hookError instanceof Error ? hookError : new Error(String(hookError)),
+        ErrorCategory.SYSTEM_INTERNAL,
+        {
+          taskType,
+          success,
+          action: 'afterOperate',
+        },
       );
     }
   }
@@ -642,7 +672,14 @@ export abstract class BaseOperateService<
         return;
       }
 
-      serviceLogger.error({ error }, '❌ Report 上传过程出错');
+      logErrorWithCategory(
+        serviceLogger,
+        error instanceof Error ? error : new Error(String(error)),
+        ErrorCategory.DEPENDENCY,
+        {
+          action: 'uploadReport',
+        },
+      );
     }
   }
 

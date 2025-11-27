@@ -2,6 +2,8 @@ import { hostname } from 'node:os';
 import 'dotenv/config';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import pino from 'pino';
+import type { WsInboundMessage } from '../types/websocket';
+import { type ErrorCategory, LogFields } from './logFields';
 import { TencentCLSTransport } from './tencentCLSTransport.js';
 
 /**
@@ -258,3 +260,123 @@ export const cleanupLogger = () => {
     clsTransport.close();
   }
 };
+
+// ==================== 日志辅助函数 ====================
+
+/**
+ * 创建标准化的日志对象
+ * 自动添加时间戳，统一日志结构
+ */
+export function createLogContext(
+  data: Record<string, any>,
+): Record<string, any> {
+  return {
+    ...data,
+    timestamp: Date.now(),
+  };
+}
+
+/**
+ * 参数清洗工具
+ * - 深拷贝避免修改原对象
+ * - 截断过长字符串（超过 1000 字符）
+ * - 隐藏敏感字段（如 password, secret, token）
+ */
+function formatSafeParams(params: any, maxLength = 1000): any {
+  if (params === null || params === undefined) {
+    return params;
+  }
+
+  // 处理字符串：直接截断
+  if (typeof params === 'string') {
+    return params.length > maxLength
+      ? `${params.substring(0, maxLength)}... [truncated ${params.length - maxLength} chars]`
+      : params;
+  }
+
+  // 处理数组：递归处理每个元素
+  if (Array.isArray(params)) {
+    return params.map((item) => formatSafeParams(item, maxLength));
+  }
+
+  // 处理对象：递归处理每个属性
+  if (typeof params === 'object') {
+    const sensitiveKeys = [
+      'password',
+      'secret',
+      'token',
+      'key',
+      'apiKey',
+      'secretKey',
+      'secretId',
+    ];
+    const result: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(params)) {
+      const lowerKey = key.toLowerCase();
+      // 隐藏敏感字段
+      if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
+        result[key] = '[REDACTED]';
+      } else {
+        result[key] = formatSafeParams(value, maxLength);
+      }
+    }
+
+    return result;
+  }
+
+  // 其他类型直接返回
+  return params;
+}
+
+/**
+ * 命令日志记录（清晰记录输入）
+ * 记录所有接收到的 WebSocket 指令及其参数
+ */
+export function logCommandInput(
+  logger: any,
+  message: WsInboundMessage<any>,
+  connectionId?: string,
+): void {
+  const { meta, payload } = message;
+
+  // 格式化参数：截断过长内容，处理敏感信息
+  const safeParams = formatSafeParams(payload.params);
+
+  logger.info(
+    createLogContext({
+      eventType: 'command.receive',
+      [LogFields.MESSAGE_ID]: meta.messageId,
+      [LogFields.CONVERSATION_ID]: meta.conversationId,
+      [LogFields.CONNECTION_ID]: connectionId,
+      [LogFields.CLIENT_TYPE]: meta.clientType || 'web',
+      [LogFields.COMMAND_ACTION]: payload.action,
+      [LogFields.COMMAND_PARAMS]: safeParams,
+      [LogFields.COMMAND_ORIGIN]: payload.originalCmd || '',
+    }),
+    `收到指令: ${payload.action}`,
+  );
+}
+
+/**
+ * 错误分类记录（便于统计）
+ * 使用统一的错误分类，便于后续统计和分析
+ */
+export function logErrorWithCategory(
+  logger: any,
+  error: Error,
+  category: ErrorCategory,
+  context: Record<string, any> = {},
+): void {
+  logger.error(
+    createLogContext({
+      eventType: 'error.occurred',
+      [LogFields.ERROR]: error,
+      [LogFields.ERROR_CATEGORY]: category,
+      [LogFields.ERROR_CODE]:
+        (error as any).statusCode || (error as any).code || undefined,
+      ...context,
+    }),
+    `发生错误: ${category} - ${error.message}`,
+  );
+}
