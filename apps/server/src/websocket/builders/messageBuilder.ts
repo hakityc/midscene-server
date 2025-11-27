@@ -4,6 +4,7 @@ import type {
   WsOutboundMessage,
 } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
+import { AppError } from '../../utils/error';
 
 const INTERNAL_BUSINESS_ERROR_MESSAGE = 'midscene-server内部错误';
 
@@ -100,7 +101,24 @@ export function createErrorResponse(
   prefix: string = '操作失败',
 ): WsOutboundMessage<string> {
   // 所有错误详情通过日志记录，WebSocket 仅返回业务错误提示
-  const sanitizedMessage = `${prefix}: ${INTERNAL_BUSINESS_ERROR_MESSAGE}`;
+  let sanitizedMessage = `${prefix}: ${INTERNAL_BUSINESS_ERROR_MESSAGE}`;
+
+  // 如果是 AppError 且状态码小于 500，或者是开发环境，或者是 AI/Script 执行错误（通常包装在 AppError 中），则返回具体错误信息
+  if (_error instanceof AppError) {
+    // 如果是 500 错误，但在 AppError 中明确包装了错误信息，我们信任它已经处理过敏感信息
+    sanitizedMessage = _error.message;
+  } else if (_error instanceof Error) {
+    // 对于普通 Error，如果是明确的脚本执行错误，也可以考虑透传，但为了安全起见，
+    // 这里主要处理 AppError。如果在 createErrorResponse 调用前没有被包装成 AppError，
+    // 则回退到通用错误信息，或者在开发环境下显示
+    if (process.env.NODE_ENV === 'development') {
+      sanitizedMessage = `${prefix}: ${_error.message}`;
+    }
+  } else if (typeof _error === 'string') {
+    if (process.env.NODE_ENV === 'development') {
+      sanitizedMessage = `${prefix}: ${_error}`;
+    }
+  }
 
   return buildOutboundFromMeta<string>(
     originalMessage.meta,
