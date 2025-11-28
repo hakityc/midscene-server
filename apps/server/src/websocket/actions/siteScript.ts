@@ -1,11 +1,13 @@
 import { WebOperateServiceRefactored } from '../../services/base/WebOperateServiceRefactored';
 import type { MessageHandler } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
-import { wsLogger } from '../../utils/logger';
+import { ErrorCategory } from '../../utils/logFields';
+import { logErrorWithCategory, wsLogger } from '../../utils/logger';
 import {
   createErrorResponse,
   createSuccessResponse,
 } from '../builders/messageBuilder';
+import { detectBusinessError } from '../utils/businessErrorDetector';
 
 // 请求处理器
 export function handleSiteScriptHandler(): MessageHandler {
@@ -19,10 +21,44 @@ export function handleSiteScriptHandler(): MessageHandler {
         payload.originalCmd,
       );
       console.log('脚本执行结果:', data);
+
+      // 检测业务错误
+      const {
+        hasError: hasBusinessError,
+        errorMsg: businessErrorMsg,
+        rawResult: businessErrorRaw,
+      } = detectBusinessError(data);
+
+      if (hasBusinessError) {
+        // 上报业务错误到 CLS
+        logErrorWithCategory(
+          wsLogger,
+          new Error(businessErrorMsg),
+          ErrorCategory.MIDSCENE_EXECUTION,
+          {
+            ...message.meta,
+            action: payload.action,
+            businessError: true,
+            rawResult: businessErrorRaw,
+          },
+        );
+      }
+
       wsLogger.info(data, '处理站点脚本请求完成');
+
+      let responseMessage = '处理完成';
+      if (hasBusinessError) {
+        responseMessage += ` (⚠️ 业务逻辑执行失败: ${businessErrorMsg})`;
+      }
+
+      // 返回结构化数据，包含执行结果和错误状态
       const response = createSuccessResponse(
         message,
-        `处理完成`,
+        {
+          message: responseMessage,
+          result: data,
+          hasErrors: hasBusinessError,
+        },
         WebSocketAction.SITE_SCRIPT,
       );
       send(response);

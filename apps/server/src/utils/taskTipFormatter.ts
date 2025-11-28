@@ -237,7 +237,7 @@ export function formatTaskTip(rawTip: string): {
   if (!rawTip || typeof rawTip !== 'string') {
     const config = getTaskTipConfig();
     return {
-      formatted: `${config.botName}正在处理中...`,
+      formatted: `${config.botName}本地任务`,
       icon: '🤖',
       category: 'unknown',
       content: '',
@@ -271,7 +271,7 @@ export function formatTaskTip(rawTip: string): {
 
   // 如果没有匹配的规则，返回默认格式
   return {
-    formatted: `${config.botName}正在处理中...`,
+    formatted: `${config.botName}本地任务`,
     icon: '🤖',
     category: 'general',
     content: trimmedTip,

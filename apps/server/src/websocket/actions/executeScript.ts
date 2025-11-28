@@ -9,6 +9,7 @@ import {
   createSuccessResponseWithMeta,
 } from '../builders/messageBuilder';
 import { ClientCommandHelper } from '../helpers/clientCommandHelper';
+import { detectBusinessError } from '../utils/businessErrorDetector';
 import { parseScriptParams } from '../utils/scriptParamsParser';
 import { TaskLockKey, taskExecutionGuard } from '../utils/taskExecutionGuard';
 
@@ -82,37 +83,26 @@ export function executeScriptHandler(): MessageHandler {
         const hasErrors = scriptResult?._hasErrors || false;
         const taskErrors = scriptResult?._taskErrors || [];
 
-        // 检查业务错误：如果执行结果中包含 status: "failed" 的条目，视为业务错误
-        let hasBusinessError = false;
-        let businessErrorMsg = '';
+        // 使用工具函数检测业务错误
+        const {
+          hasError: hasBusinessError,
+          errorMsg: businessErrorMsg,
+          rawResult: businessErrorRaw,
+        } = detectBusinessError(scriptResult?.result);
 
-        if (scriptResult?.result && typeof scriptResult.result === 'object') {
-          const resultValues = Object.values(scriptResult.result);
-          for (const item of resultValues) {
-            // 检查每个结果项是否包含失败状态
-            if (
-              item &&
-              typeof item === 'object' &&
-              (item as any).status === 'failed'
-            ) {
-              hasBusinessError = true;
-              businessErrorMsg = (item as any).msg || 'Unknown business error';
-
-              // 上报业务错误到 CLS
-              logErrorWithCategory(
-                wsLogger,
-                new Error(businessErrorMsg), // 创建业务错误对象
-                ErrorCategory.MIDSCENE_EXECUTION, // 使用执行错误分类
-                {
-                  ...message.meta, // 包含 traceId 等元数据
-                  action: payload.action,
-                  businessError: true, // 标记为业务错误
-                  rawResult: item, // 记录原始结果
-                },
-              );
-              break; // 发现第一个错误即记录并停止检查（可根据需求改为收集所有）
-            }
-          }
+        if (hasBusinessError) {
+          // 上报业务错误到 CLS
+          logErrorWithCategory(
+            wsLogger,
+            new Error(businessErrorMsg), // 创建业务错误对象
+            ErrorCategory.MIDSCENE_EXECUTION, // 使用执行错误分类
+            {
+              ...message.meta, // 包含 traceId 等元数据
+              action: payload.action,
+              businessError: true, // 标记为业务错误
+              rawResult: businessErrorRaw, // 记录原始结果
+            },
+          );
         }
 
         let responseMessage = `${payload.action} 处理完成`;

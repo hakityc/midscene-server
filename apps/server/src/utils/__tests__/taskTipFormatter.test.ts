@@ -302,7 +302,7 @@ describe('taskTipFormatter', () => {
     describe('边界情况', () => {
       it('应该处理空字符串', () => {
         const result = formatTaskTip('');
-        expect(result.formatted).toBe('小乐正在处理中...');
+        expect(result.formatted).toBe('小乐本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('unknown');
         expect(result.content).toBe('');
@@ -311,7 +311,7 @@ describe('taskTipFormatter', () => {
 
       it('应该处理 null 值', () => {
         const result = formatTaskTip(null as any);
-        expect(result.formatted).toBe('小乐正在处理中...');
+        expect(result.formatted).toBe('小乐本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('unknown');
         expect(result.content).toBe('');
@@ -320,7 +320,7 @@ describe('taskTipFormatter', () => {
 
       it('应该处理 undefined 值', () => {
         const result = formatTaskTip(undefined as any);
-        expect(result.formatted).toBe('小乐正在处理中...');
+        expect(result.formatted).toBe('小乐本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('unknown');
         expect(result.content).toBe('');
@@ -329,7 +329,7 @@ describe('taskTipFormatter', () => {
 
       it('应该处理非字符串值', () => {
         const result = formatTaskTip(123 as any);
-        expect(result.formatted).toBe('小乐正在处理中...');
+        expect(result.formatted).toBe('小乐本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('unknown');
         expect(result.content).toBe('');
