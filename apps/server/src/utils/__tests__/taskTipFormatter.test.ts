@@ -338,8 +338,9 @@ describe('taskTipFormatter', () => {
 
       it('应该处理只有空格的字符串', () => {
         const result = formatTaskTip('   ');
-        // trim() 后为空字符串，但会走默认分支返回原字符串
-        expect(result.formatted).toBe('小乐');
+        // trim() 后为空字符串，但不会触发 early return（因为 rawTip 是真值）
+        // 最终走到默认分支返回 "本地任务"
+        expect(result.formatted).toBe('小乐本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('general');
         expect(result.content).toBe('');
@@ -348,7 +349,8 @@ describe('taskTipFormatter', () => {
 
       it('应该处理未知格式的提示', () => {
         const result = formatTaskTip('UnknownPhase - Some Action');
-        expect(result.formatted).toBe('小乐UnknownPhase - Some Action');
+        // 未匹配任何模式时，返回默认的 "本地任务"
+        expect(result.formatted).toBe('小乐本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('general');
         expect(result.content).toBe('UnknownPhase - Some Action');

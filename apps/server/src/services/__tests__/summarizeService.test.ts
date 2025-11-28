@@ -99,9 +99,13 @@ describe('summarizeService - Agent 调用测试', () => {
       await summarizeImage({ url: realImageDataUrl });
 
       expect(mockGenerateLegacy).toHaveBeenCalledTimes(1);
+      // 新的实现使用 MessageInput[] 格式，包含压缩后的图片
       expect(mockGenerateLegacy).toHaveBeenCalledWith([
-        '请对这张网页整页截图进行结构化总结。',
-        realImageDataUrl,
+        { role: 'user', content: '帮我总结' },
+        {
+          role: 'user',
+          content: expect.stringContaining('"type":"image"'),
+        },
       ]);
     });
 
@@ -169,9 +173,13 @@ describe('summarizeService - Agent 调用测试', () => {
 
       const result = await summarizeImage({ url: realImageDataUrl });
 
+      // 新的实现使用 MessageInput[] 格式，包含压缩后的图片
       expect(mockGenerateLegacy).toHaveBeenCalledWith([
-        '请对这张网页整页截图进行结构化总结。',
-        realImageDataUrl,
+        { role: 'user', content: '帮我总结' },
+        {
+          role: 'user',
+          content: expect.stringContaining('"type":"image"'),
+        },
       ]);
       expect(result.summary).toBe('{"CoreTopic": "JPEG 图片测试"}');
       // 验证真实图片的大小（应该大于 0）

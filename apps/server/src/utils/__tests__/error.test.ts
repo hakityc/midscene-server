@@ -2,11 +2,12 @@ import type { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppError, setupError } from '../error';
 
-// Mock serverLogger
+// Mock serverLogger 和 logErrorWithCategory
 vi.mock('../logger', () => ({
   serverLogger: {
     error: vi.fn(),
   },
+  logErrorWithCategory: vi.fn(),
 }));
 
 describe('AppError', () => {
@@ -73,6 +74,10 @@ describe('setupError', () => {
   beforeEach(() => {
     mockContext = {
       json: vi.fn((data: any, status?: any) => ({ json: data, status })),
+      req: {
+        path: '/test/path',
+        method: 'GET',
+      },
     };
 
     mockApp = {
