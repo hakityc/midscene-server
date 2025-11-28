@@ -152,9 +152,8 @@ export function FlowActionItem({
       case 'string':
         // 对于较长的文本，使用 VariableTextarea（支持变量）
         if (
-          param.name === 'assertion' ||
           param.description?.includes('描述') ||
-          param.name === 'code'
+          ['assertion', 'code', 'script'].includes(param.name)
         ) {
           return (
             <div key={param.name}>
@@ -416,11 +415,15 @@ export function FlowActionItem({
         <Label className="text-xs font-bold">自定义步骤名称（可选）</Label>
         <VariableInput
           value={(action as any).leboStepName || ''}
-          onChange={(val) => updateField('leboStepName', val === '' ? undefined : val)}
+          onChange={(val) =>
+            updateField('leboStepName', val === '' ? undefined : val)
+          }
           placeholder="例如：步骤1：打开登录页"
           className="mt-1"
         />
-        <p className="text-xs text-gray-500 mt-1">填写后将优先用于显示步骤提示（服务端基于 stepIndex 覆盖）。</p>
+        <p className="text-xs text-gray-500 mt-1">
+          填写后将优先用于显示步骤提示（服务端基于 stepIndex 覆盖）。
+        </p>
       </div>
     </div>
   );

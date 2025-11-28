@@ -1,7 +1,8 @@
 import { WebOperateServiceRefactored } from '../../services/base/WebOperateServiceRefactored';
 import type { MessageHandler } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
-import { wsLogger } from '../../utils/logger';
+import { ErrorCategory } from '../../utils/logFields';
+import { logErrorWithCategory, wsLogger } from '../../utils/logger';
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -38,7 +39,7 @@ export function executeScriptHandler(): MessageHandler {
 
     const webOperateService = WebOperateServiceRefactored.getInstance();
 
-      // 使用封装好的方法创建任务提示回调
+    // 使用封装好的方法创建任务提示回调
     const taskTipCallback = webOperateService.createTaskTipCallback({
       send,
       message,
@@ -81,18 +82,53 @@ export function executeScriptHandler(): MessageHandler {
         const hasErrors = scriptResult?._hasErrors || false;
         const taskErrors = scriptResult?._taskErrors || [];
 
+        // 检查业务错误：如果执行结果中包含 status: "failed" 的条目，视为业务错误
+        let hasBusinessError = false;
+        let businessErrorMsg = '';
+
+        if (scriptResult?.result && typeof scriptResult.result === 'object') {
+          const resultValues = Object.values(scriptResult.result);
+          for (const item of resultValues) {
+            // 检查每个结果项是否包含失败状态
+            if (
+              item &&
+              typeof item === 'object' &&
+              (item as any).status === 'failed'
+            ) {
+              hasBusinessError = true;
+              businessErrorMsg = (item as any).msg || 'Unknown business error';
+
+              // 上报业务错误到 CLS
+              logErrorWithCategory(
+                wsLogger,
+                new Error(businessErrorMsg), // 创建业务错误对象
+                ErrorCategory.MIDSCENE_EXECUTION, // 使用执行错误分类
+                {
+                  ...message.meta, // 包含 traceId 等元数据
+                  action: payload.action,
+                  businessError: true, // 标记为业务错误
+                  rawResult: item, // 记录原始结果
+                },
+              );
+              break; // 发现第一个错误即记录并停止检查（可根据需求改为收集所有）
+            }
+          }
+        }
+
         let responseMessage = `${payload.action} 处理完成`;
         if (hasErrors && taskErrors.length > 0) {
           const errorSummary = taskErrors
             .map((err: any) => `${err.taskName}: ${err.error.message}`)
             .join('; ');
           responseMessage += ` (⚠️ 部分任务执行失败: ${errorSummary})`;
+        } else if (hasBusinessError) {
+          responseMessage += ` (⚠️ 业务逻辑执行失败: ${businessErrorMsg})`;
         }
 
         const response = createSuccessResponse(message, {
           message: responseMessage,
           result: scriptResult?.result,
-          hasErrors,
+          hasErrors: hasErrors || hasBusinessError, // 将业务错误也视为错误状态
           taskErrors: hasErrors ? taskErrors : undefined,
         });
         send(response);
