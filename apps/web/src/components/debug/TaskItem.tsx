@@ -227,16 +227,46 @@ export function TaskItem({
               </div>
 
               {onContextChange && index === 0 && (
-                <div>
-                  <Textarea
-                    value={context || ''}
-                    onChange={(e) => onContextChange(e.target.value)}
-                    placeholder="设置 AI 行为上下文"
-                    className="min-h-[40px]"
-                  />
-                  <p className="text-xs text-gray-600 mt-2 font-medium">
-                    此上下文会在执行任务前设置，用于指导 AI 的行为
-                  </p>
+                <div className="space-y-2">
+                  <div>
+                    <Textarea
+                      value={context || ''}
+                      onChange={(e) => onContextChange(e.target.value)}
+                      placeholder="设置 AI 行为上下文"
+                      className="min-h-[40px]"
+                    />
+                    <p className="text-xs text-gray-600 mt-2 font-medium">
+                      此上下文会在执行任务前设置，用于指导 AI 的行为
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-bold whitespace-nowrap">
+                      连接错误最大重试次数
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={task.maxRetriesForConnection ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          updateTask('maxRetriesForConnection', undefined);
+                        } else {
+                          const num = Number(value);
+                          updateTask(
+                            'maxRetriesForConnection',
+                            Number.isNaN(num) ? undefined : num,
+                          );
+                        }
+                      }}
+                      className="h-7 w-24 text-xs"
+                      placeholder="默认 3"
+                    />
+                    <p className="text-[10px] text-gray-500">
+                      仅对连接错误生效；例如设置为 1 表示不重试。
+                    </p>
+                  </div>
                 </div>
               )}
 

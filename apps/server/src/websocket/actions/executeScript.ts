@@ -55,7 +55,26 @@ export function executeScriptHandler(): MessageHandler {
       // 注册任务提示回调
       webOperateService.onTaskTip(taskTipCallback);
 
-      const { script, stepMetadata } = parseScriptParams(payload?.params);
+      // 解析原始参数（可能是 JSON / YAML / 对象）
+      const rawParams = (payload?.params || {}) as any;
+      const { script, stepMetadata, parsedParams } =
+        parseScriptParams(rawParams);
+
+      // 默认重试 3 次，仅针对连接类错误
+      let connectionMaxRetries = 3;
+      const tasks = (parsedParams as any)?.tasks;
+      if (Array.isArray(tasks) && tasks.length > 0) {
+        // 当前一次 executeScript 通常只执行一组 tasks，
+        // 这里优先使用第一个 task 上的 maxRetriesForConnection 配置
+        const taskLevelRetry = tasks[0]?.maxRetriesForConnection;
+        if (
+          typeof taskLevelRetry === 'number' &&
+          Number.isFinite(taskLevelRetry) &&
+          taskLevelRetry > 0
+        ) {
+          connectionMaxRetries = taskLevelRetry;
+        }
+      }
 
       // 设置步骤元数据到 service
       webOperateService.setStepMetadata(stepMetadata);
@@ -68,7 +87,11 @@ export function executeScriptHandler(): MessageHandler {
         await webOperateService.setAiContext(context);
         await maskController.executeWithMask(
           async () => {
-            scriptResult = await webOperateService.executeScript(script);
+            // 对当前这次请求使用指定的重试次数（仅对连接错误生效）
+            scriptResult = await webOperateService.executeScript(
+              script,
+              connectionMaxRetries,
+            );
             console.log(
               '🚀 AI 处理完成，返回结果:',
               JSON.stringify(scriptResult),

@@ -326,6 +326,11 @@ export interface Task {
   id: string;
   name: string;
   continueOnError: boolean;
+  /**
+   * 连接错误时的最大重试次数（仅对连接错误生效）
+   * 不配置时由服务端使用默认值（目前为 3）
+   */
+  maxRetriesForConnection?: number;
   flow: FlowAction[];
 }
 
