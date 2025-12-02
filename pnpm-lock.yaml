@@ -1295,12 +1295,12 @@ packages:
     engines: {node: '>=18.0.0'}
 
   '@midscene/core@file:apps/server/local-packages/midscene-core.tgz':
-    resolution: {integrity: sha512-+BDgDYf9654zG47aKigJOKiUXMNpRHT6SnkCEt1bTDb2Yz9VIsI8huONNuzzoZUesA1HiRzeG2XQF6T1qgldag==, tarball: file:apps/server/local-packages/midscene-core.tgz}
+    resolution: {integrity: sha512-bZmwDDoZfqwUvVmF11Bw4xGjAwl+Yu+9ZaDNJaBA8YhKi8FHX5TAG0m+KdMCmxM9jI5x87a/VAzjQRPlk2+orQ==, tarball: file:apps/server/local-packages/midscene-core.tgz}
     version: 0.30.8
     engines: {node: '>=18.0.0'}
 
   '@midscene/mcp@file:apps/server/local-packages/midscene-mcp.tgz':
-    resolution: {integrity: sha512-7spnRGdZjFHfVIuNPqCxnEcb6er4fwI91L5ZQu14k6Bb66kyKM18QKF+9AVFuSU9nxQq+hP+VBH6ek22uRy/rg==, tarball: file:apps/server/local-packages/midscene-mcp.tgz}
+    resolution: {integrity: sha512-rYUvBMpndeQY8kaHF8oYdA7m33bAQBbuEF8bzkW20lt0qy4zrLjNuvs0z18fZ3tVAIbhqPsXYRWg7WBSQgX93Q==, tarball: file:apps/server/local-packages/midscene-mcp.tgz}
     version: 0.30.8
     hasBin: true
 
@@ -1317,7 +1317,7 @@ packages:
     resolution: {integrity: sha512-jt1txKn3LvOxYCIYhtkevAsSZU6efvoqV6GcF5WiHgq/0olaCiyReA618j5dRVM9vrN8fRsQP/jgZL0ifGJ6aw==}
 
   '@midscene/web@file:apps/server/local-packages/midscene-web.tgz':
-    resolution: {integrity: sha512-oaSMCDDWxJHOWCHYx1zDs4uVmO12J5W5lr8/CKgNPY2lky9JGcGQrlye3fQnRaCS0sd/3k755V0w7T5eUGZ1Hw==, tarball: file:apps/server/local-packages/midscene-web.tgz}
+    resolution: {integrity: sha512-zFMcoeiPDnQ2ZUmxfIoaRD61whjKrHLQ0upVWCPg7DYD3bdHMH6r1gPCfTfJwRjJzcx2ilj0FXPObIZPE6ZsKw==, tarball: file:apps/server/local-packages/midscene-web.tgz}
     version: 0.30.8
     engines: {node: '>=18.0.0'}
     hasBin: true

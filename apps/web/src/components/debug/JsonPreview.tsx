@@ -26,6 +26,12 @@ function formatJsonWithDisabledActions(params: any): string {
       lines.push(`    {`);
       lines.push(`      "name": ${JSON.stringify(task.name)},`);
       lines.push(`      "continueOnError": ${task.continueOnError},`);
+      // 如果有 maxRetriesForConnection，添加到 JSON 中
+      if (task.maxRetriesForConnection !== undefined) {
+        lines.push(
+          `      "maxRetriesForConnection": ${task.maxRetriesForConnection},`,
+        );
+      }
       lines.push(`      "flow": [`);
 
       // 收集有效的动作行

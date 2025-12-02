@@ -295,6 +295,9 @@ export function buildAiScriptMessage(
   const formattedTasks = tasks.map((task) => ({
     name: task.name,
     continueOnError: task.continueOnError,
+    ...(task.maxRetriesForConnection !== undefined && {
+      maxRetriesForConnection: task.maxRetriesForConnection,
+    }),
     // 过滤掉未启用的动作（enabled 为 false 的动作）和转换后为空的动作
     flow: task.flow
       .filter((action) => action.enabled !== false)

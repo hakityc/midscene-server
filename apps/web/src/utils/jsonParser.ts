@@ -90,6 +90,9 @@ function parseTasks(tasks: any[]): Task[] {
     id: uuidv4(),
     name: task.name || `任务 ${index + 1}`,
     continueOnError: task.continueOnError || false,
+    ...(task.maxRetriesForConnection !== undefined && {
+      maxRetriesForConnection: task.maxRetriesForConnection,
+    }),
     flow: parseFlow(task.flow || []),
   }));
 }
