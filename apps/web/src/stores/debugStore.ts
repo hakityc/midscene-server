@@ -43,6 +43,10 @@ interface DebugState {
     };
   };
 
+  // JSON 模式相关（以 JSON 为主）
+  jsonParams: unknown | null;
+  jsonOverrideEnabled: boolean;
+
   // 历史记录
   history: HistoryItem[];
   showHistory: boolean;
@@ -82,6 +86,8 @@ interface DebugState {
   // 表单数据更新
   updateFromJson: (formData: any) => void;
   resetForm: () => void;
+  setJsonOverrideEnabled: (enabled: boolean) => void;
+  clearJsonOverride: () => void;
 }
 
 const generateMeta = (): MessageMeta => ({
@@ -126,6 +132,9 @@ export const useDebugStore = create<DebugState>()(
       summarizeFullPage: true,
       summarizeLocate: undefined,
 
+      jsonParams: null,
+      jsonOverrideEnabled: false,
+
       history: [],
       showHistory: false,
 
@@ -156,6 +165,17 @@ export const useDebugStore = create<DebugState>()(
       setSummarizeFullPage: (fullPage) => set({ summarizeFullPage: fullPage }),
       setSummarizeLocate: (locate) => set({ summarizeLocate: locate }),
       setShowHistory: (show) => set({ showHistory: show }),
+
+      setJsonOverrideEnabled: (enabled) =>
+        set({
+          jsonOverrideEnabled: enabled,
+        }),
+
+      clearJsonOverride: () =>
+        set({
+          jsonParams: null,
+          jsonOverrideEnabled: false,
+        }),
 
       // 历史记录操作
       addHistory: (message, label) => {
@@ -246,10 +266,14 @@ export const useDebugStore = create<DebugState>()(
         set(newState);
       },
 
-      // 从 JSON 更新表单
+      // 从 JSON 更新（JSON 为主，表单为辅）
       updateFromJson: (formData) => {
         set((state) => {
-          const updates: Partial<DebugState> = {};
+          // 无论能否完全映射表单，始终以最新 JSON 为主
+          const updates: Partial<DebugState> = {
+            jsonParams: formData,
+            jsonOverrideEnabled: true,
+          };
           const currentAction = state.action;
 
           // 根据当前 Action 类型解析 formData（formData 是 payload.params 的内容）
@@ -372,6 +396,8 @@ export const useDebugStore = create<DebugState>()(
         summarizeFullPage: state.summarizeFullPage,
         summarizeLocate: state.summarizeLocate,
         history: state.history,
+        jsonParams: state.jsonParams,
+        jsonOverrideEnabled: state.jsonOverrideEnabled,
       }),
     },
   ),
