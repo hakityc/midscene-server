@@ -271,7 +271,9 @@ export function formatTaskTip(rawTip: string): {
 
   // 如果没有匹配的规则，返回默认格式
   return {
-    formatted: `${config.botName}本地任务`,
+    // 默认情况下直接使用原始提示文案，方便前端将其作为主标题展示
+    // 这里通常对应自定义的 leboStepName 等场景
+    formatted: trimmedTip,
     icon: '🤖',
     category: 'general',
     content: trimmedTip,

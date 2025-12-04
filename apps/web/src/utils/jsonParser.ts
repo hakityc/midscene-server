@@ -56,14 +56,17 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
       const { tasks, option } = payload.params as any;
       result.tasks = parseTasks(tasks);
       result.enableLoadingShade = option === 'LOADING_SHADE';
-      
+
       // 优先从 tasks 中提取 aiActionContext
       // 如果所有 task 有相同的 aiActionContext，则设置到全局 context
       if (Array.isArray(result.tasks) && result.tasks.length > 0) {
         const contexts = result.tasks
           .map((t) => t.aiActionContext)
-          .filter((ctx): ctx is string => typeof ctx === 'string' && ctx.trim().length > 0);
-        
+          .filter(
+            (ctx): ctx is string =>
+              typeof ctx === 'string' && ctx.trim().length > 0,
+          );
+
         if (contexts.length > 0) {
           // 如果所有 task 的 context 相同，使用它作为全局 context
           const uniqueContexts = [...new Set(contexts)];
@@ -75,7 +78,7 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
           }
         }
       }
-      
+
       // 向后兼容：如果没有从 task 中找到 context，尝试从 payload.context 读取
       if (!result.aiScriptContext) {
         const context = (payload as any)?.context;
@@ -115,9 +118,7 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
         windowTitle?: string;
       };
       if (params) {
-        result.connectWindowId = params.windowId
-          ? String(params.windowId)
-          : '';
+        result.connectWindowId = params.windowId ? String(params.windowId) : '';
         result.connectWindowTitle = params.windowTitle || '';
       }
       break;
@@ -136,7 +137,8 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
         };
       };
       if (params) {
-        result.summarizeFullPage = params.fullPage !== undefined ? params.fullPage : true;
+        result.summarizeFullPage =
+          params.fullPage !== undefined ? params.fullPage : true;
         result.summarizeLocate = params.locate;
       }
       break;
@@ -159,7 +161,9 @@ function parseTasks(tasks: any[]): Task[] {
     ...(task.maxRetriesForConnection !== undefined && {
       maxRetriesForConnection: task.maxRetriesForConnection,
     }),
-    ...(task.aiActionContext && typeof task.aiActionContext === 'string' && task.aiActionContext.trim()
+    ...(task.aiActionContext &&
+    typeof task.aiActionContext === 'string' &&
+    task.aiActionContext.trim()
       ? { aiActionContext: task.aiActionContext }
       : {}),
     flow: parseFlow(task.flow || []),
