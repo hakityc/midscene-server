@@ -34,6 +34,17 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
     siteScript?: string;
     siteScriptCmd?: string;
     params?: string;
+    connectWindowId?: string;
+    connectWindowTitle?: string;
+    summarizeFullPage?: boolean;
+    summarizeLocate?: {
+      rect: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+      };
+    };
   } = {
     action,
     meta: parsedMeta,
@@ -95,6 +106,39 @@ export function parseJsonToForm(jsonMessage: WsInboundMessage) {
 
     case 'command': {
       result.params = payload.params as string;
+      break;
+    }
+
+    case 'connectWindow': {
+      const params = payload.params as {
+        windowId?: number;
+        windowTitle?: string;
+      };
+      if (params) {
+        result.connectWindowId = params.windowId
+          ? String(params.windowId)
+          : '';
+        result.connectWindowTitle = params.windowTitle || '';
+      }
+      break;
+    }
+
+    case 'summarize': {
+      const params = payload.params as {
+        fullPage?: boolean;
+        locate?: {
+          rect: {
+            left: number;
+            top: number;
+            width: number;
+            height: number;
+          };
+        };
+      };
+      if (params) {
+        result.summarizeFullPage = params.fullPage !== undefined ? params.fullPage : true;
+        result.summarizeLocate = params.locate;
+      }
       break;
     }
   }

@@ -240,16 +240,11 @@ export const useDebugStore = create<DebugState>()(
             newState.command = formData.params;
           }
         } else if (formData.action === 'connectWindow') {
-          // connectWindow 需要通过 parseJsonToForm 解析，这里暂时保持原逻辑
-          const params = item.message.payload.params as {
-            windowId?: number;
-            windowTitle?: string;
-          };
-          if (params) {
-            newState.connectWindowId = params.windowId
-              ? String(params.windowId)
-              : '';
-            newState.connectWindowTitle = params.windowTitle || '';
+          if (formData.connectWindowId !== undefined) {
+            newState.connectWindowId = formData.connectWindowId;
+          }
+          if (formData.connectWindowTitle !== undefined) {
+            newState.connectWindowTitle = formData.connectWindowTitle;
           }
         } else if (formData.action === 'summarize') {
           if (formData.summarizeFullPage !== undefined) {
