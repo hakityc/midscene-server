@@ -7,10 +7,7 @@ import {
   createSuccessResponse,
   createSuccessResponseWithMeta,
 } from '../builders/messageBuilder';
-import {
-  taskExecutionGuard,
-  TaskLockKey,
-} from '../utils/taskExecutionGuard';
+import { TaskLockKey, taskExecutionGuard } from '../utils/taskExecutionGuard';
 
 // AI 请求处理器
 export function createAiHandler(): MessageHandler {
@@ -61,14 +58,15 @@ export function createAiHandler(): MessageHandler {
         return;
       }
 
-      // 监听重连事件
+      // 监听重连事件（仅记录日志，不通知前端）
       const onReconnected = () => {
-        const response = createSuccessResponse(
-          message as WebSocketMessage,
+        wsLogger.info(
+          {
+            connectionId,
+            messageId: meta.messageId,
+          },
           'Agent重连成功，可以继续操作',
-          WebSocketAction.CALLBACK_AI_STEP,
         );
-        send(response);
       };
 
       webOperateService.once('reconnected', onReconnected);

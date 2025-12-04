@@ -80,14 +80,16 @@ export function createAiHandlerFactory(
           return;
         }
 
-        // 监听重连事件
+        // 监听重连事件（仅记录日志，不通知前端）
         const onReconnected = () => {
-          const response = createSuccessResponse(
-            message as WebSocketMessage,
+          wsLogger.info(
+            {
+              connectionId,
+              messageId: meta.messageId,
+              service: serviceName,
+            },
             'Agent重连成功，可以继续操作',
-            WebSocketAction.CALLBACK_AI_STEP,
           );
-          send(response);
         };
         service.once('reconnected', onReconnected);
       }
