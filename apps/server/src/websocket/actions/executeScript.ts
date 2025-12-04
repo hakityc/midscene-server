@@ -81,10 +81,42 @@ export function executeScriptHandler(): MessageHandler {
 
       let scriptResult: any;
       try {
-        // 从 payload 中提取 context（如果存在）
-        const context = payload?.context || '';
+        // 从 tasks 中提取 aiActionContext（如果存在）
+        // 优先使用第一个 task 的 aiActionContext
+        let aiActionContext = '';
+        if (Array.isArray(tasks) && tasks.length > 0) {
+          // 查找第一个有 aiActionContext 的 task
+          for (const task of tasks) {
+            if (
+              task?.aiActionContext &&
+              typeof task.aiActionContext === 'string'
+            ) {
+              aiActionContext = task.aiActionContext;
+              break;
+            }
+          }
 
-        await webOperateService.setAiContext(context);
+          // 如果有多个 task 有不同的 aiActionContext，记录警告
+          const contexts = tasks
+            .map((t) => t?.aiActionContext)
+            .filter(
+              (ctx): ctx is string =>
+                typeof ctx === 'string' && ctx.trim().length > 0,
+            );
+          const uniqueContexts = [...new Set(contexts)];
+          if (uniqueContexts.length > 1) {
+            wsLogger.warn(
+              {
+                connectionId,
+                messageId: meta.messageId,
+                contexts: uniqueContexts,
+              },
+              '检测到多个 task 有不同的 aiActionContext，将使用第一个 task 的 context',
+            );
+          }
+        }
+
+        await webOperateService.setAiContext(aiActionContext);
         await maskController.executeWithMask(
           async () => {
             // 对当前这次请求使用指定的重试次数（仅对连接错误生效）

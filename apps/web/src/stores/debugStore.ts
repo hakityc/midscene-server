@@ -8,7 +8,7 @@ import type {
   WebSocketAction,
   WsInboundMessage,
 } from '@/types/debug';
-import { parseFlow } from '@/utils/jsonParser';
+import { parseFlow, parseJsonToForm } from '@/utils/jsonParser';
 
 const MAX_HISTORY = 10;
 
@@ -199,81 +199,74 @@ export const useDebugStore = create<DebugState>()(
       clearHistory: () => set({ history: [] }),
 
       loadHistory: (item) => {
-        const msg = item.message;
+        // 使用统一的解析函数来解析消息，确保所有字段都被正确解析
+        const formData = parseJsonToForm(item.message);
         const newState: Partial<DebugState> = {
-          action: msg.payload.action as WebSocketAction,
-          meta: msg.meta,
+          action: formData.action,
+          meta: formData.meta,
           showHistory: false,
         };
 
         // 根据 action 类型恢复状态
-        if (msg.payload.action === 'aiScript') {
-          const params = msg.payload.params as { tasks: Task[] };
-          if (params.tasks) {
-            newState.tasks = params.tasks.map((t) => ({
+        if (formData.action === 'aiScript') {
+          if (formData.tasks) {
+            newState.tasks = formData.tasks.map((t) => ({
               ...t,
-              id: uuidv4(),
+              id: t.id || uuidv4(),
             }));
           }
-          newState.enableLoadingShade =
-            msg.payload.option?.includes('LOADING_SHADE') || false;
-          // 恢复 context（如果存在）
-          const context = (msg.payload as any)?.context;
-          if (context && typeof context === 'string') {
-            newState.aiScriptContext = context;
-          } else {
-            newState.aiScriptContext = '';
+          if (typeof formData.enableLoadingShade === 'boolean') {
+            newState.enableLoadingShade = formData.enableLoadingShade;
           }
-        } else if (msg.payload.action === 'ai') {
-          newState.aiPrompt = msg.payload.params as string;
-          // 恢复 context（如果存在）
-          const context = (msg.payload as any)?.context;
-          if (context && typeof context === 'string') {
-            newState.aiScriptContext = context;
-          } else {
-            newState.aiScriptContext = '';
+          if (formData.aiScriptContext !== undefined) {
+            newState.aiScriptContext = formData.aiScriptContext || '';
           }
-        } else if (msg.payload.action === 'siteScript') {
-          newState.siteScript = msg.payload.params as string;
-          newState.siteScriptCmd = msg.payload.originalCmd || '';
-        } else if (msg.payload.action === 'command') {
-          newState.command = msg.payload.params as string;
-        } else if (msg.payload.action === 'connectWindow') {
-          const params = msg.payload.params as {
+        } else if (formData.action === 'ai') {
+          if (formData.aiPrompt !== undefined) {
+            newState.aiPrompt = formData.aiPrompt;
+          }
+          if (formData.aiScriptContext !== undefined) {
+            newState.aiScriptContext = formData.aiScriptContext || '';
+          }
+        } else if (formData.action === 'siteScript') {
+          if (formData.siteScript !== undefined) {
+            newState.siteScript = formData.siteScript;
+          }
+          if (formData.siteScriptCmd !== undefined) {
+            newState.siteScriptCmd = formData.siteScriptCmd;
+          }
+        } else if (formData.action === 'command') {
+          if (formData.params !== undefined) {
+            newState.command = formData.params;
+          }
+        } else if (formData.action === 'connectWindow') {
+          // connectWindow 需要通过 parseJsonToForm 解析，这里暂时保持原逻辑
+          const params = item.message.payload.params as {
             windowId?: number;
             windowTitle?: string;
           };
-          newState.connectWindowId = params.windowId
-            ? String(params.windowId)
-            : '';
-          newState.connectWindowTitle = params.windowTitle || '';
-        } else if (msg.payload.action === 'summarize') {
-          const params = msg.payload.params as {
-            fullPage?: boolean;
-            locate?: {
-              rect: {
-                left: number;
-                top: number;
-                width: number;
-                height: number;
-              };
-            };
-          };
-          newState.summarizeFullPage = params.fullPage !== undefined ? params.fullPage : true;
-          newState.summarizeLocate = params.locate;
+          if (params) {
+            newState.connectWindowId = params.windowId
+              ? String(params.windowId)
+              : '';
+            newState.connectWindowTitle = params.windowTitle || '';
+          }
+        } else if (formData.action === 'summarize') {
+          if (formData.summarizeFullPage !== undefined) {
+            newState.summarizeFullPage = formData.summarizeFullPage;
+          }
+          if (formData.summarizeLocate !== undefined) {
+            newState.summarizeLocate = formData.summarizeLocate;
+          }
         }
 
         set(newState);
       },
 
-      // 从 JSON 更新（JSON 为主，表单为辅）
+      // 从 JSON 更新（以最后编辑的内容为主，完整解析所有字段）
       updateFromJson: (formData) => {
         set((state) => {
-          // 无论能否完全映射表单，始终以最新 JSON 为主
-          const updates: Partial<DebugState> = {
-            jsonParams: formData,
-            jsonOverrideEnabled: true,
-          };
+          const updates: Partial<DebugState> = {};
           const currentAction = state.action;
 
           // 根据当前 Action 类型解析 formData（formData 是 payload.params 的内容）
@@ -287,11 +280,17 @@ export const useDebugStore = create<DebugState>()(
               ) {
                 const tasksData = formData.tasks;
                 if (Array.isArray(tasksData)) {
-                  // 转换 API 格式到 FlowAction 格式
+                  // 转换 API 格式到 FlowAction 格式，完整解析所有字段
                   updates.tasks = tasksData.map((task) => ({
                     id: task.id || uuidv4(), // 如果没有 id 则生成新的
                     name: task.name || '新任务',
                     continueOnError: task.continueOnError ?? false,
+                    ...(task.maxRetriesForConnection !== undefined && {
+                      maxRetriesForConnection: task.maxRetriesForConnection,
+                    }),
+                    ...(task.aiActionContext && typeof task.aiActionContext === 'string' && task.aiActionContext.trim()
+                      ? { aiActionContext: task.aiActionContext }
+                      : {}),
                     flow: Array.isArray(task.flow)
                       ? parseFlow(task.flow).map((action) => ({
                           ...action,

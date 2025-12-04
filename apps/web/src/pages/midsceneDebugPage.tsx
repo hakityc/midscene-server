@@ -67,8 +67,6 @@ export default function MidsceneDebugPage() {
     summarizeLocate,
     history,
     showHistory,
-    jsonParams,
-    jsonOverrideEnabled,
     setAction,
     setMeta,
     refreshMessageId,
@@ -112,33 +110,10 @@ export default function MidsceneDebugPage() {
   // 变量转换 Hook
   const { transformTasks } = useVariableTransform();
 
-  // 构建消息
+  // 构建消息（始终从表单数据构建，不区分 JSON 模式和表单模式）
   const buildMessage = useCallback(
     (mode: 'original' | 'runtime' = 'original'): WsInboundMessage | null => {
       const option = enableLoadingShade ? 'LOADING_SHADE' : undefined;
-
-      // 如果开启了 JSON 覆盖模式，则始终以 JSON 为主（表单只是辅助）
-      if (jsonOverrideEnabled && jsonParams !== null && jsonParams !== undefined) {
-        const basePayload: any = {
-          action,
-          params: jsonParams,
-        };
-
-        // 仅在明确需要时附加 option/context 等附加字段
-        if (action === 'aiScript' || action === 'ai') {
-          if (option) {
-            basePayload.option = option;
-          }
-          if (aiScriptContext && aiScriptContext.trim()) {
-            (basePayload as any).context = aiScriptContext;
-          }
-        }
-
-        return {
-          meta,
-          payload: basePayload,
-        };
-      }
 
       switch (action) {
         case 'aiScript': {
@@ -195,8 +170,6 @@ export default function MidsceneDebugPage() {
       summarizeFullPage,
       summarizeLocate,
       transformTasks,
-      jsonOverrideEnabled,
-      jsonParams,
     ],
   );
 

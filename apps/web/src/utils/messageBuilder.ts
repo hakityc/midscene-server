@@ -292,18 +292,24 @@ export function buildAiScriptMessage(
   option?: string,
   context?: string,
 ): WsInboundMessage {
-  const formattedTasks = tasks.map((task) => ({
-    name: task.name,
-    continueOnError: task.continueOnError,
-    ...(task.maxRetriesForConnection !== undefined && {
-      maxRetriesForConnection: task.maxRetriesForConnection,
-    }),
-    // 过滤掉未启用的动作（enabled 为 false 的动作）和转换后为空的动作
-    flow: task.flow
-      .filter((action) => action.enabled !== false)
-      .map(flowActionToApiFormat)
-      .filter((action): action is Record<string, unknown> => action !== null),
-  }));
+  const formattedTasks = tasks.map((task) => {
+    // 优先使用 task 自身的 aiActionContext，如果没有则使用全局 context
+    const taskContext = task.aiActionContext ?? context;
+    
+    return {
+      name: task.name,
+      continueOnError: task.continueOnError,
+      ...(task.maxRetriesForConnection !== undefined && {
+        maxRetriesForConnection: task.maxRetriesForConnection,
+      }),
+      ...(taskContext && taskContext.trim() ? { aiActionContext: taskContext } : {}),
+      // 过滤掉未启用的动作（enabled 为 false 的动作）和转换后为空的动作
+      flow: task.flow
+        .filter((action) => action.enabled !== false)
+        .map(flowActionToApiFormat)
+        .filter((action): action is Record<string, unknown> => action !== null),
+    };
+  });
 
   return {
     meta,
@@ -313,7 +319,6 @@ export function buildAiScriptMessage(
         tasks: formattedTasks,
       },
       option,
-      ...(context && context.trim() ? { context } : {}),
     },
   };
 }

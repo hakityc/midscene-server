@@ -331,6 +331,11 @@ export interface Task {
    * 不配置时由服务端使用默认值（目前为 3）
    */
   maxRetriesForConnection?: number;
+  /**
+   * AI 行为上下文，用于指导 AI 在执行任务时的行为
+   * 会在执行任务前设置
+   */
+  aiActionContext?: string;
   flow: FlowAction[];
 }
 

@@ -8,6 +8,143 @@ import type { WsInboundMessage } from '@/types/debug';
 import { validateJson } from '@/utils/messageBuilder';
 
 /**
+ * Task 字段配置
+ * 
+ * 采用配置驱动的方式，提升可扩展性：
+ * 1. 新增字段只需在 fieldOrder 中添加，即可自动渲染
+ * 2. 如果字段有特殊验证需求，可在 fieldValidators 中配置
+ * 3. 未知字段会自动发现并渲染（向后兼容）
+ * 
+ * 使用示例：
+ * - 添加新字段：在 fieldOrder 数组中添加字段名
+ * - 添加验证器：在 fieldValidators 对象中添加验证函数
+ * - 排除前端字段：在 frontendOnlyFields 中添加字段名
+ */
+const TASK_FIELD_CONFIG = {
+  // 前端专用字段，不在 JSON 中显示
+  frontendOnlyFields: new Set(['id']),
+  // 字段显示顺序（按此顺序渲染），新增字段只需在此添加
+  fieldOrder: ['name', 'continueOnError', 'maxRetriesForConnection', 'aiActionContext'],
+  // 特殊字段，需要自定义渲染逻辑（会在最后渲染）
+  specialFields: new Set(['flow']),
+  // 字段值的验证函数（可选字段需要验证，确保只显示有效值）
+  // 格式：字段名 -> (value: unknown) => boolean
+  fieldValidators: {
+    aiActionContext: (value: unknown): boolean => {
+      return typeof value === 'string' && value.trim().length > 0;
+    },
+  },
+} as const;
+
+/**
+ * 格式化 flow 动作数组
+ */
+function formatFlowActions(flow: any[]): string[] {
+  const actionLines: string[] = [];
+
+  flow.forEach((action: any) => {
+    const isEnabled = action.enabled !== false;
+    // 移除前端专用字段（id, enabled）
+    // biome-ignore lint/correctness/noUnusedVariables: 解构是为了移除字段
+    const { id, enabled, ...cleanAction } = action;
+
+    // 检查是否为空对象（移除字段后没有任何内容）
+    const isEmptyAction = Object.keys(cleanAction).length === 0;
+    if (isEmptyAction) {
+      return; // 跳过空对象
+    }
+
+    const actionStr = JSON.stringify(cleanAction, null, 2);
+    const indentedAction = actionStr
+      .split('\n')
+      .map((line) => '        ' + line)
+      .join('\n');
+
+    if (!isEnabled) {
+      // 将未启用的动作注释掉
+      const commented = indentedAction
+        .split('\n')
+        .map((line) => '// ' + line)
+        .join('\n');
+      actionLines.push(commented);
+    } else {
+      actionLines.push(indentedAction);
+    }
+  });
+
+  return actionLines;
+}
+
+/**
+ * 格式化单个 Task 对象
+ */
+function formatTask(task: any): string {
+  const lines: string[] = [];
+  lines.push(`    {`);
+
+  // 按照配置的顺序渲染标准字段（可扩展：新增字段只需在配置中添加）
+  const standardFields: string[] = [];
+  const processedFields = new Set<string>();
+  
+  // 1. 处理配置中定义的字段（按顺序）
+  for (const fieldName of TASK_FIELD_CONFIG.fieldOrder) {
+    if (fieldName in task && !TASK_FIELD_CONFIG.frontendOnlyFields.has(fieldName)) {
+      processedFields.add(fieldName);
+      const value = task[fieldName];
+      const validator = TASK_FIELD_CONFIG.fieldValidators[fieldName as keyof typeof TASK_FIELD_CONFIG.fieldValidators];
+      
+      // 如果有验证器，使用验证器判断是否应该包含
+      if (validator) {
+        if (validator(value)) {
+          standardFields.push(`      "${fieldName}": ${JSON.stringify(value)},`);
+        }
+      } else if (value !== undefined && value !== null) {
+        // 默认情况：值存在就包含
+        standardFields.push(`      "${fieldName}": ${JSON.stringify(value)},`);
+      }
+    }
+  }
+
+  // 2. 自动发现并渲染未知字段（不在配置中的字段，提升向后兼容性）
+  const allFields = new Set(Object.keys(task));
+  for (const fieldName of allFields) {
+    // 跳过已处理的字段、前端专用字段和特殊字段
+    if (
+      processedFields.has(fieldName) ||
+      TASK_FIELD_CONFIG.frontendOnlyFields.has(fieldName) ||
+      TASK_FIELD_CONFIG.specialFields.has(fieldName)
+    ) {
+      continue;
+    }
+
+    const value = task[fieldName];
+    if (value !== undefined && value !== null) {
+      standardFields.push(`      "${fieldName}": ${JSON.stringify(value)},`);
+    }
+  }
+
+  // 渲染标准字段
+  standardFields.forEach((line) => lines.push(line));
+
+  // 3. 处理特殊字段 flow（最后渲染）
+  if (task.flow && Array.isArray(task.flow)) {
+    lines.push(`      "flow": [`);
+    
+    const actionLines = formatFlowActions(task.flow);
+    
+    // 添加带逗号的动作行
+    actionLines.forEach((line, index) => {
+      lines.push(line + (index < actionLines.length - 1 ? ',' : ''));
+    });
+
+    lines.push(`      ]`);
+  }
+
+  lines.push(`    }`);
+  return lines.join('\n');
+}
+
+/**
  * 格式化 JSON，将未启用的动作注释掉
  */
 function formatJsonWithDisabledActions(params: any): string {
@@ -15,68 +152,9 @@ function formatJsonWithDisabledActions(params: any): string {
     return JSON.stringify(params, null, 2);
   }
 
-  // 如果有 tasks 数组，处理每个 task 中的 flow
+  // 如果有 tasks 数组，处理每个 task
   if (Array.isArray(params.tasks)) {
-    const formattedTasks = params.tasks.map((task: any) => {
-      if (!task.flow || !Array.isArray(task.flow)) {
-        return task;
-      }
-
-      const lines: string[] = [];
-      lines.push(`    {`);
-      lines.push(`      "name": ${JSON.stringify(task.name)},`);
-      lines.push(`      "continueOnError": ${task.continueOnError},`);
-      // 如果有 maxRetriesForConnection，添加到 JSON 中
-      if (task.maxRetriesForConnection !== undefined) {
-        lines.push(
-          `      "maxRetriesForConnection": ${task.maxRetriesForConnection},`,
-        );
-      }
-      lines.push(`      "flow": [`);
-
-      // 收集有效的动作行
-      const actionLines: string[] = [];
-
-      task.flow.forEach((action: any) => {
-        const isEnabled = action.enabled !== false;
-        // 移除前端专用字段（id, enabled）
-        // biome-ignore lint/correctness/noUnusedVariables: 解构是为了移除字段
-        const { id, enabled, ...cleanAction } = action;
-
-        // 检查是否为空对象（移除字段后没有任何内容）
-        const isEmptyAction = Object.keys(cleanAction).length === 0;
-        if (isEmptyAction) {
-          return; // 跳过空对象
-        }
-
-        const actionStr = JSON.stringify(cleanAction, null, 2);
-        const indentedAction = actionStr
-          .split('\n')
-          .map((line) => '        ' + line)
-          .join('\n');
-
-        if (!isEnabled) {
-          // 将未启用的动作注释掉
-          const commented = indentedAction
-            .split('\n')
-            .map((line) => '// ' + line)
-            .join('\n');
-          actionLines.push(commented);
-        } else {
-          actionLines.push(indentedAction);
-        }
-      });
-
-      // 添加带逗号的动作行
-      actionLines.forEach((line, index) => {
-        lines.push(line + (index < actionLines.length - 1 ? ',' : ''));
-      });
-
-      lines.push(`      ]`);
-      lines.push(`    }`);
-      return lines.join('\n');
-    });
-
+    const formattedTasks = params.tasks.map((task: any) => formatTask(task));
     return `{\n  "tasks": [\n${formattedTasks.join(',\n')}\n  ]\n}`;
   }
 
