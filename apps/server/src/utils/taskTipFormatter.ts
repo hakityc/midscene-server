@@ -237,7 +237,7 @@ export function formatTaskTip(rawTip: string): {
   if (!rawTip || typeof rawTip !== 'string') {
     const config = getTaskTipConfig();
     return {
-      formatted: `${config.botName}本地任务`,
+      formatted: `${config.botName}执行本地任务`,
       icon: '🤖',
       category: 'unknown',
       content: '',
@@ -273,7 +273,7 @@ export function formatTaskTip(rawTip: string): {
   return {
     // 默认情况下直接使用原始提示文案，方便前端将其作为主标题展示
     // 这里通常对应自定义的 leboStepName 等场景
-    formatted: trimmedTip,
+    formatted: `${config.botName}${trimmedTip}`,
     icon: '🤖',
     category: 'general',
     content: trimmedTip,
