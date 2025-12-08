@@ -26,198 +26,198 @@ const TASK_TIP_MAPPINGS: TaskTipMapping[] = [
   // Planning 阶段
   {
     pattern: /^Planning\s*\/\s*LoadYaml\s*-\s*(.+)$/i,
-    template: '正在准备任务',
+    template: '初始化任务',
     icon: '📋',
   },
   {
     pattern: /^Planning\s*\/\s*Plan\s*-\s*(.+)$/i,
-    template: '正在规划操作步骤',
+    template: '操作步骤',
     icon: '🎯',
   },
   {
     pattern: /^Planning\s*-\s*(.+)$/i,
-    template: '正在准备操作',
+    template: '执行操作',
     icon: '🎯',
   },
 
   // Insight 阶段
   {
     pattern: /^Insight\s*\/\s*Locate\s*-\s*(.+)$/i,
-    template: '正在查找页面元素',
+    template: '定位页面元素',
     icon: '🔍',
   },
   {
     pattern: /^Insight\s*\/\s*Query\s*-\s*(.+)$/i,
-    template: '正在读取页面信息',
+    template: '读取页面信息',
     icon: '📊',
   },
   {
     pattern: /^Insight\s*\/\s*Boolean\s*-\s*(.+)$/i,
-    template: '正在检查页面内容',
+    template: '检查页面内容',
     icon: '🔍',
   },
   {
     pattern: /^Insight\s*\/\s*Number\s*-\s*(.+)$/i,
-    template: '正在读取数值',
+    template: '读取数值',
     icon: '🔢',
   },
   {
     pattern: /^Insight\s*\/\s*String\s*-\s*(.+)$/i,
-    template: '正在读取文本',
+    template: '读取文本',
     icon: '📝',
   },
   {
     pattern: /^Insight\s*\/\s*Assert\s*-\s*(.+)$/i,
-    template: '正在检查页面内容',
+    template: '检查页面内容',
     icon: '✅',
   },
   {
     pattern: /^Insight\s*-\s*(.+)$/i,
-    template: '正在识别页面元素',
+    template: '识别页面元素',
     icon: '🔍',
   },
 
   // Action 阶段
   {
     pattern: /^Action\s*\/\s*Tap\s*-\s*(.+)$/i,
-    template: '正在点击',
+    template: '点击内容',
     icon: '👆',
   },
   {
     pattern: /^Action\s*\/\s*Tap$/i,
-    template: '正在点击',
+    template: '点击内容',
     icon: '👆',
   },
   {
     pattern: /^Action\s*\/\s*Hover\s*-\s*(.+)$/i,
-    template: '正在悬停',
+    template: '悬停内容',
     icon: '🖱️',
   },
   {
     pattern: /^Action\s*\/\s*Hover$/i,
-    template: '正在悬停',
+    template: '悬停内容',
     icon: '🖱️',
   },
   {
     pattern: /^Action\s*\/\s*Input\s*-\s*(.+)$/i,
-    template: '正在输入',
+    template: '输入内容',
     icon: '⌨️',
   },
   {
     pattern: /^Action\s*\/\s*Input$/i,
-    template: '正在输入',
+    template: '输入内容',
     icon: '⌨️',
   },
   {
     pattern: /^Action\s*\/\s*KeyboardPress\s*-\s*(.+)$/i,
-    template: '正在按键',
+    template: '按下按键',
     icon: '⌨️',
   },
   {
     pattern: /^Action\s*\/\s*KeyboardPress$/i,
-    template: '正在按键',
+    template: '按下按键',
     icon: '⌨️',
   },
   {
     pattern: /^Action\s*\/\s*RightClick\s*-\s*(.+)$/i,
-    template: '正在右键点击',
+    template: '右键点击内容',
     icon: '🖱️',
   },
   {
     pattern: /^Action\s*\/\s*RightClick$/i,
-    template: '正在右键点击',
+    template: '右键点击内容',
     icon: '🖱️',
   },
   {
     pattern: /^Action\s*\/\s*Scroll\s*-\s*(.+)$/i,
-    template: '正在滚动页面',
+    template: '页面滚动',
     icon: '📜',
   },
   {
     pattern: /^Action\s*\/\s*Scroll$/i,
-    template: '正在滚动页面',
+    template: '页面滚动',
     icon: '📜',
   },
   {
     pattern: /^Action\s*\/\s*Sleep\s*-\s*(.+)$/i,
-    template: '正在等待',
+    template: '等待操作',
     icon: '⏳',
   },
   {
     pattern: /^Action\s*\/\s*Sleep$/i,
-    template: '正在等待',
+    template: '等待操作',
     icon: '⏳',
   },
   {
     pattern: /^Action\s*\/\s*DragAndDrop\s*-\s*(.+)$/i,
-    template: '正在拖拽',
+    template: '拖拽内容',
     icon: '🔄',
   },
   {
     pattern: /^Action\s*\/\s*DragAndDrop$/i,
-    template: '正在拖拽',
+    template: '拖拽内容',
     icon: '🔄',
   },
   {
     pattern: /^Action\s*\/\s*Swipe\s*-\s*(.+)$/i,
-    template: '正在滑动',
+    template: '滑动内容',
     icon: '👆',
   },
   {
     pattern: /^Action\s*\/\s*Swipe$/i,
-    template: '正在滑动',
+    template: '滑动内容',
     icon: '👆',
   },
   {
     pattern: /^Action\s*\/\s*AndroidPull\s*-\s*(.+)$/i,
-    template: '正在滑动页面',
+    template: '页面滑动',
     icon: '📱',
   },
   {
     pattern: /^Action\s*\/\s*AndroidPull$/i,
-    template: '正在滑动页面',
+    template: '页面滑动',
     icon: '📱',
   },
   {
     pattern: /^Action\s*\/\s*Error\s*-\s*(.+)$/i,
-    template: '操作遇到问题，正在自动重试',
+    template: '操作异常，自动重试',
     icon: '❌',
   },
   {
     pattern: /^Action\s*\/\s*Finished\s*-\s*(.+)$/i,
-    template: '操作完成',
+    template: '操作',
     icon: '🎉',
   },
   {
     pattern: /^Action\s*\/\s*Finished$/i,
-    template: '操作完成',
+    template: '操作',
     icon: '🎉',
   },
   {
     pattern: /^Action\s*\/\s*(.+)\s*-\s*(.+)$/i,
-    template: '正在执行操作',
+    template: '操作',
     icon: '⚡',
   },
   {
     pattern: /^Action\s*\/\s*(.+)$/i,
-    template: '正在执行操作',
+    template: '操作',
     icon: '⚡',
   },
 
   // Log 阶段
   {
     pattern: /^Log\s*\/\s*Screenshot\s*-\s*(.+)$/i,
-    template: '正在保存截图',
+    template: '截图',
     icon: '📸',
   },
   {
     pattern: /^Log\s*\/\s*Screenshot$/i,
-    template: '正在保存截图',
+    template: '截图',
     icon: '📸',
   },
   {
     pattern: /^Log\s*-\s*(.+)$/i,
-    template: '正在记录操作',
+    template: '操作',
     icon: '📝',
   },
 ];

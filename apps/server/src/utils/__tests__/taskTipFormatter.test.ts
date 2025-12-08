@@ -6,7 +6,7 @@ describe('taskTipFormatter', () => {
     describe('Planning 阶段', () => {
       it('应该格式化 Planning/LoadYaml 提示', () => {
         const result = formatTaskTip('Planning / LoadYaml - config.yaml');
-        expect(result.formatted).toBe('小乐正在准备任务');
+        expect(result.formatted).toBe('小乐任务');
         expect(result.icon).toBe('📋');
         expect(result.category).toBe('planning');
         expect(result.content).toBe('config.yaml');
@@ -15,7 +15,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Planning/Plan 提示', () => {
         const result = formatTaskTip('Planning / Plan - 登录流程');
-        expect(result.formatted).toBe('小乐正在规划操作步骤');
+        expect(result.formatted).toBe('小乐操作步骤');
         expect(result.icon).toBe('🎯');
         expect(result.category).toBe('planning');
         expect(result.content).toBe('登录流程');
@@ -24,7 +24,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Planning 通用提示', () => {
         const result = formatTaskTip('Planning - 分析任务需求');
-        expect(result.formatted).toBe('小乐正在准备操作');
+        expect(result.formatted).toBe('小乐操作');
         expect(result.icon).toBe('🎯');
         expect(result.category).toBe('planning');
         expect(result.content).toBe('分析任务需求');
@@ -35,7 +35,7 @@ describe('taskTipFormatter', () => {
     describe('Insight 阶段', () => {
       it('应该格式化 Insight/Locate 提示', () => {
         const result = formatTaskTip('Insight / Locate - 搜索按钮');
-        expect(result.formatted).toBe('小乐正在查找页面元素');
+        expect(result.formatted).toBe('小乐页面元素');
         expect(result.icon).toBe('🔍');
         expect(result.category).toBe('insight');
         expect(result.content).toBe('搜索按钮');
@@ -44,7 +44,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Insight/Query 提示', () => {
         const result = formatTaskTip('Insight / Query - 获取用户名');
-        expect(result.formatted).toBe('小乐正在读取页面信息');
+        expect(result.formatted).toBe('小乐页面信息');
         expect(result.icon).toBe('📊');
         expect(result.category).toBe('insight');
         expect(result.content).toBe('获取用户名');
@@ -53,7 +53,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Insight/Boolean 提示', () => {
         const result = formatTaskTip('Insight / Boolean - 检查登录状态');
-        expect(result.formatted).toBe('小乐正在检查页面内容');
+        expect(result.formatted).toBe('小乐页面内容');
         expect(result.icon).toBe('🔍');
         expect(result.category).toBe('insight');
         expect(result.content).toBe('检查登录状态');
@@ -62,7 +62,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Insight/Number 提示', () => {
         const result = formatTaskTip('Insight / Number - 统计商品数量');
-        expect(result.formatted).toBe('小乐正在读取数值');
+        expect(result.formatted).toBe('小乐数值');
         expect(result.icon).toBe('🔢');
         expect(result.category).toBe('insight');
         expect(result.content).toBe('统计商品数量');
@@ -71,7 +71,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Insight/String 提示', () => {
         const result = formatTaskTip('Insight / String - 提取标题文本');
-        expect(result.formatted).toBe('小乐正在读取文本');
+        expect(result.formatted).toBe('小乐文本');
         expect(result.icon).toBe('📝');
         expect(result.category).toBe('insight');
         expect(result.content).toBe('提取标题文本');
@@ -80,7 +80,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Insight/Assert 提示', () => {
         const result = formatTaskTip('Insight / Assert - 验证结果正确');
-        expect(result.formatted).toBe('小乐正在检查页面内容');
+        expect(result.formatted).toBe('小乐页面内容');
         expect(result.icon).toBe('✅');
         expect(result.category).toBe('insight'); // Assert 属于 Insight 阶段
         expect(result.content).toBe('验证结果正确');
@@ -89,7 +89,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Insight 通用提示', () => {
         const result = formatTaskTip('Insight - 页面分析');
-        expect(result.formatted).toBe('小乐正在识别页面元素');
+        expect(result.formatted).toBe('小乐页面元素');
         expect(result.icon).toBe('🔍');
         expect(result.category).toBe('insight');
         expect(result.content).toBe('页面分析');
@@ -100,7 +100,7 @@ describe('taskTipFormatter', () => {
     describe('Action 阶段', () => {
       it('应该格式化 Action/Tap 提示（带内容）', () => {
         const result = formatTaskTip('Action / Tap - 登录按钮');
-        expect(result.formatted).toBe('小乐正在点击');
+        expect(result.formatted).toBe('小乐点击');
         expect(result.icon).toBe('👆');
         expect(result.category).toBe('action');
         expect(result.content).toBe('登录按钮');
@@ -109,7 +109,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Tap 提示（不带内容）', () => {
         const result = formatTaskTip('Action / Tap');
-        expect(result.formatted).toBe('小乐正在点击');
+        expect(result.formatted).toBe('小乐点击');
         expect(result.icon).toBe('👆');
         expect(result.category).toBe('action');
         expect(result.content).toBe('');
@@ -118,7 +118,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Hover 提示（带内容）', () => {
         const result = formatTaskTip('Action / Hover - 菜单项');
-        expect(result.formatted).toBe('小乐正在悬停');
+        expect(result.formatted).toBe('小乐悬停');
         expect(result.icon).toBe('🖱️');
         expect(result.category).toBe('action');
         expect(result.content).toBe('菜单项');
@@ -127,7 +127,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Hover 提示（不带内容）', () => {
         const result = formatTaskTip('Action / Hover');
-        expect(result.formatted).toBe('小乐正在悬停');
+        expect(result.formatted).toBe('小乐悬停');
         expect(result.icon).toBe('🖱️');
         expect(result.category).toBe('action');
         expect(result.content).toBe('');
@@ -136,7 +136,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Input 提示', () => {
         const result = formatTaskTip('Action / Input - 用户名');
-        expect(result.formatted).toBe('小乐正在输入');
+        expect(result.formatted).toBe('小乐输入');
         expect(result.icon).toBe('⌨️');
         expect(result.category).toBe('action');
         expect(result.content).toBe('用户名');
@@ -145,7 +145,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/KeyboardPress 提示', () => {
         const result = formatTaskTip('Action / KeyboardPress - Enter');
-        expect(result.formatted).toBe('小乐正在按键');
+        expect(result.formatted).toBe('小乐按键');
         expect(result.icon).toBe('⌨️');
         expect(result.category).toBe('action');
         expect(result.content).toBe('Enter');
@@ -154,7 +154,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/RightClick 提示（带内容）', () => {
         const result = formatTaskTip('Action / RightClick - 文件夹');
-        expect(result.formatted).toBe('小乐正在右键点击');
+        expect(result.formatted).toBe('小乐右键点击');
         expect(result.icon).toBe('🖱️');
         expect(result.category).toBe('action');
         expect(result.content).toBe('文件夹');
@@ -163,7 +163,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/RightClick 提示（不带内容）', () => {
         const result = formatTaskTip('Action / RightClick');
-        expect(result.formatted).toBe('小乐正在右键点击');
+        expect(result.formatted).toBe('小乐右键点击');
         expect(result.icon).toBe('🖱️');
         expect(result.category).toBe('action');
         expect(result.content).toBe('');
@@ -172,7 +172,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Scroll 提示（带内容）', () => {
         const result = formatTaskTip('Action / Scroll - 滚动到底部');
-        expect(result.formatted).toBe('小乐正在滚动页面');
+        expect(result.formatted).toBe('小乐页面滚动');
         expect(result.icon).toBe('📜');
         expect(result.category).toBe('action');
         expect(result.content).toBe('滚动到底部');
@@ -181,7 +181,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Scroll 提示（不带内容）', () => {
         const result = formatTaskTip('Action / Scroll');
-        expect(result.formatted).toBe('小乐正在滚动页面');
+        expect(result.formatted).toBe('小乐页面滚动');
         expect(result.icon).toBe('📜');
         expect(result.category).toBe('action');
         expect(result.content).toBe('');
@@ -190,7 +190,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Sleep 提示（带内容）', () => {
         const result = formatTaskTip('Action / Sleep - 1000ms');
-        expect(result.formatted).toBe('小乐正在等待');
+        expect(result.formatted).toBe('小乐等待');
         expect(result.icon).toBe('⏳');
         expect(result.category).toBe('action');
         expect(result.content).toBe('1000ms');
@@ -199,7 +199,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Sleep 提示（不带内容）', () => {
         const result = formatTaskTip('Action / Sleep');
-        expect(result.formatted).toBe('小乐正在等待');
+        expect(result.formatted).toBe('小乐等待');
         expect(result.icon).toBe('⏳');
         expect(result.category).toBe('action');
         expect(result.content).toBe('');
@@ -208,7 +208,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/DragAndDrop 提示', () => {
         const result = formatTaskTip('Action / DragAndDrop - 拖拽图片');
-        expect(result.formatted).toBe('小乐正在拖拽');
+        expect(result.formatted).toBe('小乐拖拽');
         expect(result.icon).toBe('🔄');
         expect(result.category).toBe('action');
         expect(result.content).toBe('拖拽图片');
@@ -217,7 +217,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/AndroidPull 提示', () => {
         const result = formatTaskTip('Action / AndroidPull - 下拉刷新');
-        expect(result.formatted).toBe('小乐正在滑动页面');
+        expect(result.formatted).toBe('小乐页面滑动');
         expect(result.icon).toBe('📱');
         expect(result.category).toBe('action');
         expect(result.content).toBe('下拉刷新');
@@ -226,7 +226,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Error 提示', () => {
         const result = formatTaskTip('Action / Error - 点击失败');
-        expect(result.formatted).toBe('小乐操作遇到问题，正在自动重试');
+        expect(result.formatted).toBe('小乐操作异常，自动重试');
         expect(result.icon).toBe('❌');
         expect(result.category).toBe('action'); // Error 在 Action 下属于 action 类别
         expect(result.content).toBe('点击失败');
@@ -235,7 +235,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Finished 提示（带内容）', () => {
         const result = formatTaskTip('Action / Finished - 任务已完成');
-        expect(result.formatted).toBe('小乐操作完成');
+        expect(result.formatted).toBe('小乐操作');
         expect(result.icon).toBe('🎉');
         expect(result.category).toBe('action'); // Finished 在 Action 下属于 action 类别
         expect(result.content).toBe('任务已完成');
@@ -244,7 +244,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action/Finished 提示（不带内容）', () => {
         const result = formatTaskTip('Action / Finished');
-        expect(result.formatted).toBe('小乐操作完成');
+        expect(result.formatted).toBe('小乐操作');
         expect(result.icon).toBe('🎉');
         expect(result.category).toBe('action'); // Finished 在 Action 下属于 action 类别
         expect(result.content).toBe('');
@@ -253,7 +253,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action 自定义操作（带描述）', () => {
         const result = formatTaskTip('Action / CustomAction - 执行自定义操作');
-        expect(result.formatted).toBe('小乐正在执行操作');
+        expect(result.formatted).toBe('小乐操作');
         expect(result.icon).toBe('⚡');
         expect(result.category).toBe('action');
         expect(result.content).toBe('执行自定义操作');
@@ -262,7 +262,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Action 通用操作', () => {
         const result = formatTaskTip('Action / DoSomething');
-        expect(result.formatted).toBe('小乐正在执行操作');
+        expect(result.formatted).toBe('小乐操作');
         expect(result.icon).toBe('⚡');
         expect(result.category).toBe('action');
         expect(result.content).toBe('DoSomething');
@@ -273,7 +273,7 @@ describe('taskTipFormatter', () => {
     describe('Log 阶段', () => {
       it('应该格式化 Log/Screenshot 提示（带内容）', () => {
         const result = formatTaskTip('Log / Screenshot - 保存截图');
-        expect(result.formatted).toBe('小乐正在保存截图');
+        expect(result.formatted).toBe('小乐截图');
         expect(result.icon).toBe('📸');
         expect(result.category).toBe('general');
         expect(result.content).toBe('保存截图');
@@ -282,7 +282,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Log/Screenshot 提示（不带内容）', () => {
         const result = formatTaskTip('Log / Screenshot');
-        expect(result.formatted).toBe('小乐正在保存截图');
+        expect(result.formatted).toBe('小乐截图');
         expect(result.icon).toBe('📸');
         expect(result.category).toBe('general');
         expect(result.content).toBe('');
@@ -291,7 +291,7 @@ describe('taskTipFormatter', () => {
 
       it('应该格式化 Log 通用提示', () => {
         const result = formatTaskTip('Log - 记录执行结果');
-        expect(result.formatted).toBe('小乐正在记录操作');
+        expect(result.formatted).toBe('小乐操作');
         expect(result.icon).toBe('📝');
         expect(result.category).toBe('general');
         expect(result.content).toBe('记录执行结果');
@@ -302,7 +302,7 @@ describe('taskTipFormatter', () => {
     describe('边界情况', () => {
       it('应该处理空字符串', () => {
         const result = formatTaskTip('');
-        expect(result.formatted).toBe('小乐本地任务');
+        expect(result.formatted).toBe('小乐执行本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('unknown');
         expect(result.content).toBe('');
@@ -311,7 +311,7 @@ describe('taskTipFormatter', () => {
 
       it('应该处理 null 值', () => {
         const result = formatTaskTip(null as any);
-        expect(result.formatted).toBe('小乐本地任务');
+        expect(result.formatted).toBe('小乐执行本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('unknown');
         expect(result.content).toBe('');
@@ -320,7 +320,7 @@ describe('taskTipFormatter', () => {
 
       it('应该处理 undefined 值', () => {
         const result = formatTaskTip(undefined as any);
-        expect(result.formatted).toBe('小乐本地任务');
+        expect(result.formatted).toBe('小乐执行本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('unknown');
         expect(result.content).toBe('');
@@ -329,7 +329,7 @@ describe('taskTipFormatter', () => {
 
       it('应该处理非字符串值', () => {
         const result = formatTaskTip(123 as any);
-        expect(result.formatted).toBe('小乐本地任务');
+        expect(result.formatted).toBe('小乐执行本地任务');
         expect(result.icon).toBe('🤖');
         expect(result.category).toBe('unknown');
         expect(result.content).toBe('');
@@ -359,7 +359,7 @@ describe('taskTipFormatter', () => {
 
       it('应该处理前后有空格的提示', () => {
         const result = formatTaskTip('  Planning / Plan - 测试任务  ');
-        expect(result.formatted).toBe('小乐正在规划操作步骤');
+        expect(result.formatted).toBe('小乐操作步骤');
         expect(result.icon).toBe('🎯');
         expect(result.category).toBe('planning');
         expect(result.content).toBe('测试任务');
@@ -370,7 +370,7 @@ describe('taskTipFormatter', () => {
     describe('大小写不敏感', () => {
       it('应该处理小写的 planning', () => {
         const result = formatTaskTip('planning / plan - 测试');
-        expect(result.formatted).toBe('小乐正在规划操作步骤');
+        expect(result.formatted).toBe('小乐规划操作步骤');
         expect(result.category).toBe('planning');
         expect(result.content).toBe('测试');
         expect(result.hint).toBe('');
@@ -378,7 +378,7 @@ describe('taskTipFormatter', () => {
 
       it('应该处理大写的 INSIGHT', () => {
         const result = formatTaskTip('INSIGHT / LOCATE - 元素');
-        expect(result.formatted).toBe('小乐正在查找页面元素');
+        expect(result.formatted).toBe('小乐查找页面元素');
         expect(result.category).toBe('insight');
         expect(result.content).toBe('元素');
         expect(result.hint).toBe('');
@@ -386,7 +386,7 @@ describe('taskTipFormatter', () => {
 
       it('应该处理混合大小写的 AcTiOn', () => {
         const result = formatTaskTip('AcTiOn / TaP - 按钮');
-        expect(result.formatted).toBe('小乐正在点击');
+        expect(result.formatted).toBe('小乐点击');
         expect(result.category).toBe('action');
         expect(result.content).toBe('按钮');
         expect(result.hint).toBe('');
