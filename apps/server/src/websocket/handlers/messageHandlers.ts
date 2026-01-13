@@ -1,17 +1,16 @@
 import type { ClientType, MessageHandler } from '../../types/websocket';
 import { WebSocketAction } from '../../utils/enums';
-
+import { createSwitchConfigHandler } from '../actions/switchConfig';
 // Web 端 Actions
 import {
   createConnectTabHandler,
   createDownloadVideoHandler,
+  createSummarizeHandler,
   createAiHandler as createWebAiHandler,
   createCommandHandler as createWebCommandHandler,
   executeScriptHandler as executeWebScriptHandler,
   handleSiteScriptHandler,
-  createSummarizeHandler,
 } from '../actions/web';
-
 // Windows 端 Actions
 import {
   createConnectWindowHandler,
@@ -37,6 +36,7 @@ export function createWebMessageHandlers(): Partial<
     [WebSocketAction.SITE_SCRIPT]: handleSiteScriptHandler(),
     [WebSocketAction.COMMAND]: createWebCommandHandler(),
     [WebSocketAction.SUMMARIZE]: createSummarizeHandler(),
+    [WebSocketAction.SWITCH_CONFIG]: createSwitchConfigHandler(),
   };
 }
 
@@ -53,6 +53,7 @@ export function createWindowsMessageHandlers(): Partial<
     [WebSocketAction.AI_SCRIPT]: executeWindowsScriptHandler(),
     [WebSocketAction.COMMAND]: createWindowsCommandHandler(),
     [WebSocketAction.TEST]: executeTestHandler(),
+    [WebSocketAction.SWITCH_CONFIG]: createSwitchConfigHandler(),
   };
 }
 

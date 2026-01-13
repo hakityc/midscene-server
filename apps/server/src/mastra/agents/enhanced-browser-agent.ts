@@ -9,6 +9,7 @@ import {
   browserAgent,
   contextManager,
   enhancedWrapper,
+  reloadBrowserAgent,
   toolManager,
 } from './modules/browser-agent';
 
@@ -50,6 +51,10 @@ export class EnhancedBrowserAgent {
         globalConfig.updateConfig(configUtils.optimizeForProduction());
         logger.info('🏭 已应用生产环境配置');
       }
+
+      // 重新加载浏览器助手配置并重新创建实例
+      reloadBrowserAgent();
+      logger.info('🤖 已基于最新配置重新创建浏览器助手');
 
       // 初始化错误处理器 (已在全局导出中定义)
 

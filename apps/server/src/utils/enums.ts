@@ -13,4 +13,5 @@ export enum WebSocketAction {
   COMMAND = 'command',
   TEST = 'test',
   SUMMARIZE = 'summarize',
+  SWITCH_CONFIG = 'switchConfig',
 }

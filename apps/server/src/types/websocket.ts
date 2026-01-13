@@ -44,7 +44,7 @@ export interface WsOutboundMessage<R = unknown> {
 }
 
 // 兼容别名，便于迁移期引用不改动文件名
-export type WebSocketMessage = WsInboundMessage<string>;
+export type WebSocketMessage = WsInboundMessage<any>;
 
 // 消息处理器上下文
 export interface MessageHandlerContext {
@@ -54,7 +54,7 @@ export interface MessageHandlerContext {
 }
 
 // 消息处理器类型
-export type MessageHandler<P = string> = (
+export type MessageHandler<P = any> = (
   ctx: MessageHandlerContext,
   message: WsInboundMessage<P>,
 ) => Promise<void>;

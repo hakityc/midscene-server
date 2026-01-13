@@ -63,3 +63,38 @@ export const config: Config = {
 
 // 导出环境验证结果，供其他模块使用
 export { envValidation };
+
+/**
+ * 更新运行时配置
+ * @param newConfig 新的配置项
+ */
+export function updateRuntimeConfig(
+  newConfig: Partial<Config> & { useQwen3Vl?: boolean | number },
+) {
+  if (newConfig.model) {
+    if (newConfig.model.name) {
+      config.model.name = newConfig.model.name;
+      process.env.MIDSCENE_MODEL_NAME = newConfig.model.name;
+    }
+    if (newConfig.model.apiKey) {
+      config.model.apiKey = newConfig.model.apiKey;
+      process.env.OPENAI_API_KEY = newConfig.model.apiKey;
+    }
+    if (newConfig.model.baseUrl) {
+      config.model.baseUrl = newConfig.model.baseUrl;
+      process.env.OPENAI_BASE_URL = newConfig.model.baseUrl;
+    }
+  }
+
+  if (newConfig.useQwen3Vl !== undefined) {
+    process.env.MIDSCENE_USE_QWEN3_VL = String(
+      newConfig.useQwen3Vl === true || newConfig.useQwen3Vl === 1 ? '1' : '0',
+    );
+  }
+
+  console.log('Runtime config updated:', {
+    modelName: config.model.name,
+    baseUrl: config.model.baseUrl,
+    useQwen3Vl: process.env.MIDSCENE_USE_QWEN3_VL,
+  });
+}
